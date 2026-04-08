@@ -83,6 +83,8 @@ class HorarioTrabalho(models.Model):
         SATURDAY = 5, "Sábado"
         SUNDAY = 6, "Domingo"
 
+    MOJIBAKE_MARKERS = ("Ã", "Â", "â€", "â€™", "â€œ", "â€“", "â€”")
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="horarios_trabalho")
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="horarios_trabalho")
     role = models.CharField(max_length=20, choices=RoleChoices.choices)
@@ -118,6 +120,30 @@ class HorarioTrabalho(models.Model):
     @property
     def professional_name(self) -> str:
         return self.user.get_full_name() or self.user.username
+
+    @classmethod
+    def normalize_text(cls, value: str) -> str:
+        if not isinstance(value, str) or not value:
+            return value
+        if not any(marker in value for marker in cls.MOJIBAKE_MARKERS):
+            return value
+
+        for encoding in ("latin-1", "cp1252"):
+            try:
+                candidate = value.encode(encoding).decode("utf-8")
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                continue
+            if candidate and candidate != value:
+                return candidate
+        return value
+
+    @property
+    def display_shift_name(self) -> str:
+        return self.normalize_text(self.shift_name)
+
+    @property
+    def display_notes(self) -> str:
+        return self.normalize_text(self.notes)
 
     @property
     def linked_medico(self):
@@ -249,6 +275,11 @@ class HorarioTrabalho(models.Model):
 
         if errors:
             raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.shift_name = self.normalize_text(self.shift_name)
+        self.notes = self.normalize_text(self.notes)
+        super().save(*args, **kwargs)
 
 
 # Pacientes Model

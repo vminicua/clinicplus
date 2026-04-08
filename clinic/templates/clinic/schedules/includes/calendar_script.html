@@ -3,33 +3,30 @@
   (function() {
     const root = document.querySelector('[data-schedule-studio]');
     const dataNode = document.getElementById('schedule-calendar-data');
-    if (!root || !dataNode) {
-      return;
-    }
+    if (!root || !dataNode) return;
 
     const locale = (document.documentElement.lang || 'pt').startsWith('en') ? 'en-US' : 'pt-PT';
     const labels = {
-      noItemsDay: '{% ui "Nenhum turno cai nesta data dentro dos filtros actuais." "No shifts fall on this date inside the current filters." %}',
-      noItemsRange: '{% ui "Não existem horários para mostrar nesta combinação de filtros e período." "There are no schedules to show in this filter and range combination." %}',
+      noProfessionals: '{% ui "Nenhum profissional corresponde à pesquisa." "No professionals match this search." %}',
+      chooseProfessional: '{% ui "Escolha um profissional na lista para abrir o calendário pessoal e usar o datepicker, a navegação e as vistas de agenda." "Choose a professional from the list to open the personal calendar and use the date picker, navigation, and calendar views." %}',
+      noItemsDay: '{% ui "Não existe turno registado para este profissional nesta data." "There is no registered shift for this professional on this date." %}',
+      noItemsMonth: '{% ui "Sem turno" "No shift" %}',
+      noItemsRange: '{% ui "Não existem turnos visíveis neste período para o profissional seleccionado." "There are no visible shifts in this period for the selected professional." %}',
       noBreak: '{% ui "Sem pausa registada" "No break recorded" %}',
       noNotes: '{% ui "Sem observações adicionais." "No additional notes." %}',
       noNext: '{% ui "Sem próxima ocorrência" "No next occurrence" %}',
       baseShift: '{% ui "Turno base" "Base shift" %}',
-      bookingReady: '{% ui "Pronto para agenda" "Booking-ready" %}',
+      bookingReady: '{% ui "Pronto para marcações" "Booking-ready" %}',
       independent: '{% ui "Independente da agenda" "Independent from bookings" %}',
       noDoctor: '{% ui "Sem perfil médico ligado" "No linked doctor profile" %}',
       futureAppointments: '{% ui "marcação(ões) futuras" "future booking(s)" %}',
       todayShort: '{% ui "hoje" "today" %}',
       selectedShift: '{% ui "Turno seleccionado" "Selected shift" %}',
-      daySnapshot: '{% ui "Leitura do dia" "Day snapshot" %}',
-      visibleRange: '{% ui "No período visível" "In the visible range" %}',
-      shifts: '{% ui "Turnos" "Shifts" %}',
-      professionals: '{% ui "Profissionais" "Professionals" %}',
-      readyToSync: '{% ui "Prontos para sincronizar" "Ready to sync" %}',
+      workWindow: '{% ui "Janela de trabalho" "Work window" %}',
       branch: '{% ui "Clínica" "Clinic" %}',
+      role: '{% ui "Função" "Role" %}',
       shift: '{% ui "Turno" "Shift" %}',
       pause: '{% ui "Pausa" "Break" %}',
-      duration: '{% ui "Duração do bloco" "Slot length" %}',
       bookingMode: '{% ui "Modo de agenda" "Booking mode" %}',
       nextOccurrence: '{% ui "Próxima ocorrência" "Next occurrence" %}',
       validity: '{% ui "Vigência" "Validity" %}',
@@ -37,33 +34,50 @@
       edit: '{% ui "Editar" "Edit" %}',
       activate: '{% ui "Activar" "Activate" %}',
       deactivate: '{% ui "Desactivar" "Deactivate" %}',
-      listView: '{% ui "Vista em lista" "List view" %}',
       dayView: '{% ui "Vista diária" "Daily view" %}',
       more: '{% ui "mais" "more" %}',
-      onlyVisible: '{% ui "Só este turno está visível nesta data pelos filtros actuais." "Only this shift is visible on this date for the current filters." %}',
+      userSchedules: '{% ui "bloco(s) de horário" "schedule block(s)" %}',
+      date: '{% ui "Data" "Date" %}',
+      appointments: '{% ui "Marcações" "Bookings" %}',
+      searchHint: '{% ui "Use a pesquisa para encontrar rapidamente um profissional." "Use search to find a professional quickly." %}',
+      noShiftSelected: '{% ui "Clique num bloco do calendário para ver os detalhes deste turno." "Click a calendar block to see this shift's details." %}',
+      noEndDate: '{% ui "sem data final" "no end date" %}',
+      nextShift: '{% ui "Próximo turno" "Next shift" %}',
+      clinics: '{% ui "clínica(s)" "clinic(s)" %}',
     };
 
     const schedules = JSON.parse(dataNode.textContent || '[]');
     const canvas = root.querySelector('[data-calendar-canvas]');
-    const sidebar = root.querySelector('[data-calendar-sidebar]');
-    const roleFilter = root.querySelector('[data-calendar-role-filter]');
-    const branchFilter = root.querySelector('[data-calendar-branch-filter]');
-    const searchInput = root.querySelector('[data-calendar-search]');
+    const userList = root.querySelector('[data-user-list]');
+    const userSearch = root.querySelector('[data-user-search]');
+    const emptyHead = root.querySelector('[data-board-empty-head]');
+    const activeHead = root.querySelector('[data-board-active-head]');
+    const selectedUserSummary = root.querySelector('[data-selected-user-summary]');
+    const datePicker = root.querySelector('[data-calendar-date-picker]');
     const rangeLabel = root.querySelector('[data-calendar-range-label]');
     const todayHero = root.querySelector('[data-calendar-today-hero]');
+    const selectionCard = root.querySelector('[data-selected-occurrence]');
+    const legend = root.querySelector('[data-calendar-legend]');
 
     const params = new URLSearchParams(window.location.search);
-    const today = toStart(parseISO(root.dataset.anchorDate));
+    const today = toStart(parseISO(root.dataset.anchorDate) || new Date());
+    const professionals = buildProfessionals(schedules);
+    const professionalIndex = new Map(professionals.map((item) => [item.id, item]));
+    const initialUserId = professionalIndex.has(params.get('user')) ? params.get('user') : null;
+    const initialDate = toStart(parseISO(params.get('date')) || today);
     const state = {
+      selectedUserId: initialUserId,
       view: normalizeView(params.get('view')),
-      anchor: toStart(parseISO(params.get('date')) || today),
-      selectedDate: toStart(parseISO(params.get('date')) || today),
+      anchor: initialDate,
+      selectedDate: initialDate,
       selectedOccurrenceKey: null,
-      role: 'all',
-      branch: 'all',
-      status: 'active',
-      query: '',
+      userQuery: '',
     };
+
+    if (state.selectedUserId && !params.get('date')) {
+      const nextDate = parseISO(professionalIndex.get(state.selectedUserId).nextOccurrenceDate) || today;
+      setFocusDate(nextDate);
+    }
 
     function normalizeView(value) {
       return ['list', 'day', 'week', 'month'].includes(value) ? value : 'week';
@@ -86,8 +100,15 @@
       return toStart(next);
     }
 
+    function daysInMonth(year, month) {
+      return new Date(year, month + 1, 0).getDate();
+    }
+
     function sameDate(left, right) {
-      return !!left && !!right && left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth() && left.getDate() === right.getDate();
+      return !!left && !!right
+        && left.getFullYear() === right.getFullYear()
+        && left.getMonth() === right.getMonth()
+        && left.getDate() === right.getDate();
     }
 
     function iso(date) {
@@ -144,6 +165,62 @@
       return `schedule-role-dot-${role || 'outro'}`;
     }
 
+    function buildProfessionals(items) {
+      const grouped = new Map();
+      items.forEach((item) => {
+        const id = String(item.user_id);
+        if (!grouped.has(id)) {
+          grouped.set(id, {
+            id,
+            name: item.professional_name,
+            username: item.username,
+            email: item.email,
+            doctorBadge: item.doctor_badge || '',
+            roleKey: item.role,
+            roles: new Set(),
+            branches: new Set(),
+            scheduleCount: 0,
+            activeCount: 0,
+            nextOccurrenceDate: null,
+          });
+        }
+
+        const professional = grouped.get(id);
+        professional.roles.add(item.role_label);
+        professional.branches.add(item.branch_name);
+        professional.scheduleCount += 1;
+        if (item.is_active) professional.activeCount += 1;
+        if (!professional.doctorBadge && item.doctor_badge) professional.doctorBadge = item.doctor_badge;
+        if (!professional.roleKey) professional.roleKey = item.role;
+        if (item.next_occurrence_date && (!professional.nextOccurrenceDate || item.next_occurrence_date < professional.nextOccurrenceDate)) {
+          professional.nextOccurrenceDate = item.next_occurrence_date;
+        }
+      });
+
+      return Array.from(grouped.values())
+        .map((professional) => {
+          const roles = Array.from(professional.roles);
+          const branches = Array.from(professional.branches);
+          return {
+            ...professional,
+            roles,
+            branches,
+            primaryRole: roles[0] || '',
+            primaryBranch: branches[0] || '',
+            inactiveCount: professional.scheduleCount - professional.activeCount,
+            searchText: [
+              professional.name,
+              professional.username,
+              professional.email,
+              professional.doctorBadge,
+              roles.join(' '),
+              branches.join(' '),
+            ].join(' ').toLowerCase(),
+          };
+        })
+        .sort((left, right) => left.name.localeCompare(right.name, locale));
+    }
+
     function rangeForView() {
       if (state.view === 'day') return { start: state.anchor, end: state.anchor };
       if (state.view === 'week') return { start: startOfWeek(state.anchor), end: endOfWeek(state.anchor) };
@@ -152,12 +229,8 @@
     }
 
     function rangeText(range) {
-      if (state.view === 'day') {
-        return cap(fmt(range.start, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
-      }
-      if (state.view === 'month') {
-        return cap(fmt(state.anchor, { month: 'long', year: 'numeric' }));
-      }
+      if (state.view === 'day') return cap(fmt(range.start, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+      if (state.view === 'month') return cap(fmt(state.anchor, { month: 'long', year: 'numeric' }));
       const sameMonth = range.start.getMonth() === range.end.getMonth() && range.start.getFullYear() === range.end.getFullYear();
       if (sameMonth) {
         return `${fmt(range.start, { day: 'numeric' })} - ${fmt(range.end, { day: 'numeric', month: 'long', year: 'numeric' })}`;
@@ -165,31 +238,24 @@
       return `${fmt(range.start, { day: 'numeric', month: 'short' })} - ${fmt(range.end, { day: 'numeric', month: 'short', year: 'numeric' })}`;
     }
 
-    function populateFilters() {
-      const roles = Array.from(new Map(schedules.map((item) => [item.role, item.role_label])).entries());
-      const branches = Array.from(new Map(schedules.map((item) => [String(item.branch_id), item.branch_name])).entries());
-      roleFilter.insertAdjacentHTML('beforeend', roles.map(([value, label]) => `<option value="${esc(value)}">${esc(label)}</option>`).join(''));
-      branchFilter.insertAdjacentHTML('beforeend', branches.map(([value, label]) => `<option value="${esc(value)}">${esc(label)}</option>`).join(''));
+    function weekdayLabels() {
+      const monday = startOfWeek(today);
+      return Array.from({ length: 7 }, (_, index) => addDays(monday, index));
     }
 
-    function filteredSchedules() {
-      const query = state.query.trim().toLowerCase();
-      return schedules.filter((item) => {
-        if (state.role !== 'all' && item.role !== state.role) return false;
-        if (state.branch !== 'all' && String(item.branch_id) !== state.branch) return false;
-        if (state.status === 'active' && !item.is_active) return false;
-        if (state.status === 'inactive' && item.is_active) return false;
-        if (!query) return true;
-        return [
-          item.professional_name,
-          item.username,
-          item.email,
-          item.role_label,
-          item.branch_name,
-          item.shift_name,
-          item.doctor_badge,
-        ].join(' ').toLowerCase().includes(query);
-      });
+    function filteredProfessionals() {
+      const query = state.userQuery.trim().toLowerCase();
+      if (!query) return professionals;
+      return professionals.filter((item) => item.searchText.includes(query));
+    }
+
+    function selectedProfessional() {
+      return state.selectedUserId ? professionalIndex.get(state.selectedUserId) || null : null;
+    }
+
+    function selectedSchedules() {
+      if (!state.selectedUserId) return [];
+      return schedules.filter((item) => String(item.user_id) === state.selectedUserId);
     }
 
     function occurrences(items, range) {
@@ -200,6 +266,7 @@
         const start = validFrom > range.start ? validFrom : range.start;
         const end = validUntil && validUntil < range.end ? validUntil : range.end;
         if (end < start) return;
+
         for (let cursor = toStart(start); cursor <= end; cursor = addDays(cursor, 1)) {
           if (mondayIndex(cursor) !== item.weekday) continue;
           rows.push({
@@ -207,81 +274,172 @@
             date: toStart(cursor),
             dateIso: iso(cursor),
             startMinutes: minutes(item.start_time),
-            endMinutes: minutes(item.end_time),
             schedule: item,
           });
         }
       });
-      return rows.sort((a, b) => a.dateIso.localeCompare(b.dateIso) || a.startMinutes - b.startMinutes || a.schedule.professional_name.localeCompare(b.schedule.professional_name));
+
+      return rows.sort((left, right) => left.dateIso.localeCompare(right.dateIso) || left.startMinutes - right.startMinutes);
     }
 
     function byDate(rows, date) {
       return rows.filter((row) => row.dateIso === iso(date));
     }
 
-    function selectedOccurrence(rows) {
-      return state.selectedOccurrenceKey ? rows.find((row) => row.key === state.selectedOccurrenceKey) || null : null;
+    function currentSelection(rows) {
+      const active = state.selectedOccurrenceKey ? rows.find((row) => row.key === state.selectedOccurrenceKey) || null : null;
+      if (active) return active;
+      const sameDay = byDate(rows, state.selectedDate);
+      state.selectedOccurrenceKey = sameDay[0] ? sameDay[0].key : null;
+      return sameDay[0] || null;
     }
 
-    function metric(name, value) {
-      const node = root.querySelector(`[data-schedule-metric="${name}"]`);
-      if (node) node.textContent = value;
+    function showHead(active) {
+      if (emptyHead) emptyHead.classList.toggle('d-none', active);
+      if (activeHead) activeHead.classList.toggle('d-none', !active);
+      if (legend) legend.classList.add('d-none');
     }
 
-    function chips(row) {
-      const item = row.schedule;
-      const result = [
-        `<span class="schedule-meta-pill"><i class="material-symbols-rounded" style="font-size:0.92rem;">apartment</i>${esc(item.branch_name)}</span>`,
-        `<span class="schedule-meta-pill"><i class="material-symbols-rounded" style="font-size:0.92rem;">schedule</i>${esc(item.start_time)} - ${esc(item.end_time)}</span>`,
-      ];
-      if (item.accepts_appointments) {
-        result.push(`<span class="schedule-meta-pill"><i class="material-symbols-rounded" style="font-size:0.92rem;">calendar_month</i>${item.appointments_today} ${esc(labels.todayShort)}</span>`);
-      } else {
-        result.push(`<span class="schedule-meta-pill"><i class="material-symbols-rounded" style="font-size:0.92rem;">lock_clock</i>${item.slot_minutes} min</span>`);
+    function badge(text, icon) {
+      return `<span class="schedule-meta-pill">${icon ? `<i class="material-symbols-rounded" style="font-size:0.92rem;">${icon}</i>` : ''}${esc(text)}</span>`;
+    }
+
+    function formatLongDate(date) {
+      return cap(fmt(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+    }
+
+    function renderUserList() {
+      if (!userList) return;
+      const items = filteredProfessionals();
+      if (!items.length) {
+        userList.innerHTML = `<div class="schedule-user-empty">${esc(labels.noProfessionals)}<br><small>${esc(labels.searchHint)}</small></div>`;
+        return;
       }
-      return result.join('');
+
+      userList.innerHTML = items.map((item) => {
+        const branchLabel = item.branches.length > 1 ? `${item.branches.length} ${labels.clinics}` : item.primaryBranch;
+        const nextDate = item.nextOccurrenceDate ? fmt(parseISO(item.nextOccurrenceDate), { day: 'numeric', month: 'short' }) : labels.noNext;
+        return `
+          <button type="button" class="schedule-user-card ${state.selectedUserId === item.id ? 'is-active' : ''}" data-user-id="${esc(item.id)}">
+            <div class="schedule-user-top">
+              <div>
+                <div class="schedule-user-name">${esc(item.name)}</div>
+                <div class="schedule-user-meta">@${esc(item.username)}${item.doctorBadge ? ` · ${esc(item.doctorBadge)}` : ''}</div>
+              </div>
+              <span class="schedule-user-count">${item.scheduleCount}</span>
+            </div>
+            <div class="schedule-user-caption">
+              <span class="schedule-mini-badge">${esc(item.primaryRole || labels.role)}</span>
+              <span class="schedule-mini-badge">${esc(branchLabel)}</span>
+              <span class="schedule-mini-badge">${esc(labels.nextShift)}: ${esc(nextDate)}</span>
+            </div>
+          </button>
+        `;
+      }).join('');
     }
 
-    function card(row, variant) {
-      const cls = variant === 'week' ? 'schedule-week-card' : variant === 'day' ? 'schedule-day-card' : 'schedule-list-card';
+    function renderSelectedUserSummary(professional) {
+      if (!selectedUserSummary) return;
+      if (!professional) {
+        selectedUserSummary.innerHTML = '';
+        return;
+      }
+
+      const branchLabel = professional.branches.length > 1 ? `${professional.branches.length} ${labels.clinics}` : professional.primaryBranch;
+      const nextDate = professional.nextOccurrenceDate ? formatLongDate(parseISO(professional.nextOccurrenceDate)) : labels.noNext;
+      selectedUserSummary.innerHTML = `
+        <div class="schedule-selected-user-title">${esc(professional.name)}</div>
+        <div class="schedule-selected-user-meta">@${esc(professional.username)} · ${professional.scheduleCount} ${esc(labels.userSchedules)}</div>
+        <div class="schedule-selected-user-tags">
+          <span class="schedule-role-chip"><span class="schedule-legend-dot ${roleDot(professional.roleKey)}"></span>${esc(professional.primaryRole || labels.role)}</span>
+          <span class="schedule-role-chip">${esc(branchLabel)}</span>
+          <span class="schedule-role-chip">${esc(labels.nextShift)}: ${esc(nextDate)}</span>
+        </div>
+      `;
+    }
+
+    function renderEmptyBoard() {
+      showHead(false);
+      renderSelectedUserSummary(null);
+      if (rangeLabel) rangeLabel.textContent = '';
+      if (datePicker) datePicker.value = '';
+      if (selectionCard) {
+        selectionCard.classList.add('d-none');
+        selectionCard.innerHTML = '';
+      }
+      if (canvas) {
+        canvas.innerHTML = `
+          <div class="schedule-empty-state">
+            <div>
+              <h4 class="mb-2">{% ui "Calendário individual" "Individual calendar" %}</h4>
+              <p class="mb-0">${esc(labels.chooseProfessional)}</p>
+            </div>
+          </div>
+        `;
+      }
+      syncUrl();
+    }
+
+    function renderOccurrenceCard(row, compact) {
       const item = row.schedule;
+      const title = item.shift_name || item.role_label || labels.baseShift;
+      const className = [
+        compact ? 'schedule-month-event' : 'schedule-event-card',
+        roleClass(item.role),
+        row.key === state.selectedOccurrenceKey ? 'is-active' : '',
+      ].filter(Boolean).join(' ');
+
+      if (compact) {
+        return `
+          <button type="button" class="${className}" data-occurrence-key="${esc(row.key)}">
+            <div class="schedule-month-event-main">
+              <span class="schedule-event-time">${esc(item.start_time)} - ${esc(item.end_time)}</span>
+              <span class="schedule-month-event-title">${esc(title)}</span>
+            </div>
+            <div class="schedule-month-event-meta">
+              <span class="schedule-month-event-pill">${esc(item.role_label)}</span>
+              <span class="schedule-month-event-pill">${esc(item.branch_name)}</span>
+            </div>
+          </button>
+        `;
+      }
+
       return `
-        <button type="button" class="${cls} ${roleClass(item.role)}" data-occurrence-key="${esc(row.key)}">
-          <div class="schedule-card-topline">
+        <button type="button" class="${className}" data-occurrence-key="${esc(row.key)}">
+          <div class="schedule-event-top">
             <div>
               <span class="schedule-event-time">${esc(item.start_time)} - ${esc(item.end_time)}</span>
-              <div class="schedule-card-title">${esc(item.professional_name)}</div>
-              <div class="schedule-card-subtitle">@${esc(item.username)}${item.doctor_badge ? ` · ${esc(item.doctor_badge)}` : ''}</div>
+              <span class="schedule-event-title">${esc(title)}</span>
+              <div class="schedule-event-subtitle">${esc(item.branch_name)} · ${esc(item.role_label)}</div>
             </div>
             <span class="schedule-role-chip"><span class="schedule-legend-dot ${roleDot(item.role)}"></span>${esc(item.role_label)}</span>
           </div>
-          <div class="schedule-card-meta-row">${chips(row)}</div>
+          <div class="schedule-card-meta">
+            ${badge(item.accepts_appointments ? labels.bookingReady : labels.independent, item.accepts_appointments ? 'calendar_month' : 'lock_clock')}
+            ${badge(item.branch_name, 'apartment')}
+            ${item.break_label ? badge(item.break_label, 'coffee') : ''}
+          </div>
         </button>
       `;
     }
 
     function renderMonth(range, rows) {
-      const weekday = Array.from({ length: 7 }, (_, index) => `<div class="schedule-weekday-label">${esc(cap(fmt(addDays(startOfWeek(today), index), { weekday: 'short' })))}</div>`).join('');
+      const weekday = weekdayLabels().map((day) => `<div class="schedule-weekday-label">${esc(cap(fmt(day, { weekday: 'short' })))}</div>`).join('');
       const parts = [];
+
       for (let cursor = range.start; cursor <= range.end; cursor = addDays(cursor, 1)) {
         const items = byDate(rows, cursor);
-        const visible = items.slice(0, 3).map((row) => `
-          <button type="button" class="schedule-month-event ${roleClass(row.schedule.role)}" data-occurrence-key="${esc(row.key)}">
-            <span class="schedule-event-time">${esc(row.schedule.start_time)} - ${esc(row.schedule.end_time)}</span>
-            <span class="schedule-event-title">${esc(row.schedule.professional_name)}</span>
-            <span class="schedule-event-meta">${esc(row.schedule.role_label)}</span>
-          </button>
-        `).join('');
         parts.push(`
           <div class="schedule-month-cell ${cursor.getMonth() !== state.anchor.getMonth() ? 'is-outside' : ''} ${sameDate(cursor, today) ? 'is-today' : ''} ${sameDate(cursor, state.selectedDate) ? 'is-selected' : ''}" data-calendar-date="${iso(cursor)}">
             <div class="schedule-day-number"><span>${esc(fmt(cursor, { weekday: 'short' }))}</span><span class="schedule-day-badge">${cursor.getDate()}</span></div>
             <div class="schedule-month-events">
-              ${visible || `<span class="schedule-event-meta">${esc(labels.noItemsDay)}</span>`}
-              ${items.length > 3 ? `<span class="schedule-more-chip">+${items.length - 3} ${esc(labels.more)}</span>` : ''}
+              ${items.length ? items.slice(0, 2).map((row) => renderOccurrenceCard(row, true)).join('') : `<span class="schedule-month-empty-pill">${esc(labels.noItemsMonth)}</span>`}
+              ${items.length > 2 ? `<span class="schedule-more-chip">+${items.length - 2} ${esc(labels.more)}</span>` : ''}
             </div>
           </div>
         `);
       }
+
       return `<div class="schedule-month-scroll"><div class="schedule-calendar-grid">${weekday}${parts.join('')}</div></div>`;
     }
 
@@ -290,18 +448,22 @@
         const day = addDays(range.start, index);
         const items = byDate(rows, day);
         return `
-          <div class="schedule-day-column ${sameDate(day, today) ? 'is-today' : ''} ${sameDate(day, state.selectedDate) ? 'is-selected' : ''}" data-calendar-date="${iso(day)}">
-            <div class="schedule-day-column-header">
-              <div><small>${esc(cap(fmt(day, { weekday: 'long' })))}</small><strong>${esc(fmt(day, { day: 'numeric', month: 'short' }))}</strong></div>
+          <section class="schedule-week-row ${sameDate(day, today) ? 'is-today' : ''} ${sameDate(day, state.selectedDate) ? 'is-selected' : ''}" data-calendar-date="${iso(day)}">
+            <div class="schedule-week-row-head">
+              <div>
+                <small>${esc(cap(fmt(day, { weekday: 'long' })))}</small>
+                <strong>${esc(fmt(day, { day: 'numeric', month: 'short' }))}</strong>
+              </div>
               <span class="schedule-day-count">${items.length}</span>
             </div>
-            <div class="schedule-week-events">
-              ${items.length ? items.map((row) => card(row, 'week')).join('') : `<div class="schedule-selected-field full"><small>${esc(labels.daySnapshot)}</small><span>${esc(labels.noItemsDay)}</span></div>`}
+            <div class="schedule-week-row-events">
+              ${items.length ? items.map((row) => renderOccurrenceCard(row, false)).join('') : `<div class="schedule-week-row-empty">${esc(labels.noItemsDay)}</div>`}
             </div>
-          </div>
+          </section>
         `;
       }).join('');
-      return `<div class="schedule-week-scroll"><div class="schedule-week-grid">${columns}</div></div>`;
+
+      return `<div class="schedule-week-rows">${columns}</div>`;
     }
 
     function renderDay(rows) {
@@ -314,7 +476,7 @@
             <span>${esc(cap(fmt(state.selectedDate, { month: 'long', weekday: 'short' })))}</span>
           </div>
           <div class="schedule-day-events">
-            ${items.length ? items.map((row) => card(row, 'day')).join('') : `<div class="schedule-empty">${esc(labels.noItemsDay)}</div>`}
+            ${items.length ? items.map((row) => renderOccurrenceCard(row, false)).join('') : `<div class="schedule-empty">${esc(labels.noItemsDay)}</div>`}
           </div>
         </div>
       `;
@@ -331,116 +493,126 @@
               <h5>${esc(cap(fmt(cursor, { weekday: 'long', day: 'numeric', month: 'long' })))}</h5>
               <span>${items.length}</span>
             </div>
-            <div class="schedule-list-items">${items.map((row) => card(row, 'list')).join('')}</div>
+            <div class="schedule-list-items">${items.map((row) => renderOccurrenceCard(row, false)).join('')}</div>
           </section>
         `);
       }
       return groups.length ? groups.join('') : `<div class="schedule-empty">${esc(labels.noItemsRange)}</div>`;
     }
 
-    function renderSidebar(rows, items) {
-      const dayRows = byDate(rows, state.selectedDate);
-      const selected = selectedOccurrence(rows);
-      if (!selected) {
-        const bookingReady = new Set(dayRows.filter((row) => row.schedule.accepts_appointments).map((row) => row.schedule.id)).size;
-        sidebar.innerHTML = `
-          <section class="schedule-highlight-card">
-            <small class="schedule-kicker" style="background: rgba(15,118,110,.08); color: var(--schedule-accent);">{% ui "Data seleccionada" "Selected date" %}</small>
-            <h5>${esc(cap(fmt(state.selectedDate, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })))}</h5>
-            <p>{% ui "Clique num bloco do calendário para ver detalhes, atalhos e estado da integração com agenda." "Click a calendar block to see details, shortcuts, and booking integration status." %}</p>
-          </section>
-          <section class="schedule-sidebar-section">
-            <h6>${esc(labels.daySnapshot)}</h6>
-            <div class="schedule-mini-metrics">
-              <div class="schedule-mini-metric"><small>${esc(labels.shifts)}</small><strong>${dayRows.length}</strong></div>
-              <div class="schedule-mini-metric"><small>${esc(labels.professionals)}</small><strong>${new Set(dayRows.map((row) => row.schedule.user_id)).size}</strong></div>
-              <div class="schedule-mini-metric"><small>${esc(labels.readyToSync)}</small><strong>${bookingReady}</strong></div>
-              <div class="schedule-mini-metric"><small>${esc(labels.visibleRange)}</small><strong>${rows.length}</strong></div>
+    function renderSelectionCard(row) {
+      if (!selectionCard) return;
+      selectionCard.classList.remove('d-none');
+
+      if (!row) {
+        selectionCard.innerHTML = `
+          <div class="schedule-selection-top">
+            <div>
+              <div class="schedule-selection-title">${esc(formatLongDate(state.selectedDate))}</div>
+              <div class="schedule-user-meta">${esc(labels.noShiftSelected)}</div>
             </div>
-          </section>
-          <section class="schedule-sidebar-section">
-            <h6>{% ui "Leitura rápida do dia" "Quick day reading" %}</h6>
-            <div class="schedule-sidebar-list">
-              ${dayRows.length ? dayRows.slice(0, 6).map((row) => `<div class="schedule-sidebar-list-item"><div><strong>${esc(row.schedule.professional_name)}</strong><small>${esc(row.schedule.role_label)} · ${esc(row.schedule.branch_name)}</small></div><span>${esc(row.schedule.start_time)} - ${esc(row.schedule.end_time)}</span></div>`).join('') : `<div class="schedule-selected-field full"><small>${esc(labels.daySnapshot)}</small><span>${esc(labels.noItemsDay)}</span></div>`}
-            </div>
-          </section>
+          </div>
         `;
         return;
       }
 
-      const item = selected.schedule;
+      const item = row.schedule;
       const toggleLabel = item.is_active ? labels.deactivate : labels.activate;
       const toggleTitle = item.is_active ? '{% ui "Desactivar horário" "Deactivate schedule" %}' : '{% ui "Activar horário" "Activate schedule" %}';
       const toggleText = item.is_active ? '{% ui "O horário ficará guardado no histórico, mas sairá da operação activa." "The schedule will remain in history but leave the active operation." %}' : '{% ui "O horário voltará para a operação activa." "The schedule will return to the active operation." %}';
-      sidebar.innerHTML = `
-        <section class="schedule-highlight-card ${roleClass(item.role)}">
-          <small class="schedule-kicker" style="background: rgba(15,118,110,.08); color: var(--schedule-accent);">${esc(labels.selectedShift)}</small>
-          <h5>${esc(item.professional_name)}</h5>
-          <p>${esc(item.role_label)} · ${esc(item.branch_name)} · ${esc(cap(fmt(selected.date, { weekday: 'long', day: 'numeric', month: 'long' })))}</p>
-        </section>
-        <section class="schedule-sidebar-section">
-          <div class="schedule-selected-grid">
-            <div class="schedule-selected-field"><small>${esc(labels.branch)}</small><strong>${esc(item.branch_name)}</strong></div>
-            <div class="schedule-selected-field"><small>${esc(labels.shift)}</small><strong>${esc(item.shift_name || labels.baseShift)}</strong></div>
-            <div class="schedule-selected-field"><small>{% ui "Janela de trabalho" "Work window" %}</small><strong>${esc(item.start_time)} - ${esc(item.end_time)}</strong></div>
-            <div class="schedule-selected-field"><small>${esc(labels.pause)}</small><strong>${esc(item.break_label || labels.noBreak)}</strong></div>
-            <div class="schedule-selected-field"><small>${esc(labels.duration)}</small><strong>${item.slot_minutes} min</strong></div>
-            <div class="schedule-selected-field"><small>${esc(labels.bookingMode)}</small><strong>${esc(item.accepts_appointments ? labels.bookingReady : labels.independent)}</strong></div>
-            <div class="schedule-selected-field"><small>${esc(labels.nextOccurrence)}</small><strong>${esc(item.next_occurrence_date ? fmt(parseISO(item.next_occurrence_date), { day: 'numeric', month: 'short', year: 'numeric' }) : labels.noNext)}</strong></div>
-            <div class="schedule-selected-field"><small>${esc(labels.validity)}</small><strong>${esc(fmt(parseISO(item.valid_from), { day: 'numeric', month: 'short', year: 'numeric' }))} → ${esc(item.valid_until ? fmt(parseISO(item.valid_until), { day: 'numeric', month: 'short', year: 'numeric' }) : '{% ui "sem data final" "no end date" %}')}</strong></div>
-            <div class="schedule-selected-field full"><small>{% ui "Sincronização clínica" "Clinical synchronization" %}</small><span>${item.accepts_appointments ? `${item.appointments_today} ${esc(labels.todayShort)} · ${item.future_appointments} ${esc(labels.futureAppointments)}` : esc(labels.independent)}${item.linked_doctor ? ` · ${esc(item.doctor_badge || '')}` : ` · ${esc(labels.noDoctor)}`}</span></div>
+
+      selectionCard.innerHTML = `
+        <div class="schedule-selection-top">
+          <div>
+            <div class="schedule-selection-title">${esc(labels.selectedShift)}: ${esc(item.shift_name || labels.baseShift)}</div>
+            <div class="schedule-user-meta">${esc(formatLongDate(row.date))} · ${esc(item.start_time)} - ${esc(item.end_time)}</div>
           </div>
-          <div class="schedule-sidebar-actions">
+          <div class="schedule-selection-actions">
             <a href="${esc(item.detail_url)}" data-modal-url="${esc(item.detail_url)}" data-modal-size="modal-xl" class="btn btn-outline-dark mb-0"><i class="material-symbols-rounded text-sm me-1">visibility</i>${esc(labels.openDetails)}</a>
             <a href="${esc(item.edit_url)}" data-modal-url="${esc(item.edit_url)}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0"><i class="material-symbols-rounded text-sm me-1">edit</i>${esc(labels.edit)}</a>
-          </div>
-          <div class="schedule-sidebar-actions">
             <a href="#" data-confirm-action data-action-url="${esc(item.toggle_url)}" data-confirm-title="${esc(toggleTitle)}" data-confirm-text="${esc(toggleText)}" data-confirm-button="${esc(toggleLabel)}" data-confirm-icon="${item.is_active ? 'warning' : 'question'}" class="btn ${item.is_active ? 'btn-outline-warning' : 'btn-outline-success'} mb-0"><i class="material-symbols-rounded text-sm me-1">${item.is_active ? 'event_busy' : 'event_available'}</i>${esc(toggleLabel)}</a>
           </div>
-          <div class="schedule-selected-note">${esc(item.notes || labels.noNotes)}</div>
-        </section>
-        <section class="schedule-sidebar-section">
-          <h6>{% ui "Outros turnos nesta data" "Other shifts on this date" %}</h6>
-          <div class="schedule-sidebar-list">
-            ${dayRows.filter((row) => row.key !== selected.key).slice(0, 5).map((row) => `<div class="schedule-sidebar-list-item"><div><strong>${esc(row.schedule.professional_name)}</strong><small>${esc(row.schedule.role_label)} · ${esc(row.schedule.branch_name)}</small></div><span>${esc(row.schedule.start_time)}</span></div>`).join('') || `<div class="schedule-selected-field full"><small>{% ui "Data actual" "Current date" %}</small><span>${esc(labels.onlyVisible)}</span></div>`}
-          </div>
-        </section>
+        </div>
+        <div class="schedule-selection-grid">
+          <div class="schedule-selection-field"><small>${esc(labels.date)}</small><strong>${esc(formatLongDate(row.date))}</strong></div>
+          <div class="schedule-selection-field"><small>${esc(labels.workWindow)}</small><strong>${esc(item.start_time)} - ${esc(item.end_time)}</strong></div>
+          <div class="schedule-selection-field"><small>${esc(labels.branch)}</small><strong>${esc(item.branch_name)}</strong></div>
+          <div class="schedule-selection-field"><small>${esc(labels.role)}</small><strong>${esc(item.role_label)}</strong></div>
+          <div class="schedule-selection-field"><small>${esc(labels.shift)}</small><strong>${esc(item.shift_name || labels.baseShift)}</strong></div>
+          <div class="schedule-selection-field"><small>${esc(labels.pause)}</small><strong>${esc(item.break_label || labels.noBreak)}</strong></div>
+          <div class="schedule-selection-field"><small>${esc(labels.bookingMode)}</small><strong>${esc(item.accepts_appointments ? labels.bookingReady : labels.independent)}</strong></div>
+          <div class="schedule-selection-field"><small>${esc(labels.appointments)}</small><span>${item.accepts_appointments ? `${item.appointments_today} ${esc(labels.todayShort)} · ${item.future_appointments} ${esc(labels.futureAppointments)}` : esc(labels.independent)}</span></div>
+          <div class="schedule-selection-field"><small>${esc(labels.nextOccurrence)}</small><strong>${esc(item.next_occurrence_date ? formatLongDate(parseISO(item.next_occurrence_date)) : labels.noNext)}</strong></div>
+          <div class="schedule-selection-field"><small>${esc(labels.validity)}</small><span>${esc(fmt(parseISO(item.valid_from), { day: 'numeric', month: 'short', year: 'numeric' }))} → ${esc(item.valid_until ? fmt(parseISO(item.valid_until), { day: 'numeric', month: 'short', year: 'numeric' }) : labels.noEndDate)}</span></div>
+          <div class="schedule-selection-field"><small>{% ui "Perfil clínico" "Clinical profile" %}</small><span>${item.linked_doctor ? esc(item.doctor_badge || labels.bookingReady) : esc(labels.noDoctor)}</span></div>
+        </div>
+        <div class="schedule-selection-note">${esc(item.notes || labels.noNotes)}</div>
       `;
-      if (window.clinicShell && typeof window.clinicShell.init === 'function') window.clinicShell.init(sidebar);
+
+      if (window.clinicShell && typeof window.clinicShell.init === 'function') window.clinicShell.init(selectionCard);
     }
 
-    function updateControls(items, rows, range) {
-      rangeLabel.textContent = rangeText(range);
-      roleFilter.value = state.role;
-      branchFilter.value = state.branch;
-      searchInput.value = state.query;
-      root.querySelectorAll('[data-calendar-view]').forEach((button) => button.classList.toggle('is-active', button.dataset.calendarView === state.view));
-      root.querySelectorAll('[data-calendar-status]').forEach((button) => button.classList.toggle('is-active', button.dataset.calendarStatus === state.status));
-      metric('visibleBlocks', rows.length);
-      metric('visibleProfessionals', new Set(rows.map((row) => row.schedule.user_id)).size);
-      metric('onDuty', new Set(byDate(rows, state.selectedDate).map((row) => row.schedule.user_id)).size);
-      metric('bookingReady', new Set(items.filter((item) => item.accepts_appointments && item.is_active).map((item) => item.id)).size);
+    function updateControls(range, professional) {
+      showHead(!!professional);
+      if (rangeLabel) rangeLabel.textContent = rangeText(range);
+      if (datePicker) datePicker.value = iso(state.selectedDate);
+      root.querySelectorAll('[data-calendar-view]').forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.calendarView === state.view);
+      });
+      renderSelectedUserSummary(professional);
     }
 
     function syncUrl() {
       const next = new URLSearchParams(window.location.search);
-      next.set('view', state.view);
-      next.set('date', iso(state.anchor));
-      history.replaceState({}, '', `${window.location.pathname}?${next.toString()}`);
+      next.delete('user');
+      next.delete('view');
+      next.delete('date');
+      if (state.selectedUserId) {
+        next.set('user', state.selectedUserId);
+        next.set('view', state.view);
+        next.set('date', iso(state.selectedDate));
+      }
+      const query = next.toString();
+      history.replaceState({}, '', query ? `${window.location.pathname}?${query}` : window.location.pathname);
+    }
+
+    function setFocusDate(date) {
+      state.selectedDate = toStart(date);
+      state.anchor = state.view === 'month'
+        ? new Date(state.selectedDate.getFullYear(), state.selectedDate.getMonth(), 1)
+        : toStart(state.selectedDate);
+    }
+
+    function shiftRange(direction) {
+      if (state.view === 'day') {
+        setFocusDate(addDays(state.selectedDate, direction));
+        return;
+      }
+      if (state.view === 'week') {
+        setFocusDate(addDays(state.selectedDate, direction * 7));
+        return;
+      }
+      if (state.view === 'month') {
+        const targetMonth = new Date(state.selectedDate.getFullYear(), state.selectedDate.getMonth() + direction, 1);
+        const nextDay = Math.min(state.selectedDate.getDate(), daysInMonth(targetMonth.getFullYear(), targetMonth.getMonth()));
+        setFocusDate(new Date(targetMonth.getFullYear(), targetMonth.getMonth(), nextDay));
+        return;
+      }
+      setFocusDate(addDays(state.selectedDate, direction * 21));
     }
 
     function render() {
-      const items = filteredSchedules();
-      const range = rangeForView();
-      const rows = occurrences(items, range);
-      if (!selectedOccurrence(rows)) {
-        const sameDay = byDate(rows, state.selectedDate);
-        state.selectedOccurrenceKey = sameDay[0] ? sameDay[0].key : null;
-        if (!sameDay.length && rows[0]) {
-          state.selectedDate = rows[0].date;
-          state.selectedOccurrenceKey = rows[0].key;
-        }
+      renderUserList();
+      const professional = selectedProfessional();
+      if (!professional) {
+        renderEmptyBoard();
+        return;
       }
+
+      const range = rangeForView();
+      const rows = occurrences(selectedSchedules(), range);
+      const selected = currentSelection(rows);
+
       canvas.innerHTML = !rows.length
         ? `<div class="schedule-empty">${esc(labels.noItemsRange)}</div>`
         : state.view === 'month'
@@ -450,74 +622,90 @@
             : state.view === 'day'
               ? renderDay(rows)
               : renderList(range, rows);
-      updateControls(items, rows, range);
-      renderSidebar(rows, items);
+
+      updateControls(range, professional);
+      renderSelectionCard(selected);
       syncUrl();
       if (window.clinicShell && typeof window.clinicShell.init === 'function') window.clinicShell.init(canvas);
     }
 
-    function shiftRange(direction) {
-      if (state.view === 'day') state.anchor = addDays(state.anchor, direction);
-      else if (state.view === 'week') state.anchor = addDays(state.anchor, direction * 7);
-      else if (state.view === 'month') state.anchor = new Date(state.anchor.getFullYear(), state.anchor.getMonth() + direction, 1);
-      else state.anchor = addDays(state.anchor, direction * 21);
-      state.selectedDate = state.view === 'week' ? startOfWeek(state.anchor) : toStart(state.anchor);
-    }
-
     root.addEventListener('click', (event) => {
-      const viewButton = event.target.closest('[data-calendar-view]');
-      if (viewButton) {
-        state.view = normalizeView(viewButton.dataset.calendarView);
-        state.selectedDate = state.view === 'week' ? startOfWeek(state.anchor) : toStart(state.anchor);
+      const userButton = event.target.closest('[data-user-id]');
+      if (userButton) {
+        const professional = professionalIndex.get(userButton.dataset.userId);
+        if (!professional) return;
+        state.selectedUserId = professional.id;
+        state.selectedOccurrenceKey = null;
+        setFocusDate(parseISO(professional.nextOccurrenceDate) || today);
         render();
         return;
       }
 
-      const statusButton = event.target.closest('[data-calendar-status]');
-      if (statusButton) {
-        state.status = statusButton.dataset.calendarStatus;
+      const viewButton = event.target.closest('[data-calendar-view]');
+      if (viewButton && state.selectedUserId) {
+        state.view = normalizeView(viewButton.dataset.calendarView);
+        state.selectedOccurrenceKey = null;
+        setFocusDate(state.selectedDate);
         render();
         return;
       }
 
       const navButton = event.target.closest('[data-calendar-nav]');
-      if (navButton) {
-        if (navButton.dataset.calendarNav === 'today') {
-          state.anchor = today;
-          state.selectedDate = today;
-        } else {
-          shiftRange(navButton.dataset.calendarNav === 'next' ? 1 : -1);
-        }
+      if (navButton && state.selectedUserId) {
+        state.selectedOccurrenceKey = null;
+        if (navButton.dataset.calendarNav === 'today') setFocusDate(today);
+        else shiftRange(navButton.dataset.calendarNav === 'next' ? 1 : -1);
         render();
         return;
       }
 
       const occurrenceTrigger = event.target.closest('[data-occurrence-key]');
-      if (occurrenceTrigger) {
+      if (occurrenceTrigger && state.selectedUserId) {
         const [, dateValue] = occurrenceTrigger.dataset.occurrenceKey.split('|');
+        const nextDate = parseISO(dateValue);
         state.selectedOccurrenceKey = occurrenceTrigger.dataset.occurrenceKey;
-        state.selectedDate = parseISO(dateValue) || state.selectedDate;
+        if (nextDate) setFocusDate(nextDate);
         render();
         return;
       }
 
       const dateTrigger = event.target.closest('[data-calendar-date]');
-      if (dateTrigger) {
-        const next = parseISO(dateTrigger.dataset.calendarDate);
-        if (next) {
-          state.selectedDate = next;
-          if (state.view === 'day') state.anchor = next;
-          render();
-        }
+      if (dateTrigger && state.selectedUserId) {
+        const nextDate = parseISO(dateTrigger.dataset.calendarDate);
+        if (!nextDate) return;
+        state.selectedOccurrenceKey = null;
+        setFocusDate(nextDate);
+        render();
       }
     });
 
-    searchInput.addEventListener('input', () => { state.query = searchInput.value; render(); });
-    roleFilter.addEventListener('change', () => { state.role = roleFilter.value; render(); });
-    branchFilter.addEventListener('change', () => { state.branch = branchFilter.value; render(); });
-    if (todayHero) todayHero.addEventListener('click', () => { state.anchor = today; state.selectedDate = today; render(); });
+    if (userSearch) {
+      userSearch.addEventListener('input', () => {
+        state.userQuery = userSearch.value;
+        renderUserList();
+      });
+    }
 
-    populateFilters();
+    if (datePicker) {
+      datePicker.addEventListener('change', () => {
+        if (!state.selectedUserId) return;
+        const nextDate = parseISO(datePicker.value);
+        if (!nextDate) return;
+        state.selectedOccurrenceKey = null;
+        setFocusDate(nextDate);
+        render();
+      });
+    }
+
+    if (todayHero) {
+      todayHero.addEventListener('click', () => {
+        if (!state.selectedUserId) return;
+        state.selectedOccurrenceKey = null;
+        setFocusDate(today);
+        render();
+      });
+    }
+
     render();
   })();
 </script>

@@ -1,0 +1,139 @@
+{% load ui_extras %}
+{% if schedule_form_mode == "batch_create" %}
+<form method="post" action="{{ request.path }}" class="{% if is_modal_request %}js-modal-form{% endif %}" autocomplete="off" data-swal-submit data-processing-title="{% ui 'Processando...' 'Processing...' %}" data-processing-text="{% ui 'Estamos a guardar os horários.' 'We are saving the schedules.' %}" data-schedule-builder>
+  {% csrf_token %}
+  {% if is_modal_request %}
+    <input type="hidden" name="modal" value="1">
+  {% endif %}
+
+  {% for hidden_field in form.hidden_fields %}
+    {{ hidden_field }}
+  {% endfor %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger text-white mb-4">
+      {% for error in form.non_field_errors %}
+        <div>{{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="js-wizard">
+    <div class="clinic-wizard-nav">
+      <div class="clinic-wizard-pill" data-step-target="0">
+        <div class="text-xs text-secondary text-uppercase">{% ui "Passo 1" "Step 1" %}</div>
+        <strong>{% ui "Base do horário" "Schedule base" %}</strong>
+      </div>
+      <div class="clinic-wizard-pill" data-step-target="1">
+        <div class="text-xs text-secondary text-uppercase">{% ui "Passo 2" "Step 2" %}</div>
+        <strong>{% ui "Repetição semanal" "Weekly repetition" %}</strong>
+      </div>
+      <div class="clinic-wizard-pill" data-step-target="2">
+        <div class="text-xs text-secondary text-uppercase">{% ui "Passo 3" "Step 3" %}</div>
+        <strong>{% ui "Ajustes por dia" "Per-day adjustments" %}</strong>
+      </div>
+    </div>
+
+    <div data-step-panel="0">
+      <div class="clinic-form-grid">
+        {% include "accounts/shared/includes/form_field.html" with field=form.user wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.branch wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.role wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.shift_name wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.valid_from wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.valid_until wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.accepts_appointments wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.notes wide_fields="notes" %}
+      </div>
+    </div>
+
+    <div data-step-panel="1" class="d-none">
+      <div class="card clinic-detail-card border-0 shadow-sm mb-4">
+        <div class="card-header pb-0 border-0 bg-transparent">
+          <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div>
+              <h5 class="mb-1">{% ui "Dias da semana" "Weekdays" %}</h5>
+              <p class="text-secondary mb-0">{% ui "Escolha os dias em que este padrão deve repetir-se." "Choose the days when this pattern should repeat." %}</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="button" class="btn btn-outline-dark btn-sm mb-0" data-weekday-preset="business">{% ui "Dias úteis" "Business days" %}</button>
+              <button type="button" class="btn btn-outline-dark btn-sm mb-0" data-weekday-preset="all">{% ui "Todos" "All" %}</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm mb-0" data-weekday-preset="clear">{% ui "Limpar" "Clear" %}</button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body pt-3" data-weekday-picker>
+          {% include "accounts/shared/includes/form_field.html" with field=form.weekdays wide_fields="weekdays" %}
+        </div>
+      </div>
+
+      <div class="card clinic-detail-card border-0 shadow-sm">
+        <div class="card-header pb-0 border-0 bg-transparent">
+          <h5 class="mb-1">{% ui "Horário base" "Base schedule" %}</h5>
+          <p class="text-secondary mb-0">{% ui "Este horário é aplicado aos dias seleccionados e depois pode ser ajustado individualmente." "This schedule is applied to the selected days and can then be adjusted individually." %}</p>
+        </div>
+        <div class="card-body pt-3">
+          <div class="clinic-form-grid">
+            {% include "accounts/shared/includes/form_field.html" with field=form.start_time wide_fields="" %}
+            {% include "accounts/shared/includes/form_field.html" with field=form.end_time wide_fields="" %}
+            {% include "accounts/shared/includes/form_field.html" with field=form.break_start wide_fields="" %}
+            {% include "accounts/shared/includes/form_field.html" with field=form.break_end wide_fields="" %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div data-step-panel="2" class="d-none">
+      <div class="mb-3">
+        {% include "accounts/shared/includes/form_field.html" with field=form.customize_day_hours wide_fields="" %}
+      </div>
+
+      <div class="row g-3">
+        {% for group in weekday_override_groups %}
+          <div class="col-xl-6">
+            <div class="card clinic-detail-card border border-2 border-light-subtle h-100 shadow-none" data-day-config-card data-day-value="{{ group.value }}">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                  <div>
+                    <h6 class="mb-1">{{ group.label }}</h6>
+                    <p class="text-secondary mb-0">{% ui "Use o horário base ou preencha apenas este dia se ele precisar de horas diferentes." "Use the base schedule or fill only this day if it needs different hours." %}</p>
+                  </div>
+                  <span class="badge bg-light text-dark border">{% ui "Opcional" "Optional" %}</span>
+                </div>
+
+                <div class="mt-3" data-day-config-idle>
+                  <p class="text-sm text-secondary mb-0">{% ui "Seleccione este dia no passo anterior e active os ajustes por dia para personalizar horários, pausas ou dias intercalados." "Select this day in the previous step and enable day adjustments to customize hours, breaks, or alternating days." %}</p>
+                </div>
+
+                <div class="clinic-form-grid mt-3 d-none" data-day-config-fields>
+                  {% include "accounts/shared/includes/form_field.html" with field=group.start_field wide_fields="" %}
+                  {% include "accounts/shared/includes/form_field.html" with field=group.end_field wide_fields="" %}
+                  {% include "accounts/shared/includes/form_field.html" with field=group.break_start_field wide_fields="" %}
+                  {% include "accounts/shared/includes/form_field.html" with field=group.break_end_field wide_fields="" %}
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-2 mt-4 flex-wrap">
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-dark mb-0" data-wizard-prev>{% ui "Voltar" "Back" %}</button>
+        <button type="button" class="btn btn-outline-dark mb-0" data-wizard-next>{% ui "Seguinte" "Next" %}</button>
+      </div>
+      <div class="d-flex gap-2">
+        {% if is_modal_request %}
+          <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">{% ui "Cancelar" "Cancel" %}</button>
+        {% else %}
+          <a href="{{ cancel_url }}" class="btn btn-outline-secondary mb-0">{% ui "Cancelar" "Cancel" %}</a>
+        {% endif %}
+        <button type="submit" class="btn bg-gradient-dark mb-0 d-none" data-wizard-submit>{{ submit_label }}</button>
+      </div>
+    </div>
+  </div>
+</form>
+{% else %}
+  {% include "accounts/shared/includes/form_content.html" %}
+{% endif %}

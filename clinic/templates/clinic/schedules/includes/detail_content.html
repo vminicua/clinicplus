@@ -36,11 +36,6 @@
           {% else %}
             <span class="clinic-inline-badge">{% ui "Independente da agenda" "Independent from bookings" %}</span>
           {% endif %}
-          {% if object.is_active %}
-            <span class="clinic-inline-badge">{% ui "Activo" "Active" %}</span>
-          {% else %}
-            <span class="clinic-inline-badge">{% ui "Inactivo" "Inactive" %}</span>
-          {% endif %}
         </div>
 
         <div class="clinic-detail-grid">
@@ -61,7 +56,7 @@
 
           <div class="clinic-detail-item">
             <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Turno" "Shift" %}</p>
-            <h6 class="mb-0">{% if object.shift_name %}{{ object.shift_name }}{% else %}{% ui "Turno base" "Base shift" %}{% endif %}</h6>
+            <h6 class="mb-0">{% if object.display_shift_name %}{{ object.display_shift_name }}{% else %}{% ui "Turno base" "Base shift" %}{% endif %}</h6>
           </div>
 
           <div class="clinic-detail-item">
@@ -72,11 +67,6 @@
           <div class="clinic-detail-item">
             <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Pausa" "Break" %}</p>
             <h6 class="mb-0">{% if object.break_label %}{{ object.break_label }}{% else %}{% ui "Sem pausa registada" "No break recorded" %}{% endif %}</h6>
-          </div>
-
-          <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Duração do bloco" "Slot length" %}</p>
-            <h6 class="mb-0">{{ object.slot_minutes }} {% ui "minutos" "minutes" %}</h6>
           </div>
 
           <div class="clinic-detail-item">
@@ -128,7 +118,7 @@
 
           <div class="clinic-detail-item full-width">
             <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Observações" "Notes" %}</p>
-            <h6 class="mb-0">{% if object.notes %}{{ object.notes|linebreaksbr }}{% else %}{% ui "Sem observações adicionais." "No additional notes." %}{% endif %}</h6>
+            <h6 class="mb-0">{% if object.display_notes %}{{ object.display_notes|linebreaksbr }}{% else %}{% ui "Sem observações adicionais." "No additional notes." %}{% endif %}</h6>
           </div>
         </div>
       </div>

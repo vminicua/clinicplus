@@ -114,7 +114,8 @@
 
         const panels = Array.from(wizard.querySelectorAll('[data-step-panel]'));
         const indicators = Array.from(wizard.querySelectorAll('[data-step-target]'));
-        let currentIndex = 0;
+        const errorIndex = panels.findIndex((panel) => panel.querySelector('.invalid-feedback.d-block, .alert-danger'));
+        let currentIndex = errorIndex >= 0 ? errorIndex : 0;
 
         function syncStep() {
           panels.forEach((panel, index) => {
@@ -159,6 +160,73 @@
         });
 
         syncStep();
+      });
+    }
+
+    function initScheduleBuilders(root) {
+      root.querySelectorAll('[data-schedule-builder]').forEach((builder) => {
+        if (builder.dataset.ready === '1') {
+          return;
+        }
+        builder.dataset.ready = '1';
+
+        const weekdayInputs = Array.from(builder.querySelectorAll('[data-weekday-picker] input[type="checkbox"]'));
+        const presetButtons = Array.from(builder.querySelectorAll('[data-weekday-preset]'));
+        const customizeInput = builder.querySelector('input[name="customize_day_hours"]');
+        const dayCards = Array.from(builder.querySelectorAll('[data-day-config-card]'));
+
+        function selectedWeekdays() {
+          return new Set(weekdayInputs.filter((input) => input.checked).map((input) => input.value));
+        }
+
+        function syncDayCards() {
+          const selected = selectedWeekdays();
+          const customizeEnabled = !customizeInput || customizeInput.checked;
+
+          dayCards.forEach((card) => {
+            const isSelected = selected.has(card.dataset.dayValue);
+            const hasErrors = !!card.querySelector('.invalid-feedback.d-block');
+            const fields = card.querySelector('[data-day-config-fields]');
+            const idle = card.querySelector('[data-day-config-idle]');
+            const showFields = (customizeEnabled && isSelected) || hasErrors;
+
+            card.classList.toggle('border-dark', isSelected || hasErrors);
+            card.classList.toggle('shadow-sm', isSelected || hasErrors);
+
+            if (fields) {
+              fields.classList.toggle('d-none', !showFields);
+            }
+            if (idle) {
+              idle.classList.toggle('d-none', showFields);
+            }
+          });
+        }
+
+        presetButtons.forEach((button) => {
+          button.addEventListener('click', (event) => {
+            event.preventDefault();
+            weekdayInputs.forEach((input) => {
+              if (button.dataset.weekdayPreset === 'business') {
+                input.checked = ['0', '1', '2', '3', '4'].includes(input.value);
+              } else if (button.dataset.weekdayPreset === 'all') {
+                input.checked = true;
+              } else if (button.dataset.weekdayPreset === 'clear') {
+                input.checked = false;
+              }
+            });
+            syncDayCards();
+          });
+        });
+
+        weekdayInputs.forEach((input) => {
+          input.addEventListener('change', syncDayCards);
+        });
+
+        if (customizeInput) {
+          customizeInput.addEventListener('change', syncDayCards);
+        }
+
+        syncDayCards();
       });
     }
 
@@ -470,6 +538,7 @@
       initModalTriggers(root);
       initFormSubmits(root);
       initWizards(root);
+      initScheduleBuilders(root);
       initPermissionTables(root);
       initDataTables(root);
       initConfirmActions(root);

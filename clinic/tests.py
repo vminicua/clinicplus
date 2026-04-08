@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from accounts.models import Branch, SystemPreference
 from clinic.forms import PatientForm
-from clinic.forms import WorkScheduleForm
+from clinic.forms import WorkScheduleBatchCreateForm, WorkScheduleForm
 from clinic.models import Agendamento, Consulta, HorarioTrabalho, Hospital, Medico, Paciente
 
 
@@ -236,6 +236,39 @@ class PatientViewsTests(TestCase):
         schedule.refresh_from_db()
         self.assertFalse(schedule.is_active)
 
+    def test_work_schedule_create_view_builds_multiple_days_with_override(self):
+        staff_user = User.objects.create(username="multi_schedule", first_name="Marta", last_name="Cuamba")
+
+        response = self.client.post(
+            reverse("clinic:work_schedule_create"),
+            data={
+                "user": staff_user.pk,
+                "branch": self.branch.pk,
+                "role": HorarioTrabalho.RoleChoices.ENFERMEIRO,
+                "shift_name": "Escala inteligente",
+                "weekdays": ["0", "2", "4"],
+                "start_time": "08:00",
+                "end_time": "16:00",
+                "break_start": "",
+                "break_end": "",
+                "customize_day_hours": "on",
+                "wednesday_start_time": "10:00",
+                "wednesday_end_time": "18:00",
+                "valid_from": "2026-04-01",
+                "valid_until": "",
+                "accepts_appointments": "on",
+                "notes": "Cobertura semanal",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        created = HorarioTrabalho.objects.filter(user=staff_user).order_by("weekday")
+        self.assertEqual(created.count(), 3)
+        self.assertEqual(created[0].start_time.strftime("%H:%M"), "08:00")
+        self.assertEqual(created[1].weekday, HorarioTrabalho.WeekdayChoices.WEDNESDAY)
+        self.assertEqual(created[1].start_time.strftime("%H:%M"), "10:00")
+        self.assertEqual(created[1].end_time.strftime("%H:%M"), "18:00")
+
 
 class WorkScheduleFormTests(TestCase):
     def setUp(self):
@@ -281,3 +314,34 @@ class WorkScheduleFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("start_time", form.errors)
+
+    def test_batch_create_form_creates_multiple_days_and_uses_base_hours_as_fallback(self):
+        form = WorkScheduleBatchCreateForm(
+            data={
+                "user": self.staff_user.pk,
+                "branch": self.branch.pk,
+                "role": HorarioTrabalho.RoleChoices.ENFERMEIRO,
+                "shift_name": "Turno rotativo",
+                "weekdays": ["1", "3"],
+                "start_time": "08:00",
+                "end_time": "14:00",
+                "break_start": "",
+                "break_end": "",
+                "customize_day_hours": "on",
+                "thursday_start_time": "12:00",
+                "thursday_end_time": "18:00",
+                "valid_from": "2026-04-01",
+                "valid_until": "",
+                "accepts_appointments": "",
+                "notes": "Observação interna",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        created = form.save()
+
+        self.assertEqual(len(created), 2)
+        self.assertEqual(created[0].weekday, HorarioTrabalho.WeekdayChoices.TUESDAY)
+        self.assertEqual(created[0].start_time.strftime("%H:%M"), "08:00")
+        self.assertEqual(created[1].weekday, HorarioTrabalho.WeekdayChoices.THURSDAY)
+        self.assertEqual(created[1].start_time.strftime("%H:%M"), "12:00")

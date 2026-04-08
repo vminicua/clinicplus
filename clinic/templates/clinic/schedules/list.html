@@ -17,61 +17,64 @@
     </div>
 
     <div class="schedule-studio" data-schedule-studio data-anchor-date="{{ calendar_anchor_date }}">
-      <section class="schedule-hero-card mb-4">
-        <div class="schedule-hero-top">
-          <div class="schedule-hero-title">
-            <span class="schedule-kicker">
-              <i class="material-symbols-rounded" style="font-size: 1rem;">calendar_month</i>
-              {% ui "Calendário Operacional" "Operational calendar" %}
-            </span>
-            <h2>{% ui "Horários em vista premium" "Schedules in a premium calendar view" %}</h2>
-            <p>{% ui "Agora a equipa aparece como agenda real, com alternância entre lista, diário, semanal e mensal, pronta para crescer com as marcações da clínica." "Your team now appears in a real calendar, with list, day, week, and month views, ready to grow with clinical bookings." %}</p>
-          </div>
-
-          <div class="schedule-hero-actions">
-            {% if perms.clinic.add_horariotrabalho %}
-              <a href="{% url 'clinic:work_schedule_create' %}" data-modal-url="{% url 'clinic:work_schedule_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-light text-dark mb-0">
-                <i class="material-symbols-rounded text-sm me-1">add</i>
-                {% ui "Novo horário" "New schedule" %}
-              </a>
-            {% endif %}
-            <button type="button" class="btn btn-outline-light mb-0" data-calendar-today-hero>
-              <i class="material-symbols-rounded text-sm me-1">today</i>
-              {% ui "Ir para hoje" "Go to today" %}
-            </button>
-          </div>
+      <div class="schedule-page-topbar mb-4">
+        <div>
+          <p class="schedule-page-kicker mb-1">{% ui "Horários" "Schedules" %}</p>
+          <h2 class="schedule-page-title mb-1">{% ui "Agenda individual da equipa" "Individual team calendar" %}</h2>
         </div>
 
-        <div class="schedule-metrics">
-          <div class="schedule-metric">
-            <div class="schedule-metric-label">{% ui "Blocos visíveis" "Visible blocks" %}</div>
-            <div class="schedule-metric-value" data-schedule-metric="visibleBlocks">{{ active_schedule_blocks }}</div>
-            <div class="schedule-metric-caption">{% ui "Blocos dentro da vista e dos filtros actuais." "Blocks inside the current view and filters." %}</div>
-          </div>
-          <div class="schedule-metric">
-            <div class="schedule-metric-label">{% ui "Profissionais" "Professionals" %}</div>
-            <div class="schedule-metric-value" data-schedule-metric="visibleProfessionals">{{ scheduled_professionals }}</div>
-            <div class="schedule-metric-caption">{% ui "Equipa única representada no período activo." "Unique team members represented in the active period." %}</div>
-          </div>
-          <div class="schedule-metric">
-            <div class="schedule-metric-label">{% ui "Em serviço no período" "On duty in range" %}</div>
-            <div class="schedule-metric-value" data-schedule-metric="onDuty">{{ today_on_duty }}</div>
-            <div class="schedule-metric-caption">{% ui "Quem realmente cai dentro da janela actual." "Who actually falls inside the current window." %}</div>
-          </div>
-          <div class="schedule-metric">
-            <div class="schedule-metric-label">{% ui "Prontos para agenda" "Booking-ready" %}</div>
-            <div class="schedule-metric-value" data-schedule-metric="bookingReady">{{ appointment_ready }}</div>
-            <div class="schedule-metric-caption">{% ui "Turnos marcados para futura sincronização com consultas." "Shifts marked for future synchronization with appointments." %}</div>
-          </div>
-        </div>
-      </section>
+        {% if perms.clinic.add_horariotrabalho %}
+          <a href="{% url 'clinic:work_schedule_create' %}" data-modal-url="{% url 'clinic:work_schedule_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-light text-dark mb-0">
+            <i class="material-symbols-rounded text-sm me-1">add</i>
+            {% ui "Novo horário" "New schedule" %}
+          </a>
+        {% endif %}
+      </div>
 
       <div class="row g-4">
-        <div class="col-xxl-9">
+        <div class="col-xl-4 col-xxl-3">
+          <aside class="schedule-directory-card">
+            <div class="schedule-directory-header">
+              <h5 class="mb-1">{% ui "Profissionais" "Professionals" %}</h5>
+            </div>
+
+            <div class="schedule-directory-toolbar">
+              <label class="schedule-search-wrap">
+                <i class="material-symbols-rounded">search</i>
+                <input type="search" class="schedule-search-input" data-user-search placeholder="{% ui 'Pesquisar nome, username ou clínica...' 'Search name, username, or clinic...' %}">
+              </label>
+            </div>
+
+            <div class="schedule-directory-list" data-user-list></div>
+          </aside>
+        </div>
+
+        <div class="col-xl-8 col-xxl-9">
           <section class="schedule-board-card">
             <div class="schedule-board-header">
-              <div class="schedule-board-toolbar">
-                <div class="schedule-range-group">
+              <div class="schedule-board-empty-head" data-board-empty-head>
+                <h4 class="mb-1">{% ui "Calendário individual" "Individual calendar" %}</h4>
+                <p class="text-secondary mb-0">{% ui "Seleccione um profissional na lista à esquerda para mostrar a agenda e os modos de visualização." "Select a professional from the list on the left to show the calendar and its view modes." %}</p>
+              </div>
+
+              <div class="schedule-board-active-head d-none" data-board-active-head>
+                <div class="schedule-board-toolbar">
+                  <div class="schedule-selected-user" data-selected-user-summary></div>
+
+                  <div class="schedule-toolbar-actions">
+                    <label class="schedule-date-control">
+                      <i class="material-symbols-rounded">calendar_today</i>
+                      <input type="date" class="schedule-date-input" data-calendar-date-picker>
+                    </label>
+
+                    <button type="button" class="btn btn-outline-dark mb-0" data-calendar-today-hero>
+                      <i class="material-symbols-rounded text-sm me-1">today</i>
+                      {% ui "Hoje" "Today" %}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="schedule-board-toolbar mt-3">
                   <div class="schedule-nav-group">
                     <button type="button" class="schedule-nav-btn" data-calendar-nav="prev" aria-label="{% ui 'Período anterior' 'Previous period' %}">
                       <i class="material-symbols-rounded" style="font-size: 1.15rem;">chevron_left</i>
@@ -91,46 +94,21 @@
                       <strong data-calendar-range-label>{% ui "A carregar..." "Loading..." %}</strong>
                     </div>
                   </div>
-                </div>
 
-                <div class="schedule-view-switcher" role="tablist" aria-label="{% ui 'Vista do calendário' 'Calendar view' %}">
-                  <button type="button" class="schedule-view-btn" data-calendar-view="list">{% ui "Lista" "List" %}</button>
-                  <button type="button" class="schedule-view-btn" data-calendar-view="day">{% ui "Diário" "Day" %}</button>
-                  <button type="button" class="schedule-view-btn" data-calendar-view="week">{% ui "Semanal" "Week" %}</button>
-                  <button type="button" class="schedule-view-btn" data-calendar-view="month">{% ui "Mensal" "Month" %}</button>
-                </div>
-              </div>
-
-              <div class="schedule-board-filters">
-                <label class="schedule-search-wrap">
-                  <i class="material-symbols-rounded">search</i>
-                  <input type="search" class="schedule-search-input" data-calendar-search placeholder="{% ui 'Pesquisar profissional, turno, email ou clínica...' 'Search professional, shift, email, or clinic...' %}">
-                </label>
-
-                <label class="schedule-select-wrap">
-                  <i class="material-symbols-rounded">badge</i>
-                  <select class="schedule-select" data-calendar-role-filter>
-                    <option value="all">{% ui "Todas as funções" "All roles" %}</option>
-                  </select>
-                </label>
-
-                <label class="schedule-select-wrap">
-                  <i class="material-symbols-rounded">apartment</i>
-                  <select class="schedule-select" data-calendar-branch-filter>
-                    <option value="all">{% ui "Todas as clínicas" "All clinics" %}</option>
-                  </select>
-                </label>
-
-                <div class="schedule-status-switcher" role="tablist" aria-label="{% ui 'Estado do horário' 'Schedule status' %}">
-                  <button type="button" class="schedule-filter-pill" data-calendar-status="all">{% ui "Todos" "All" %}</button>
-                  <button type="button" class="schedule-filter-pill" data-calendar-status="active">{% ui "Activos" "Active" %}</button>
-                  <button type="button" class="schedule-filter-pill" data-calendar-status="inactive">{% ui "Inactivos" "Inactive" %}</button>
+                  <div class="schedule-view-switcher" role="tablist" aria-label="{% ui 'Vista do calendário' 'Calendar view' %}">
+                    <button type="button" class="schedule-view-btn" data-calendar-view="list">{% ui "Lista" "List" %}</button>
+                    <button type="button" class="schedule-view-btn" data-calendar-view="day">{% ui "Diário" "Day" %}</button>
+                    <button type="button" class="schedule-view-btn" data-calendar-view="week">{% ui "Semanal" "Week" %}</button>
+                    <button type="button" class="schedule-view-btn" data-calendar-view="month">{% ui "Mensal" "Month" %}</button>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div class="schedule-board-body">
-              <div class="schedule-legend" aria-hidden="true">
+              <div class="schedule-selection-card d-none" data-selected-occurrence></div>
+
+              <div class="schedule-legend d-none" data-calendar-legend aria-hidden="true">
                 <span class="schedule-legend-item"><span class="schedule-legend-dot schedule-role-dot-medico"></span>{% ui "Médico" "Doctor" %}</span>
                 <span class="schedule-legend-item"><span class="schedule-legend-dot schedule-role-dot-enfermeiro"></span>{% ui "Enfermagem" "Nursing" %}</span>
                 <span class="schedule-legend-item"><span class="schedule-legend-dot schedule-role-dot-recepcao"></span>{% ui "Recepção" "Reception" %}</span>
@@ -140,16 +118,6 @@
               <div class="schedule-canvas-wrap" data-calendar-canvas></div>
             </div>
           </section>
-        </div>
-
-        <div class="col-xxl-3">
-          <aside class="schedule-sidebar-card">
-            <div class="schedule-sidebar-header">
-              <h4>{% ui "Painel contextual" "Context panel" %}</h4>
-              <p>{% ui "Resumo vivo da data e do turno seleccionado, com acesso rápido às acções principais." "Live summary of the selected date and shift, with quick access to primary actions." %}</p>
-            </div>
-            <div class="schedule-sidebar-body" data-calendar-sidebar></div>
-          </aside>
         </div>
       </div>
     </div>

@@ -23,7 +23,7 @@ from accounts.ui import (
     ui_text,
 )
 from accounts.views.base_view import AppPermissionMixin, ClinicPageMixin, ModalDetailMixin, ModalFormMixin
-from clinic.forms import PatientForm, WorkScheduleForm
+from clinic.forms import PatientForm, WorkScheduleBatchCreateForm, WorkScheduleForm
 from clinic.models import Agendamento, Consulta, HorarioTrabalho, Paciente
 
 
@@ -110,7 +110,7 @@ def serialize_work_schedule(schedule):
         "role_label": schedule.get_role_display(),
         "weekday": schedule.weekday,
         "weekday_label": schedule.get_weekday_display(),
-        "shift_name": schedule.shift_name,
+        "shift_name": schedule.display_shift_name,
         "start_time": schedule.start_time.strftime("%H:%M"),
         "end_time": schedule.end_time.strftime("%H:%M"),
         "break_start": schedule.break_start.strftime("%H:%M") if schedule.break_start else "",
@@ -121,7 +121,7 @@ def serialize_work_schedule(schedule):
         "valid_until": schedule.valid_until.isoformat() if schedule.valid_until else None,
         "accepts_appointments": schedule.accepts_appointments,
         "is_active": schedule.is_active,
-        "notes": schedule.notes,
+        "notes": schedule.display_notes,
         "branch_id": schedule.branch_id,
         "branch_name": schedule.branch.name,
         "appointments_today": schedule.appointments_today or 0,
@@ -751,7 +751,7 @@ class WorkScheduleDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMix
 
 class WorkScheduleCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
     model = HorarioTrabalho
-    form_class = WorkScheduleForm
+    form_class = WorkScheduleBatchCreateForm
     template_name = "clinic/schedules/form.html"
     modal_template_name = "clinic/schedules/modal_form.html"
     success_url = reverse_lazy("clinic:work_schedule_list")
@@ -775,19 +775,51 @@ class WorkScheduleCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        form = context.get("form")
         context["form_title"] = ui_text(self.request, "Criar horário", "Create schedule")
         context["form_description"] = ui_text(
             self.request,
-            "Defina um bloco semanal de trabalho que poderá ser usado depois pela agenda e marcações.",
-            "Define a weekly work block that can later be used by the calendar and bookings.",
+            "Crie um ou vários blocos semanais de uma vez, com opção de ajustar horas diferentes por dia.",
+            "Create one or multiple weekly blocks at once, with the option to adjust different hours by day.",
         )
-        context["submit_label"] = ui_text(self.request, "Guardar horário", "Save schedule")
+        context["submit_label"] = ui_text(self.request, "Guardar horários", "Save schedules")
         context["cancel_url"] = reverse("clinic:work_schedule_list")
-        context["wide_fields"] = "notes"
+        context["schedule_form_mode"] = "batch_create"
+        context["weekday_override_groups"] = form.get_weekday_override_groups() if form else []
         return context
 
     def get_success_message(self) -> str:
         return ui_text(self.request, "Horário criado com sucesso.", "Schedule created successfully.")
+
+    def form_valid(self, form):
+        created_schedules = form.save()
+        self.object = created_schedules[0] if created_schedules else None
+        total_created = len(created_schedules)
+        message = (
+            ui_text(
+                self.request,
+                "%(count)s horário criado com sucesso.",
+                "%(count)s schedule created successfully.",
+            )
+            if total_created == 1
+            else ui_text(
+                self.request,
+                "%(count)s horários criados com sucesso.",
+                "%(count)s schedules created successfully.",
+            )
+        ) % {"count": total_created}
+
+        if self.is_modal():
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": message,
+                    "reload": True,
+                }
+            )
+
+        messages.success(self.request, message)
+        return redirect(self.get_success_url())
 
 
 class WorkScheduleUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
@@ -827,6 +859,7 @@ class WorkScheduleUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin
         context["submit_label"] = ui_text(self.request, "Actualizar horário", "Update schedule")
         context["cancel_url"] = reverse("clinic:work_schedule_detail", args=[self.object.pk])
         context["wide_fields"] = "notes"
+        context["schedule_form_mode"] = "single_update"
         return context
 
     def get_success_message(self) -> str:

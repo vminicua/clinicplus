@@ -119,7 +119,8 @@
                   <td>
                     <span class="text-sm d-block">{{ patient.phone }}</span>
                     <span class="text-xs text-secondary">
-                      {% ui "Emergência" "Emergency" %}: {{ patient.emergency_phone }}
+                      {% ui "Emergência" "Emergency" %}:
+                      {% if patient.emergency_phone %}{{ patient.emergency_phone }}{% else %}{% ui "Sem telefone" "No phone" %}{% endif %}
                     </span>
                   </td>
                   <td>
@@ -127,6 +128,7 @@
                     <span class="text-xs text-secondary">
                       {% if patient.city %}{{ patient.city }}{% else %}{% ui "Sem cidade" "No city" %}{% endif %}
                       {% if patient.state %} · {{ patient.state }}{% endif %}
+                      {% if patient.country %} · {{ patient.country }}{% endif %}
                     </span>
                   </td>
                   <td>

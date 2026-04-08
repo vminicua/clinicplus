@@ -106,6 +106,7 @@
                       <p class="text-xs text-secondary mb-0">
                         {% if patient.clinic_name %}{{ patient.clinic_name }}{% else %}{% ui "Sem clínica atribuída" "No clinic assigned" %}{% endif %}
                         {% if patient.city %} · {{ patient.city }}{% endif %}
+                        {% if patient.country %} · {{ patient.country }}{% endif %}
                       </p>
                     </div>
                   </td>

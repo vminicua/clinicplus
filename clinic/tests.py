@@ -15,7 +15,7 @@ class PatientFormTests(TestCase):
             city="Maputo",
         )
 
-    def test_patient_form_creates_linked_active_user_and_optional_branch(self):
+    def test_patient_form_creates_linked_active_user_with_optional_postal_and_emergency_phone(self):
         form = PatientForm(
             data={
                 "first_name": "Ana",
@@ -28,10 +28,9 @@ class PatientFormTests(TestCase):
                 "phone": "840111111",
                 "address": "Bairro Central",
                 "city": "Maputo",
+                "country": "Moçambique",
                 "state": "Maputo",
-                "zip_code": "1100",
                 "emergency_contact": "Carlos Mabote",
-                "emergency_phone": "840222222",
                 "allergies": "Pólen",
                 "medical_history": "Sem antecedentes graves.",
             }
@@ -47,6 +46,9 @@ class PatientFormTests(TestCase):
         self.assertTrue(patient.user.is_active)
         self.assertEqual(patient.branch, self.branch)
         self.assertIsNone(patient.hospital)
+        self.assertEqual(patient.country, "Moçambique")
+        self.assertEqual(patient.zip_code, "")
+        self.assertEqual(patient.emergency_phone, "")
 
 
 class PatientViewsTests(TestCase):
@@ -81,10 +83,11 @@ class PatientViewsTests(TestCase):
             gender="F",
             address="Rua 1",
             city="Maputo",
+            country="Moçambique",
             state="Maputo",
-            zip_code="1100",
+            zip_code="",
             emergency_contact="José Silva",
-            emergency_phone="840444444",
+            emergency_phone="",
             medical_history="Sem observações.",
             allergies="",
         )

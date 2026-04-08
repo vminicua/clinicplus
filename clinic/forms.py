@@ -31,6 +31,7 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
             "phone",
             "address",
             "city",
+            "country",
             "state",
             "zip_code",
             "emergency_contact",
@@ -46,7 +47,8 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
             "phone": tr("Telefone", "Phone"),
             "address": tr("Endereço", "Address"),
             "city": tr("Cidade", "City"),
-            "state": tr("Província / estado", "Province / state"),
+            "country": tr("País", "Country"),
+            "state": tr("Província", "Province"),
             "zip_code": tr("Código postal", "Postal code"),
             "emergency_contact": tr("Contacto de emergência", "Emergency contact"),
             "emergency_phone": tr("Telefone de emergência", "Emergency phone"),
@@ -68,13 +70,22 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
             ),
             "phone": tr("Contacto principal do paciente.", "Primary patient contact number."),
             "address": tr("Morada actual ou referência de localização.", "Current address or location reference."),
+            "country": tr(
+                "País de residência ou nacionalidade declarada. O padrão inicial é Moçambique.",
+                "Country of residence or declared nationality. Mozambique is the default.",
+            ),
+            "state": tr("Província de residência do paciente.", "Patient's province of residence."),
+            "zip_code": tr(
+                "Opcional. Útil quando o paciente tem código postal aplicável.",
+                "Optional. Useful when the patient has an applicable postal code.",
+            ),
             "emergency_contact": tr(
                 "Pessoa a contactar em caso de urgência.",
                 "Person to contact in case of emergency.",
             ),
             "emergency_phone": tr(
-                "Número directo do contacto de emergência.",
-                "Direct number for the emergency contact.",
+                "Opcional. Número directo do contacto de emergência.",
+                "Optional. Direct number for the emergency contact.",
             ),
             "allergies": tr(
                 "Liste alergias conhecidas, uma por linha ou separadas por vírgula.",
@@ -97,6 +108,8 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
         self.apply_widget_classes()
         self.fields["branch"].required = False
         self.fields["branch"].queryset = Branch.objects.order_by("name")
+        self.fields["zip_code"].required = False
+        self.fields["emergency_phone"].required = False
 
         if self.instance and self.instance.pk:
             self.fields["first_name"].initial = self.instance.user.first_name
@@ -114,6 +127,7 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
             "phone": "tel",
             "address": "street-address",
             "city": "address-level2",
+            "country": "country-name",
             "state": "address-level1",
             "zip_code": "postal-code",
             "emergency_contact": "name",

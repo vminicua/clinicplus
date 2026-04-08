@@ -68,6 +68,26 @@ class Paciente(models.Model):
         ('F', 'Feminino'),
         ('O', 'Outro'),
     ]
+    COUNTRY_CHOICES = [
+        ('Moçambique', 'Moçambique'),
+        ('África do Sul', 'África do Sul'),
+        ('Angola', 'Angola'),
+        ('Botswana', 'Botswana'),
+        ('Brasil', 'Brasil'),
+        ('Cabo Verde', 'Cabo Verde'),
+        ('China', 'China'),
+        ('Estados Unidos', 'Estados Unidos'),
+        ('Eswatini', 'Eswatini'),
+        ('França', 'França'),
+        ('Índia', 'Índia'),
+        ('Malawi', 'Malawi'),
+        ('Portugal', 'Portugal'),
+        ('Reino Unido', 'Reino Unido'),
+        ('Tanzânia', 'Tanzânia'),
+        ('Zâmbia', 'Zâmbia'),
+        ('Zimbabwe', 'Zimbabwe'),
+        ('Outro', 'Outro'),
+    ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     hospital = models.ForeignKey(
@@ -90,10 +110,11 @@ class Paciente(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     address = models.CharField(max_length=255)
     city = models.CharField(max_length=100)
+    country = models.CharField(max_length=100, choices=COUNTRY_CHOICES, default='Moçambique')
     state = models.CharField(max_length=100)
-    zip_code = models.CharField(max_length=20)
+    zip_code = models.CharField(max_length=20, blank=True)
     emergency_contact = models.CharField(max_length=255)
-    emergency_phone = models.CharField(max_length=20)
+    emergency_phone = models.CharField(max_length=20, blank=True)
     medical_history = models.TextField(blank=True)
     allergies = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)

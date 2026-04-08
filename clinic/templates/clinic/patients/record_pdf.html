@@ -26,15 +26,15 @@
       margin-bottom: 18px;
     }
 
-    .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
+    .header-table,
+    .detail-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: separate;
     }
 
     .brand {
-      max-width: 70%;
+      width: 100%;
     }
 
     .brand h1 {
@@ -69,21 +69,39 @@
       margin-bottom: 10px;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px 16px;
+    .header-cell {
+      vertical-align: top;
     }
 
-    .item {
+    .header-cell.is-right {
+      width: 120px;
+      text-align: right;
+    }
+
+    .detail-row td {
+      vertical-align: top;
+      padding-bottom: 10px;
+    }
+
+    .detail-row td:first-child {
+      padding-right: 8px;
+    }
+
+    .detail-row td:last-child {
+      padding-left: 8px;
+    }
+
+    .detail-row td[colspan="2"] {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .card-box {
       border: 1px solid #dbe4ee;
       border-radius: 10px;
       padding: 10px 12px;
       background: #f8fafc;
-    }
-
-    .item.full {
-      grid-column: 1 / -1;
+      page-break-inside: avoid;
     }
 
     .label {
@@ -132,136 +150,114 @@
 </head>
 <body>
   <div class="header">
-    <div class="header-top">
-      <div class="brand">
-        <h1>Ficha do Paciente</h1>
-        <p>{{ patient.full_name }}</p>
-        <p class="muted">
-          {{ patient_code }}
-          {% if patient.clinic_name %} · {{ patient.clinic_name }}{% endif %}
-          {% if patient.country %} · {{ patient.country }}{% endif %}
-        </p>
-      </div>
-      <div class="badge">
-        {% if patient.is_active %}Activo{% else %}Inactivo{% endif %}
-      </div>
-    </div>
+    <table class="header-table">
+      <tr>
+        <td class="header-cell">
+          <div class="brand">
+            <h1>Ficha do Paciente</h1>
+            <p>{{ patient.full_name }}</p>
+            <p class="muted">
+              {{ patient_code }}
+              {% if patient.clinic_name %} · {{ patient.clinic_name }}{% endif %}
+              {% if patient.country %} · {{ patient.country }}{% endif %}
+            </p>
+          </div>
+        </td>
+        <td class="header-cell is-right">
+          <div class="badge">
+            {% if patient.is_active %}Activo{% else %}Inactivo{% endif %}
+          </div>
+        </td>
+      </tr>
+    </table>
   </div>
 
   <div class="section">
     <h2>Identificação</h2>
-    <div class="grid">
-      <div class="item">
-        <div class="label">ID</div>
-        <div class="value">{{ patient_code }}</div>
-      </div>
-      <div class="item">
-        <div class="label">BI / Passaporte</div>
-        <div class="value">{{ patient.cpf }}</div>
-      </div>
-      <div class="item">
-        <div class="label">Data de nascimento</div>
-        <div class="value">{{ patient.date_of_birth|date:"d/m/Y" }}</div>
-      </div>
-      <div class="item">
-        <div class="label">Género</div>
-        <div class="value">{{ patient.get_gender_display }}</div>
-      </div>
-      <div class="item">
-        <div class="label">Clínica</div>
-        <div class="value">{% if patient.clinic_name %}{{ patient.clinic_name }}{% else %}Sem clínica atribuída{% endif %}</div>
-      </div>
-      <div class="item">
-        <div class="label">Email</div>
-        <div class="value">{% if patient.user.email %}{{ patient.user.email }}{% else %}Sem email registado{% endif %}</div>
-      </div>
-    </div>
+    <table class="detail-table">
+      <tr class="detail-row">
+        <td><div class="card-box"><div class="label">ID</div><div class="value">{{ patient_code }}</div></div></td>
+        <td><div class="card-box"><div class="label">BI / Passaporte</div><div class="value">{{ patient.cpf }}</div></div></td>
+      </tr>
+      <tr class="detail-row">
+        <td><div class="card-box"><div class="label">Data de nascimento</div><div class="value">{{ patient.date_of_birth|date:"d/m/Y" }}</div></div></td>
+        <td><div class="card-box"><div class="label">Género</div><div class="value">{{ patient.get_gender_display }}</div></div></td>
+      </tr>
+      <tr class="detail-row">
+        <td><div class="card-box"><div class="label">Clínica</div><div class="value">{% if patient.clinic_name %}{{ patient.clinic_name }}{% else %}Sem clínica atribuída{% endif %}</div></div></td>
+        <td><div class="card-box"><div class="label">Email</div><div class="value">{% if patient.user.email %}{{ patient.user.email }}{% else %}Sem email registado{% endif %}</div></div></td>
+      </tr>
+    </table>
   </div>
 
   <div class="section">
     <h2>Contactos e Residência</h2>
-    <div class="grid">
-      <div class="item">
-        <div class="label">Telefone</div>
-        <div class="value">{{ patient.phone }}</div>
-      </div>
-      <div class="item">
-        <div class="label">Contacto de emergência</div>
-        <div class="value">{{ patient.emergency_contact }}</div>
-      </div>
-      <div class="item">
-        <div class="label">Telefone de emergência</div>
-        <div class="value">{% if patient.emergency_phone %}{{ patient.emergency_phone }}{% else %}Sem telefone de emergência{% endif %}</div>
-      </div>
-      <div class="item">
-        <div class="label">Cidade / Província</div>
-        <div class="value">
-          {% if patient.city %}{{ patient.city }}{% else %}Sem cidade{% endif %}
-          {% if patient.state %} · {{ patient.state }}{% endif %}
-        </div>
-      </div>
-      <div class="item">
-        <div class="label">País</div>
-        <div class="value">{{ patient.country }}</div>
-      </div>
-      <div class="item">
-        <div class="label">Código postal</div>
-        <div class="value">{% if patient.zip_code %}{{ patient.zip_code }}{% else %}Sem código postal{% endif %}</div>
-      </div>
-      <div class="item full">
-        <div class="label">Endereço</div>
-        <div class="value">{{ patient.address }}</div>
-      </div>
-    </div>
+    <table class="detail-table">
+      <tr class="detail-row">
+        <td><div class="card-box"><div class="label">Telefone</div><div class="value">{{ patient.phone }}</div></div></td>
+        <td><div class="card-box"><div class="label">Contacto de emergência</div><div class="value">{{ patient.emergency_contact }}</div></div></td>
+      </tr>
+      <tr class="detail-row">
+        <td><div class="card-box"><div class="label">Telefone de emergência</div><div class="value">{% if patient.emergency_phone %}{{ patient.emergency_phone }}{% else %}Sem telefone de emergência{% endif %}</div></div></td>
+        <td><div class="card-box"><div class="label">Cidade / Província</div><div class="value">{% if patient.city %}{{ patient.city }}{% else %}Sem cidade{% endif %}{% if patient.state %} · {{ patient.state }}{% endif %}</div></div></td>
+      </tr>
+      <tr class="detail-row">
+        <td><div class="card-box"><div class="label">País</div><div class="value">{{ patient.country }}</div></div></td>
+        <td><div class="card-box"><div class="label">Código postal</div><div class="value">{% if patient.zip_code %}{{ patient.zip_code }}{% else %}Sem código postal{% endif %}</div></div></td>
+      </tr>
+      <tr class="detail-row">
+        <td colspan="2"><div class="card-box"><div class="label">Endereço</div><div class="value">{{ patient.address }}</div></div></td>
+      </tr>
+    </table>
   </div>
 
   <div class="section">
     <h2>Resumo Clínico</h2>
-    <div class="grid">
-      <div class="item">
-        <div class="label">Agendamentos</div>
-        <div class="value">{{ patient.total_appointments }}</div>
-      </div>
-      <div class="item">
-        <div class="label">Consultas concluídas</div>
-        <div class="value">{{ patient.total_consultations }}</div>
-      </div>
-      <div class="item full">
-        <div class="label">Alergias</div>
-        <div class="value">{% if patient.allergies %}{{ patient.allergies }}{% else %}Sem alergias registadas{% endif %}</div>
-      </div>
-      <div class="item full">
-        <div class="label">Histórico clínico base</div>
-        <div class="value">{% if patient.medical_history %}{{ patient.medical_history }}{% else %}Sem histórico clínico base{% endif %}</div>
-      </div>
+    <table class="detail-table">
+      <tr class="detail-row">
+        <td><div class="card-box"><div class="label">Agendamentos</div><div class="value">{{ patient.total_appointments }}</div></div></td>
+        <td><div class="card-box"><div class="label">Consultas concluídas</div><div class="value">{{ patient.total_consultations }}</div></div></td>
+      </tr>
+      <tr class="detail-row">
+        <td colspan="2"><div class="card-box"><div class="label">Alergias</div><div class="value">{% if patient.allergies %}{{ patient.allergies }}{% else %}Sem alergias registadas{% endif %}</div></div></td>
+      </tr>
+      <tr class="detail-row">
+        <td colspan="2"><div class="card-box"><div class="label">Histórico clínico base</div><div class="value">{% if patient.medical_history %}{{ patient.medical_history }}{% else %}Sem histórico clínico base{% endif %}</div></div></td>
+      </tr>
       {% if latest_consultation %}
-        <div class="item full">
-          <div class="label">Última consulta concluída</div>
-          <div class="value">
-            {{ latest_consultation.data|date:"d/m/Y" }} às {{ latest_consultation.hora|time:"H:i" }}
-            {% if latest_consultation.medico %} · {{ latest_consultation.medico }}{% endif %}
-            {% if latest_consultation.consulta.diagnostico %}<br>Diagnóstico: {{ latest_consultation.consulta.diagnostico }}{% endif %}
-            {% if latest_consultation.consulta.prescricao %}<br>Prescrição: {{ latest_consultation.consulta.prescricao }}{% endif %}
-          </div>
-        </div>
+        <tr class="detail-row">
+          <td colspan="2">
+            <div class="card-box">
+              <div class="label">Última consulta concluída</div>
+              <div class="value">
+                {{ latest_consultation.data|date:"d/m/Y" }} às {{ latest_consultation.hora|time:"H:i" }}
+                {% if latest_consultation.medico %} · {{ latest_consultation.medico }}{% endif %}
+                {% if latest_consultation.consulta.diagnostico %}<br>Diagnóstico: {{ latest_consultation.consulta.diagnostico }}{% endif %}
+                {% if latest_consultation.consulta.prescricao %}<br>Prescrição: {{ latest_consultation.consulta.prescricao }}{% endif %}
+              </div>
+            </div>
+          </td>
+        </tr>
       {% endif %}
-    </div>
+    </table>
   </div>
 
   <div class="section">
     <h2>Histórico Recente</h2>
     {% for entry in history_entries %}
       <div class="history-card">
-        <div class="history-top">
-          <div>
-            <strong>{{ entry.data|date:"d/m/Y" }} às {{ entry.hora|time:"H:i" }}</strong>
-            <div class="muted">
-              {{ entry.medico }}
-              {% if entry.medico.especialidade %} · {{ entry.medico.especialidade.name }}{% endif %}
-            </div>
-          </div>
-          <div><strong>{{ entry.get_status_display }}</strong></div>
-        </div>
+        <table class="header-table">
+          <tr>
+            <td class="header-cell">
+              <strong>{{ entry.data|date:"d/m/Y" }} às {{ entry.hora|time:"H:i" }}</strong>
+              <div class="muted">
+                {{ entry.medico }}
+                {% if entry.medico.especialidade %} · {{ entry.medico.especialidade.name }}{% endif %}
+              </div>
+            </td>
+            <td class="header-cell is-right"><strong>{{ entry.get_status_display }}</strong></td>
+          </tr>
+        </table>
         <div><strong>Motivo:</strong> {{ entry.motivo }}</div>
         {% if entry.notas %}
           <div><strong>Notas:</strong> {{ entry.notas }}</div>
@@ -275,7 +271,7 @@
         {% endif %}
       </div>
     {% empty %}
-      <div class="item">
+      <div class="card-box">
         <div class="value">Sem histórico clínico registado.</div>
       </div>
     {% endfor %}

@@ -1,7 +1,185 @@
-from django.contrib.auth.models import Permission
+from collections import OrderedDict
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
+
+
+User = get_user_model()
 
 SYSTEM_PERMISSION_ACTIONS = ("add", "change", "delete", "view")
+STANDARD_PERMISSION_LABELS = OrderedDict(
+    [
+        ("view", "Ver"),
+        ("add", "Criar"),
+        ("change", "Editar"),
+        ("delete", "Eliminar"),
+    ]
+)
+
+APP_SECTION_METADATA = {
+    "auth": {
+        "title": "Acessos e segurança",
+        "description": "Controlo de utilizadores, perfis e permissões do sistema.",
+        "order": 10,
+    },
+    "accounts": {
+        "title": "Preferências do utilizador",
+        "description": "Definições complementares das contas de acesso.",
+        "order": 20,
+    },
+    "clinic": {
+        "title": "Operação clínica",
+        "description": "Permissões ligadas aos módulos operacionais da clínica.",
+        "order": 30,
+    },
+    "admin": {
+        "title": "Auditoria técnica",
+        "description": "Registos técnicos e logs do painel administrativo.",
+        "order": 40,
+    },
+    "contenttypes": {
+        "title": "Infra-estrutura Django",
+        "description": "Permissões internas do framework.",
+        "order": 50,
+    },
+    "sessions": {
+        "title": "Sessões",
+        "description": "Controlo técnico de sessões de autenticação.",
+        "order": 60,
+    },
+}
+
+DEFAULT_ROLE_PERMISSION_MAP = {
+    "Administrador do Sistema": {
+        "add_user",
+        "change_user",
+        "delete_user",
+        "view_user",
+        "add_group",
+        "change_group",
+        "delete_group",
+        "view_group",
+        "add_permission",
+        "change_permission",
+        "delete_permission",
+        "view_permission",
+        "view_userprofile",
+        "change_userprofile",
+        "add_hospital",
+        "change_hospital",
+        "delete_hospital",
+        "view_hospital",
+        "add_especialidade",
+        "change_especialidade",
+        "delete_especialidade",
+        "view_especialidade",
+        "add_medico",
+        "change_medico",
+        "delete_medico",
+        "view_medico",
+        "add_paciente",
+        "change_paciente",
+        "delete_paciente",
+        "view_paciente",
+        "add_agendamento",
+        "change_agendamento",
+        "delete_agendamento",
+        "view_agendamento",
+        "add_consulta",
+        "change_consulta",
+        "delete_consulta",
+        "view_consulta",
+        "add_medicamento",
+        "change_medicamento",
+        "delete_medicamento",
+        "view_medicamento",
+        "add_departamento",
+        "change_departamento",
+        "delete_departamento",
+        "view_departamento",
+    },
+    "Gestor da Clínica / Sucursal": {
+        "view_user",
+        "change_user",
+        "view_group",
+        "view_hospital",
+        "change_hospital",
+        "view_especialidade",
+        "add_especialidade",
+        "change_especialidade",
+        "view_medico",
+        "add_medico",
+        "change_medico",
+        "view_paciente",
+        "add_paciente",
+        "change_paciente",
+        "view_agendamento",
+        "add_agendamento",
+        "change_agendamento",
+        "view_consulta",
+        "view_medicamento",
+        "view_departamento",
+        "add_departamento",
+        "change_departamento",
+    },
+    "Recepcionista": {
+        "view_paciente",
+        "add_paciente",
+        "change_paciente",
+        "view_agendamento",
+        "add_agendamento",
+        "change_agendamento",
+        "view_medico",
+        "view_especialidade",
+        "view_hospital",
+    },
+    "Médico": {
+        "view_paciente",
+        "view_agendamento",
+        "change_agendamento",
+        "view_consulta",
+        "add_consulta",
+        "change_consulta",
+        "view_medico",
+        "view_especialidade",
+    },
+    "Enfermeiro(a)": {
+        "view_paciente",
+        "view_agendamento",
+        "change_agendamento",
+        "view_consulta",
+        "view_medico",
+    },
+    "Farmacêutico / Stock": {
+        "view_medicamento",
+        "add_medicamento",
+        "change_medicamento",
+        "view_hospital",
+    },
+    "Financeiro / Caixa": {
+        "view_paciente",
+        "view_agendamento",
+        "view_consulta",
+        "view_hospital",
+    },
+    "Auditor / Direcção": {
+        "view_user",
+        "view_group",
+        "view_permission",
+        "view_hospital",
+        "view_especialidade",
+        "view_medico",
+        "view_paciente",
+        "view_agendamento",
+        "view_consulta",
+        "view_medicamento",
+        "view_departamento",
+    },
+}
+
+
+def visible_users_queryset():
+    return User.objects.exclude(is_superuser=True)
 
 
 def is_system_permission(permission: Permission) -> bool:
@@ -13,3 +191,110 @@ def is_system_permission(permission: Permission) -> bool:
 def describe_permission_scope(permission: Permission) -> str:
     return f"{permission.content_type.app_label}.{permission.content_type.model}"
 
+
+def get_permission_action(permission: Permission) -> str | None:
+    model_name = permission.content_type.model
+    for action in STANDARD_PERMISSION_LABELS:
+        if permission.codename == f"{action}_{model_name}":
+            return action
+    return None
+
+
+def get_permission_group_label(permission: Permission) -> str:
+    model_class = permission.content_type.model_class()
+    if model_class is not None:
+        return model_class._meta.verbose_name_plural.title()
+    return permission.content_type.model.replace("_", " ").title()
+
+
+def build_permission_matrix(selected_permission_ids=None):
+    selected_permission_ids = {int(value) for value in (selected_permission_ids or [])}
+    permissions = Permission.objects.select_related("content_type").order_by(
+        "content_type__app_label",
+        "content_type__model",
+        "codename",
+    )
+
+    section_map = OrderedDict()
+
+    for permission in permissions:
+        app_label = permission.content_type.app_label
+        section_meta = APP_SECTION_METADATA.get(
+            app_label,
+            {
+                "title": app_label.replace("_", " ").title(),
+                "description": "Permissões agrupadas automaticamente por módulo.",
+                "order": 999,
+            },
+        )
+        section = section_map.setdefault(
+            app_label,
+            {
+                "app_label": app_label,
+                "title": section_meta["title"],
+                "description": section_meta["description"],
+                "order": section_meta["order"],
+                "models": OrderedDict(),
+            },
+        )
+
+        model_key = permission.content_type.model
+        model_group = section["models"].setdefault(
+            model_key,
+            {
+                "key": model_key,
+                "label": get_permission_group_label(permission),
+                "scope": describe_permission_scope(permission),
+                "actions": OrderedDict((action, None) for action in STANDARD_PERMISSION_LABELS),
+                "extras": [],
+            },
+        )
+
+        action = get_permission_action(permission)
+        entry = {
+            "id": permission.id,
+            "name": permission.name,
+            "codename": permission.codename,
+            "checked": permission.id in selected_permission_ids,
+        }
+
+        if action:
+            model_group["actions"][action] = entry
+        else:
+            model_group["extras"].append(entry)
+
+    ordered_sections = sorted(section_map.values(), key=lambda item: (item["order"], item["title"]))
+    for section in ordered_sections:
+        section_models = []
+        for model in section["models"].values():
+            model["action_items"] = [
+                {
+                    "key": action,
+                    "label": label,
+                    "permission": model["actions"][action],
+                }
+                for action, label in STANDARD_PERMISSION_LABELS.items()
+            ]
+            section_models.append(model)
+        section["models"] = section_models
+
+    return ordered_sections
+
+
+def sync_default_roles():
+    permissions_by_codename = {
+        permission.codename: permission
+        for permission in Permission.objects.select_related("content_type").all()
+    }
+
+    for role_name, codenames in DEFAULT_ROLE_PERMISSION_MAP.items():
+        group, created = Group.objects.get_or_create(name=role_name)
+        if not created:
+            continue
+
+        matched_permissions = [
+            permissions_by_codename[codename]
+            for codename in sorted(codenames)
+            if codename in permissions_by_codename
+        ]
+        group.permissions.set(matched_permissions)

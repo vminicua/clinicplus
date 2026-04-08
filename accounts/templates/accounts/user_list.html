@@ -50,11 +50,11 @@
         <div class="card clinic-stat-card h-100">
           <div class="card-header p-3 position-relative">
             <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
-              <i class="material-symbols-rounded opacity-10">workspace_premium</i>
+              <i class="material-symbols-rounded opacity-10">badge</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Acesso total</p>
-              <h4 class="mb-0">{{ superusers }}</h4>
+              <p class="text-sm mb-0">Com perfis</p>
+              <h4 class="mb-0">{{ users_with_roles }}</h4>
             </div>
           </div>
         </div>
@@ -132,8 +132,8 @@
                   </td>
                   <td class="text-end pe-4">
                     <a href="{% url 'accounts:user_detail' user_item.pk %}" class="btn btn-link text-dark text-sm mb-0">Ver</a>
-                    <a href="{% url 'accounts:user_update' user_item.pk %}" class="btn btn-link text-info text-sm mb-0">Editar</a>
-                    <a href="{% url 'accounts:user_delete' user_item.pk %}" class="btn btn-link text-danger text-sm mb-0">Eliminar</a>
+                    <a href="{% url 'accounts:user_update' user_item.pk %}" data-modal-url="{% url 'accounts:user_update' user_item.pk %}" data-modal-size="modal-lg" class="btn btn-link text-info text-sm mb-0">Editar</a>
+                    <a href="{% url 'accounts:user_delete' user_item.pk %}" data-modal-url="{% url 'accounts:user_delete' user_item.pk %}" data-modal-size="modal-lg" class="btn btn-link text-danger text-sm mb-0">Eliminar</a>
                   </td>
                 </tr>
               {% empty %}
@@ -153,4 +153,3 @@
   </div>
 </div>
 {% endblock content %}
-

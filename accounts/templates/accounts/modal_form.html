@@ -1,0 +1,14 @@
+<div class="modal-content clinic-modal-card">
+  <div class="modal-header">
+    <div>
+      <p class="text-sm text-secondary mb-1">{{ page_title }}</p>
+      <h4 class="mb-1">{{ form_title }}</h4>
+      <p class="text-secondary mb-0">{{ form_description }}</p>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+  </div>
+  <div class="modal-body">
+    {% include "accounts/includes/form_content.html" %}
+  </div>
+</div>
+

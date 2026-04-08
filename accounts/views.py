@@ -2,17 +2,26 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.models import Group, Permission
-from django.db.models import Q
+from django.db.models import Prefetch, Q
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from .forms import PermissionForm, RoleForm, UserForm
-from .utils import is_system_permission
+from .utils import is_system_permission, visible_users_queryset
 
 
 User = get_user_model()
+
+
+def is_modal_request(request) -> bool:
+    return (
+        request.GET.get("modal") == "1"
+        or request.POST.get("modal") == "1"
+        or request.headers.get("x-requested-with") == "XMLHttpRequest"
+    )
 
 
 class AppPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
@@ -49,6 +58,7 @@ class ClinicPageMixin(LoginRequiredMixin):
         context.setdefault("meta_title", f"Clinic Plus | {self.page_title}")
         context.setdefault("current_date", timezone.localdate())
         context.setdefault("greeting_name", greeting_name)
+        context.setdefault("is_modal_request", is_modal_request(self.request))
         return context
 
 
@@ -74,6 +84,76 @@ class SearchableListMixin(ClinicPageMixin):
         return context
 
 
+class ModalResponseMixin:
+    modal_template_name = ""
+    success_message = ""
+    modal_size = "modal-lg"
+
+    def is_modal(self) -> bool:
+        return is_modal_request(self.request)
+
+    def get_template_names(self):
+        if self.is_modal() and self.modal_template_name:
+            return [self.modal_template_name]
+        return [self.template_name]
+
+    def get_success_message(self) -> str:
+        return self.success_message
+
+    def get_modal_title(self) -> str:
+        return self.page_title
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.setdefault("modal_title", self.get_modal_title())
+        context.setdefault("modal_size", self.modal_size)
+        return context
+
+
+class ModalFormMixin(ModalResponseMixin):
+    error_message = "Revise os campos destacados e tente novamente."
+
+    def form_valid(self, form):
+        self.object = form.save()
+        if self.is_modal():
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": self.get_success_message(),
+                    "reload": True,
+                }
+            )
+
+        messages.success(self.request, self.get_success_message())
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        if self.is_modal():
+            return self.render_to_response(self.get_context_data(form=form), status=422)
+
+        messages.error(self.request, self.error_message)
+        return self.render_to_response(self.get_context_data(form=form), status=422)
+
+
+class ModalDeleteMixin(ModalResponseMixin):
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        success_url = self.get_success_url()
+        self.object.delete()
+
+        if self.is_modal():
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": self.get_success_message(),
+                    "reload": True,
+                }
+            )
+
+        messages.success(self.request, self.get_success_message())
+        return redirect(success_url)
+
+
 class UserListView(AppPermissionMixin, SearchableListMixin, ListView):
     model = User
     template_name = "accounts/user_list.html"
@@ -88,7 +168,8 @@ class UserListView(AppPermissionMixin, SearchableListMixin, ListView):
     def get_queryset(self):
         query = self.get_search_query()
         queryset = (
-            User.objects.select_related("profile")
+            visible_users_queryset()
+            .select_related("profile")
             .prefetch_related("groups")
             .order_by("first_name", "last_name", "username")
         )
@@ -105,57 +186,38 @@ class UserListView(AppPermissionMixin, SearchableListMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        base_queryset = User.objects.all()
+        base_queryset = visible_users_queryset()
         context["total_users"] = base_queryset.count()
         context["active_users"] = base_queryset.filter(is_active=True).count()
         context["staff_users"] = base_queryset.filter(is_staff=True).count()
-        context["superusers"] = base_queryset.filter(is_superuser=True).count()
-        context["primary_action_url"] = reverse("accounts:user_create")
+        context["users_with_roles"] = base_queryset.filter(groups__isnull=False).distinct().count()
+        context["primary_action_modal_url"] = reverse("accounts:user_create")
         context["primary_action_label"] = "Novo utilizador"
         context["primary_action_icon"] = "person_add"
+        context["primary_action_modal_size"] = "modal-lg"
         return context
 
 
 class UserDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
-    queryset = User.objects.select_related("profile").prefetch_related("groups", "user_permissions")
+    queryset = visible_users_queryset().select_related("profile").prefetch_related("groups")
     template_name = "accounts/user_detail.html"
     permission_required = "auth.view_user"
     segment = "users"
     page_title = "Detalhes do utilizador"
-    page_subtitle = "Resumo do acesso, perfis atribuídos e permissões directas."
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["primary_action_url"] = reverse("accounts:user_update", args=[self.object.pk])
-        context["primary_action_label"] = "Editar"
-        context["primary_action_icon"] = "edit"
-        context["secondary_action_url"] = reverse("accounts:user_list")
-        context["secondary_action_label"] = "Voltar"
-        context["secondary_action_icon"] = "arrow_back"
-        context["direct_permissions"] = self.object.user_permissions.select_related(
-            "content_type"
-        ).order_by("content_type__app_label", "content_type__model", "name")
-        return context
+    page_subtitle = "Resumo do acesso e perfis atribuídos."
 
 
-class UserCreateView(AppPermissionMixin, ClinicPageMixin, CreateView):
+class UserCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
     model = User
     form_class = UserForm
     template_name = "accounts/form.html"
+    modal_template_name = "accounts/modal_form.html"
     success_url = reverse_lazy("accounts:user_list")
+    success_message = "Utilizador criado com sucesso."
     permission_required = "auth.add_user"
     segment = "users"
     page_title = "Novo utilizador"
     page_subtitle = "Crie a conta, defina o idioma e associe perfis de acesso."
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, "Utilizador criado com sucesso.")
-        return response
-
-    def form_invalid(self, form):
-        messages.error(self.request, "Revise os campos destacados e tente novamente.")
-        return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -163,28 +225,21 @@ class UserCreateView(AppPermissionMixin, ClinicPageMixin, CreateView):
         context["form_description"] = "Use esta área para registar uma nova conta de acesso ao sistema."
         context["submit_label"] = "Guardar utilizador"
         context["cancel_url"] = reverse("accounts:user_list")
-        context["wide_fields"] = ["groups", "user_permissions"]
+        context["form_mode"] = "user"
         return context
 
 
-class UserUpdateView(AppPermissionMixin, ClinicPageMixin, UpdateView):
-    queryset = User.objects.select_related("profile").prefetch_related("groups", "user_permissions")
+class UserUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
+    queryset = visible_users_queryset().select_related("profile").prefetch_related("groups")
     form_class = UserForm
     template_name = "accounts/form.html"
+    modal_template_name = "accounts/modal_form.html"
     success_url = reverse_lazy("accounts:user_list")
+    success_message = "Utilizador actualizado com sucesso."
     permission_required = "auth.change_user"
     segment = "users"
     page_title = "Editar utilizador"
-    page_subtitle = "Actualize dados, perfis e permissões da conta seleccionada."
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, "Utilizador actualizado com sucesso.")
-        return response
-
-    def form_invalid(self, form):
-        messages.error(self.request, "Revise os campos destacados e tente novamente.")
-        return super().form_invalid(form)
+    page_subtitle = "Actualize dados e perfis da conta seleccionada."
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -192,14 +247,16 @@ class UserUpdateView(AppPermissionMixin, ClinicPageMixin, UpdateView):
         context["form_description"] = "A palavra-passe só será alterada se preencher os dois campos de confirmação."
         context["submit_label"] = "Actualizar utilizador"
         context["cancel_url"] = reverse("accounts:user_detail", args=[self.object.pk])
-        context["wide_fields"] = ["groups", "user_permissions"]
+        context["form_mode"] = "user"
         return context
 
 
-class UserDeleteView(AppPermissionMixin, ClinicPageMixin, DeleteView):
-    queryset = User.objects.select_related("profile").prefetch_related("groups")
+class UserDeleteView(AppPermissionMixin, ModalDeleteMixin, ClinicPageMixin, DeleteView):
+    queryset = visible_users_queryset().select_related("profile").prefetch_related("groups")
     template_name = "accounts/confirm_delete.html"
+    modal_template_name = "accounts/modal_confirm_delete.html"
     success_url = reverse_lazy("accounts:user_list")
+    success_message = "Utilizador eliminado com sucesso."
     permission_required = "auth.delete_user"
     segment = "users"
     page_title = "Eliminar utilizador"
@@ -209,18 +266,13 @@ class UserDeleteView(AppPermissionMixin, ClinicPageMixin, DeleteView):
         self.object = self.get_object()
 
         if self.object == request.user:
-            messages.error(request, "Não pode eliminar a sua própria conta enquanto a sessão estiver activa.")
-            return redirect("accounts:user_detail", pk=self.object.pk)
-
-        if self.object.is_superuser and User.objects.filter(is_superuser=True).count() == 1:
-            messages.error(request, "Não pode eliminar o último utilizador com acesso total ao sistema.")
+            messages.error(
+                request,
+                "Não pode eliminar a sua própria conta enquanto a sessão estiver activa.",
+            )
             return redirect("accounts:user_detail", pk=self.object.pk)
 
         return super().dispatch(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, "Utilizador eliminado com sucesso.")
-        return super().delete(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -249,7 +301,11 @@ class RoleListView(AppPermissionMixin, SearchableListMixin, ListView):
 
     def get_queryset(self):
         query = self.get_search_query()
-        queryset = Group.objects.prefetch_related("permissions", "user_set").order_by("name")
+        visible_users = visible_users_queryset().order_by("first_name", "last_name", "username")
+        queryset = Group.objects.prefetch_related(
+            "permissions",
+            Prefetch("user_set", queryset=visible_users),
+        ).order_by("name")
 
         if query:
             queryset = queryset.filter(name__icontains=query)
@@ -260,19 +316,23 @@ class RoleListView(AppPermissionMixin, SearchableListMixin, ListView):
         context = super().get_context_data(**kwargs)
         base_queryset = Group.objects.all()
         context["total_roles"] = base_queryset.count()
-        context["roles_in_use"] = base_queryset.filter(user__isnull=False).distinct().count()
+        context["roles_in_use"] = base_queryset.filter(user__is_superuser=False).distinct().count()
         context["roles_with_permissions"] = base_queryset.filter(
             permissions__isnull=False
         ).distinct().count()
-        context["linked_users"] = User.objects.filter(groups__isnull=False).distinct().count()
-        context["primary_action_url"] = reverse("accounts:role_create")
+        context["linked_users"] = visible_users_queryset().filter(groups__isnull=False).distinct().count()
+        context["primary_action_modal_url"] = reverse("accounts:role_create")
         context["primary_action_label"] = "Novo perfil"
         context["primary_action_icon"] = "badge"
+        context["primary_action_modal_size"] = "modal-xl"
         return context
 
 
 class RoleDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
-    queryset = Group.objects.prefetch_related("permissions", "user_set")
+    queryset = Group.objects.prefetch_related(
+        "permissions",
+        Prefetch("user_set", queryset=visible_users_queryset().order_by("first_name", "last_name", "username")),
+    )
     template_name = "accounts/role_detail.html"
     permission_required = "auth.view_group"
     segment = "roles"
@@ -281,37 +341,25 @@ class RoleDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["primary_action_url"] = reverse("accounts:role_update", args=[self.object.pk])
-        context["primary_action_label"] = "Editar"
-        context["primary_action_icon"] = "edit"
-        context["secondary_action_url"] = reverse("accounts:role_list")
-        context["secondary_action_label"] = "Voltar"
-        context["secondary_action_icon"] = "arrow_back"
         context["ordered_permissions"] = self.object.permissions.select_related(
             "content_type"
         ).order_by("content_type__app_label", "content_type__model", "name")
-        context["assigned_users"] = self.object.user_set.order_by("first_name", "last_name", "username")
+        context["assigned_users"] = self.object.user_set.all()
         return context
 
 
-class RoleCreateView(AppPermissionMixin, ClinicPageMixin, CreateView):
+class RoleCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
     model = Group
     form_class = RoleForm
     template_name = "accounts/form.html"
+    modal_template_name = "accounts/modal_form.html"
     success_url = reverse_lazy("accounts:role_list")
+    success_message = "Perfil criado com sucesso."
+    modal_size = "modal-xl"
     permission_required = "auth.add_group"
     segment = "roles"
     page_title = "Novo perfil"
     page_subtitle = "Crie um perfil que represente uma função do sistema."
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, "Perfil criado com sucesso.")
-        return response
-
-    def form_invalid(self, form):
-        messages.error(self.request, "Revise os campos destacados e tente novamente.")
-        return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -319,28 +367,23 @@ class RoleCreateView(AppPermissionMixin, ClinicPageMixin, CreateView):
         context["form_description"] = "Use perfis para agrupar permissões por cargo ou responsabilidade."
         context["submit_label"] = "Guardar perfil"
         context["cancel_url"] = reverse("accounts:role_list")
-        context["wide_fields"] = ["permissions"]
+        context["form_mode"] = "role"
+        context["permission_matrix"] = context["form"].permission_matrix
         return context
 
 
-class RoleUpdateView(AppPermissionMixin, ClinicPageMixin, UpdateView):
+class RoleUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
     queryset = Group.objects.prefetch_related("permissions")
     form_class = RoleForm
     template_name = "accounts/form.html"
+    modal_template_name = "accounts/modal_form.html"
     success_url = reverse_lazy("accounts:role_list")
+    success_message = "Perfil actualizado com sucesso."
+    modal_size = "modal-xl"
     permission_required = "auth.change_group"
     segment = "roles"
     page_title = "Editar perfil"
     page_subtitle = "Actualize o nome e as permissões deste perfil."
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, "Perfil actualizado com sucesso.")
-        return response
-
-    def form_invalid(self, form):
-        messages.error(self.request, "Revise os campos destacados e tente novamente.")
-        return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -348,22 +391,23 @@ class RoleUpdateView(AppPermissionMixin, ClinicPageMixin, UpdateView):
         context["form_description"] = "As alterações reflectem-se em todos os utilizadores ligados a este perfil."
         context["submit_label"] = "Actualizar perfil"
         context["cancel_url"] = reverse("accounts:role_detail", args=[self.object.pk])
-        context["wide_fields"] = ["permissions"]
+        context["form_mode"] = "role"
+        context["permission_matrix"] = context["form"].permission_matrix
         return context
 
 
-class RoleDeleteView(AppPermissionMixin, ClinicPageMixin, DeleteView):
-    queryset = Group.objects.prefetch_related("user_set")
+class RoleDeleteView(AppPermissionMixin, ModalDeleteMixin, ClinicPageMixin, DeleteView):
+    queryset = Group.objects.prefetch_related(
+        Prefetch("user_set", queryset=visible_users_queryset().order_by("first_name", "last_name", "username"))
+    )
     template_name = "accounts/confirm_delete.html"
+    modal_template_name = "accounts/modal_confirm_delete.html"
     success_url = reverse_lazy("accounts:role_list")
+    success_message = "Perfil eliminado com sucesso."
     permission_required = "auth.delete_group"
     segment = "roles"
     page_title = "Eliminar perfil"
     page_subtitle = "Confirme a remoção do perfil seleccionado."
-
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, "Perfil eliminado com sucesso.")
-        return super().delete(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -436,17 +480,20 @@ class PermissionListView(AppPermissionMixin, SearchableListMixin, ListView):
         context = super().get_context_data(**kwargs)
         all_permissions = list(Permission.objects.select_related("content_type").all())
         context["total_permissions"] = len(all_permissions)
-        context["system_permissions"] = sum(1 for permission in all_permissions if is_system_permission(permission))
+        context["system_permissions"] = sum(
+            1 for permission in all_permissions if is_system_permission(permission)
+        )
         context["custom_permissions"] = context["total_permissions"] - context["system_permissions"]
         context["current_kind"] = self.get_kind_filter()
-        context["primary_action_url"] = reverse("accounts:permission_create")
+        context["primary_action_modal_url"] = reverse("accounts:permission_create")
         context["primary_action_label"] = "Nova permissão"
         context["primary_action_icon"] = "verified_user"
+        context["primary_action_modal_size"] = "modal-lg"
         return context
 
 
 class PermissionDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
-    queryset = Permission.objects.select_related("content_type").prefetch_related("group_set", "user_set")
+    queryset = Permission.objects.select_related("content_type").prefetch_related("group_set")
     template_name = "accounts/permission_detail.html"
     permission_required = "auth.view_permission"
     segment = "permissions"
@@ -456,36 +503,21 @@ class PermissionDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["is_system_permission"] = is_system_permission(self.object)
-        if not context["is_system_permission"]:
-            context["primary_action_url"] = reverse("accounts:permission_update", args=[self.object.pk])
-            context["primary_action_label"] = "Editar"
-            context["primary_action_icon"] = "edit"
-        context["secondary_action_url"] = reverse("accounts:permission_list")
-        context["secondary_action_label"] = "Voltar"
-        context["secondary_action_icon"] = "arrow_back"
         context["linked_roles"] = self.object.group_set.order_by("name")
-        context["linked_users"] = self.object.user_set.order_by("first_name", "last_name", "username")
         return context
 
 
-class PermissionCreateView(AppPermissionMixin, ClinicPageMixin, CreateView):
+class PermissionCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
     model = Permission
     form_class = PermissionForm
     template_name = "accounts/form.html"
+    modal_template_name = "accounts/modal_form.html"
     success_url = reverse_lazy("accounts:permission_list")
+    success_message = "Permissão criada com sucesso."
     permission_required = "auth.add_permission"
     segment = "permissions"
     page_title = "Nova permissão"
     page_subtitle = "Crie permissões personalizadas para fluxos específicos do sistema."
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, "Permissão criada com sucesso.")
-        return response
-
-    def form_invalid(self, form):
-        messages.error(self.request, "Revise os campos destacados e tente novamente.")
-        return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -493,27 +525,27 @@ class PermissionCreateView(AppPermissionMixin, ClinicPageMixin, CreateView):
         context["form_description"] = "Permissões personalizadas ajudam a cobrir fluxos que ainda não existem no modelo base."
         context["submit_label"] = "Guardar permissão"
         context["cancel_url"] = reverse("accounts:permission_list")
+        context["form_mode"] = "permission"
         return context
 
 
-class PermissionUpdateView(EditablePermissionMixin, AppPermissionMixin, ClinicPageMixin, UpdateView):
+class PermissionUpdateView(
+    EditablePermissionMixin,
+    AppPermissionMixin,
+    ModalFormMixin,
+    ClinicPageMixin,
+    UpdateView,
+):
     queryset = Permission.objects.select_related("content_type")
     form_class = PermissionForm
     template_name = "accounts/form.html"
+    modal_template_name = "accounts/modal_form.html"
     success_url = reverse_lazy("accounts:permission_list")
+    success_message = "Permissão actualizada com sucesso."
     permission_required = "auth.change_permission"
     segment = "permissions"
     page_title = "Editar permissão"
     page_subtitle = "Actualize o nome visível, o código interno ou o escopo da permissão."
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, "Permissão actualizada com sucesso.")
-        return response
-
-    def form_invalid(self, form):
-        messages.error(self.request, "Revise os campos destacados e tente novamente.")
-        return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -521,31 +553,35 @@ class PermissionUpdateView(EditablePermissionMixin, AppPermissionMixin, ClinicPa
         context["form_description"] = "Ajuste apenas permissões personalizadas. As permissões base do sistema continuam protegidas."
         context["submit_label"] = "Actualizar permissão"
         context["cancel_url"] = reverse("accounts:permission_detail", args=[self.object.pk])
+        context["form_mode"] = "permission"
         return context
 
 
-class PermissionDeleteView(EditablePermissionMixin, AppPermissionMixin, ClinicPageMixin, DeleteView):
-    queryset = Permission.objects.select_related("content_type").prefetch_related("group_set", "user_set")
+class PermissionDeleteView(
+    EditablePermissionMixin,
+    AppPermissionMixin,
+    ModalDeleteMixin,
+    ClinicPageMixin,
+    DeleteView,
+):
+    queryset = Permission.objects.select_related("content_type").prefetch_related("group_set")
     template_name = "accounts/confirm_delete.html"
+    modal_template_name = "accounts/modal_confirm_delete.html"
     success_url = reverse_lazy("accounts:permission_list")
+    success_message = "Permissão eliminada com sucesso."
     permission_required = "auth.delete_permission"
     segment = "permissions"
     page_title = "Eliminar permissão"
     page_subtitle = "Remova apenas permissões personalizadas que já não sejam necessárias."
 
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, "Permissão eliminada com sucesso.")
-        return super().delete(request, *args, **kwargs)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["delete_title"] = "Eliminar permissão"
-        context["delete_description"] = "Os perfis e utilizadores deixam de herdar este acesso assim que a remoção for concluída."
+        context["delete_description"] = "Os perfis deixam de herdar este acesso assim que a remoção for concluída."
         context["delete_object_name"] = self.object.name
         context["cancel_url"] = reverse("accounts:permission_detail", args=[self.object.pk])
         context["impact_lines"] = [
             f"Código interno: {self.object.codename}",
             f"Perfis ligados: {self.object.group_set.count()}",
-            f"Utilizadores com atribuição directa: {self.object.user_set.count()}",
         ]
         return context

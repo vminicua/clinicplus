@@ -7,7 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 
 from .models import UserProfile
-from .utils import describe_permission_scope
+from .utils import build_permission_matrix, describe_permission_scope
 
 
 User = get_user_model()
@@ -25,6 +25,9 @@ class StyledFormMixin:
 
             if isinstance(widget, forms.CheckboxInput):
                 widget.attrs["class"] = self.checkbox_class
+                continue
+
+            if isinstance(widget, forms.CheckboxSelectMultiple):
                 continue
 
             if isinstance(widget, forms.SelectMultiple):
@@ -71,18 +74,7 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         required=False,
         label="Perfis (roles)",
         help_text="Perfis que definem o acesso principal deste utilizador.",
-        widget=forms.SelectMultiple,
-    )
-    user_permissions = PermissionMultipleChoiceField(
-        queryset=Permission.objects.select_related("content_type").order_by(
-            "content_type__app_label",
-            "content_type__model",
-            "name",
-        ),
-        required=False,
-        label="Permissões directas",
-        help_text="Use apenas quando o acesso não puder ser resolvido pelo perfil.",
-        widget=forms.SelectMultiple,
+        widget=forms.CheckboxSelectMultiple,
     )
     preferred_language = forms.ChoiceField(
         choices=UserProfile.LANGUAGE_CHOICES,
@@ -98,9 +90,7 @@ class UserForm(StyledFormMixin, forms.ModelForm):
             "email",
             "is_active",
             "is_staff",
-            "is_superuser",
             "groups",
-            "user_permissions",
         ]
         labels = {
             "username": "Nome de utilizador",
@@ -108,15 +98,13 @@ class UserForm(StyledFormMixin, forms.ModelForm):
             "last_name": "Apelido",
             "email": "Email",
             "is_active": "Activo",
-            "is_staff": "Acesso à administração",
-            "is_superuser": "Acesso total ao sistema",
+            "is_staff": "Acesso à administração técnica",
         }
         help_texts = {
             "username": "Identificador usado para entrar no sistema.",
             "email": "Contacto principal do utilizador.",
             "is_active": "Desactive para bloquear o acesso sem apagar o registo.",
             "is_staff": "Permite aceder ao painel `/admin/` do Django.",
-            "is_superuser": "Ignora verificações de permissões. Use apenas para administradores.",
         }
 
     def __init__(self, *args, **kwargs):
@@ -126,6 +114,7 @@ class UserForm(StyledFormMixin, forms.ModelForm):
 
         self.fields["username"].widget.attrs["autocomplete"] = "username"
         self.fields["email"].widget.attrs["autocomplete"] = "email"
+        self.fields["groups"].queryset = Group.objects.order_by("name")
 
         if self.instance and self.instance.pk:
             profile, _ = UserProfile.objects.get_or_create(user=self.instance)
@@ -160,6 +149,7 @@ class UserForm(StyledFormMixin, forms.ModelForm):
 
         user.save()
         self.save_m2m()
+        user.user_permissions.clear()
 
         profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.preferred_language = self.cleaned_data["preferred_language"]
@@ -178,7 +168,7 @@ class RoleForm(StyledFormMixin, forms.ModelForm):
         required=False,
         label="Permissões atribuídas",
         help_text="Seleccione as permissões que compõem este perfil.",
-        widget=forms.SelectMultiple,
+        widget=forms.MultipleHiddenInput,
     )
 
     class Meta:
@@ -194,6 +184,16 @@ class RoleForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_widget_classes()
+        self.permission_matrix = build_permission_matrix(self.get_selected_permission_ids())
+
+    def get_selected_permission_ids(self):
+        if self.is_bound:
+            values = self.data.getlist("permissions")
+        elif self.instance.pk:
+            values = self.instance.permissions.values_list("id", flat=True)
+        else:
+            values = self.initial.get("permissions", [])
+        return {int(value) for value in values}
 
 
 class PermissionForm(StyledFormMixin, forms.ModelForm):

@@ -1,0 +1,301 @@
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  window.CLINIC_FLASH_MESSAGES = [
+    {% for message in messages %}
+      {
+        level: "{{ message.tags|default:'info'|escapejs }}",
+        text: "{{ message|escapejs }}"
+      },
+    {% endfor %}
+  ];
+</script>
+<script>
+  (function() {
+    const modalElement = document.getElementById('clinicActionModal');
+    const modalInstance = modalElement && typeof bootstrap !== 'undefined'
+      ? new bootstrap.Modal(modalElement)
+      : null;
+
+    function mapLevel(level) {
+      if (level === 'error' || level === 'danger') {
+        return 'error';
+      }
+      if (level === 'warning') {
+        return 'warning';
+      }
+      if (level === 'success') {
+        return 'success';
+      }
+      return 'info';
+    }
+
+    function showProcessing(title, text) {
+      if (!window.Swal) {
+        return;
+      }
+      Swal.fire({
+        title: title || 'Processando...',
+        text: text || 'Aguarde um momento.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+    }
+
+    function showFeedback(icon, title, text) {
+      if (!window.Swal) {
+        return;
+      }
+      Swal.fire({
+        icon: icon,
+        title: title,
+        text: text,
+        timer: icon === 'success' ? 1800 : undefined,
+        showConfirmButton: icon !== 'success',
+      });
+    }
+
+    function showFlashMessages() {
+      if (!window.Swal || !Array.isArray(window.CLINIC_FLASH_MESSAGES)) {
+        return;
+      }
+      window.CLINIC_FLASH_MESSAGES.forEach((message, index) => {
+        setTimeout(() => {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: mapLevel(message.level),
+            title: message.text,
+            showConfirmButton: false,
+            timer: 3500,
+            timerProgressBar: true,
+          });
+        }, index * 250);
+      });
+    }
+
+    function validateWizardStep(panel) {
+      const fields = panel.querySelectorAll('input, select, textarea');
+      for (const field of fields) {
+        if (field.disabled || field.type === 'hidden') {
+          continue;
+        }
+        if (!field.reportValidity()) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function initWizards(root) {
+      root.querySelectorAll('.js-wizard').forEach((wizard) => {
+        if (wizard.dataset.ready === '1') {
+          return;
+        }
+        wizard.dataset.ready = '1';
+
+        const panels = Array.from(wizard.querySelectorAll('[data-step-panel]'));
+        const indicators = Array.from(wizard.querySelectorAll('[data-step-target]'));
+        let currentIndex = 0;
+
+        function syncStep() {
+          panels.forEach((panel, index) => {
+            panel.classList.toggle('d-none', index !== currentIndex);
+          });
+
+          indicators.forEach((indicator, index) => {
+            indicator.classList.toggle('active', index === currentIndex);
+            indicator.classList.toggle('completed', index < currentIndex);
+          });
+
+          wizard.querySelectorAll('[data-wizard-prev]').forEach((button) => {
+            button.disabled = currentIndex === 0;
+          });
+
+          wizard.querySelectorAll('[data-wizard-next]').forEach((button) => {
+            button.classList.toggle('d-none', currentIndex === panels.length - 1);
+          });
+
+          wizard.querySelectorAll('[data-wizard-submit]').forEach((button) => {
+            button.classList.toggle('d-none', currentIndex !== panels.length - 1);
+          });
+        }
+
+        wizard.addEventListener('click', (event) => {
+          const nextButton = event.target.closest('[data-wizard-next]');
+          if (nextButton) {
+            event.preventDefault();
+            if (validateWizardStep(panels[currentIndex])) {
+              currentIndex = Math.min(currentIndex + 1, panels.length - 1);
+              syncStep();
+            }
+            return;
+          }
+
+          const prevButton = event.target.closest('[data-wizard-prev]');
+          if (prevButton) {
+            event.preventDefault();
+            currentIndex = Math.max(currentIndex - 1, 0);
+            syncStep();
+          }
+        });
+
+        syncStep();
+      });
+    }
+
+    function initPermissionTables(root) {
+      root.querySelectorAll('[data-permission-toggle]').forEach((toggle) => {
+        if (toggle.dataset.ready === '1') {
+          return;
+        }
+        toggle.dataset.ready = '1';
+        toggle.addEventListener('change', () => {
+          const group = toggle.closest('[data-permission-group]');
+          if (!group) {
+            return;
+          }
+          group.querySelectorAll('input[type="checkbox"][name="permissions"]').forEach((checkbox) => {
+            checkbox.checked = toggle.checked;
+          });
+        });
+      });
+    }
+
+    function initModalTriggers(root) {
+      root.querySelectorAll('[data-modal-url]').forEach((trigger) => {
+        if (trigger.dataset.ready === '1') {
+          return;
+        }
+        trigger.dataset.ready = '1';
+        trigger.addEventListener('click', async (event) => {
+          event.preventDefault();
+
+          if (!modalElement || !modalInstance) {
+            window.location.href = trigger.getAttribute('href') || trigger.dataset.modalUrl;
+            return;
+          }
+
+          const url = trigger.dataset.modalUrl;
+          const modalSize = trigger.dataset.modalSize || 'modal-lg';
+
+          try {
+            showProcessing('A carregar...', 'Estamos a preparar o formulário.');
+            const separator = url.includes('?') ? '&' : '?';
+            const response = await fetch(`${url}${separator}modal=1`, {
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+              },
+            });
+            const html = await response.text();
+            modalElement.querySelector('.modal-dialog').className = `modal-dialog modal-dialog-centered ${modalSize}`;
+            modalElement.querySelector('.modal-content').innerHTML = html;
+            modalInstance.show();
+            Swal.close();
+            initClinicShell(modalElement);
+          } catch (error) {
+            console.error(error);
+            showFeedback('error', 'Erro', 'Não foi possível carregar este formulário.');
+          }
+        });
+      });
+    }
+
+    async function submitModalForm(form) {
+      try {
+        showProcessing(
+          form.dataset.processingTitle || 'Processando...',
+          form.dataset.processingText || 'Aguarde um momento.'
+        );
+
+        const formData = new FormData(form);
+        if (!formData.has('modal')) {
+          formData.append('modal', '1');
+        }
+
+        const response = await fetch(form.action, {
+          method: (form.method || 'post').toUpperCase(),
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+        });
+
+        const contentType = response.headers.get('content-type') || '';
+
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          if (modalInstance) {
+            modalInstance.hide();
+          }
+          showFeedback('success', 'Sucesso', data.message || 'Operação concluída com sucesso.');
+          if (data.redirect_url) {
+            setTimeout(() => {
+              window.location.href = data.redirect_url;
+            }, 900);
+            return;
+          }
+          if (data.reload !== false) {
+            setTimeout(() => {
+              window.location.reload();
+            }, 900);
+          }
+          return;
+        }
+
+        const html = await response.text();
+        modalElement.querySelector('.modal-content').innerHTML = html;
+        Swal.close();
+        initClinicShell(modalElement);
+        if (!response.ok) {
+          showFeedback('error', 'Dados por corrigir', 'Revise os campos destacados e tente novamente.');
+        }
+      } catch (error) {
+        console.error(error);
+        showFeedback('error', 'Erro', 'O processamento falhou. Tente novamente.');
+      }
+    }
+
+    function initFormSubmits(root) {
+      root.querySelectorAll('form[data-swal-submit]').forEach((form) => {
+        if (form.dataset.ready === '1') {
+          return;
+        }
+        form.dataset.ready = '1';
+
+        form.addEventListener('submit', (event) => {
+          if (form.classList.contains('js-modal-form')) {
+            event.preventDefault();
+            submitModalForm(form);
+            return;
+          }
+
+          showProcessing(
+            form.dataset.processingTitle || 'Processando...',
+            form.dataset.processingText || 'Aguarde um momento.'
+          );
+        });
+      });
+    }
+
+    function initClinicShell(root) {
+      initModalTriggers(root);
+      initFormSubmits(root);
+      initWizards(root);
+      initPermissionTables(root);
+    }
+
+    window.clinicShell = {
+      init: initClinicShell,
+      showProcessing,
+      showFeedback,
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initClinicShell(document);
+      showFlashMessages();
+    });
+  })();
+</script>

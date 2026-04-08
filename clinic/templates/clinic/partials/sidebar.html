@@ -20,61 +20,75 @@
         <span class="text-uppercase text-xs font-weight-bolder opacity-6 text-dark">Navegacao</span>
       </li>
       <li class="nav-item">
-        <a class="nav-link {% if segment == 'dashboard' %}active{% endif %}" href="{% url 'clinic:index' %}#overview">
-          <i class="material-symbols-rounded opacity-10">dashboard</i>
-          <span class="nav-link-text ms-2">Visao geral</span>
+        <a class="nav-link clinic-nav-parent {% if segment == 'dashboard' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-operacao" role="button" aria-expanded="{% if segment == 'dashboard' %}true{% else %}false{% endif %}" aria-controls="sidebar-operacao">
+          <span class="d-flex align-items-center">
+            <i class="material-symbols-rounded opacity-10">dashboard</i>
+            <span class="nav-link-text ms-2">Painel operacional</span>
+          </span>
+          <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
         </a>
+        <div class="collapse {% if segment == 'dashboard' %}show{% endif %}" id="sidebar-operacao">
+          <ul class="nav flex-column clinic-submenu">
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'clinic:index' %}#overview">
+                <span class="nav-link-text">Visao geral</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'clinic:index' %}#agenda">
+                <span class="nav-link-text">Agenda</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'clinic:index' %}#team">
+                <span class="nav-link-text">Equipa medica</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'clinic:index' %}#finance">
+                <span class="nav-link-text">Financeiro</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'clinic:index' %}#operations">
+                <span class="nav-link-text">Operacao</span>
+              </a>
+            </li>
+          </ul>
+        </div>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="{% url 'clinic:index' %}#agenda">
-          <i class="material-symbols-rounded opacity-10">calendar_month</i>
-          <span class="nav-link-text ms-2">Agenda</span>
+        <a class="nav-link clinic-nav-parent {% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-admin" role="button" aria-expanded="{% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}true{% else %}false{% endif %}" aria-controls="sidebar-admin">
+          <span class="d-flex align-items-center">
+            <i class="material-symbols-rounded opacity-10">admin_panel_settings</i>
+            <span class="nav-link-text ms-2">Administração</span>
+          </span>
+          <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
         </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'clinic:index' %}#team">
-          <i class="material-symbols-rounded opacity-10">groups</i>
-          <span class="nav-link-text ms-2">Equipa medica</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'clinic:index' %}#finance">
-          <i class="material-symbols-rounded opacity-10">monitoring</i>
-          <span class="nav-link-text ms-2">Financeiro</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'clinic:index' %}#operations">
-          <i class="material-symbols-rounded opacity-10">speed</i>
-          <span class="nav-link-text ms-2">Operacao</span>
-        </a>
-      </li>
-      <li class="nav-item px-3 mt-3 mb-2">
-        <span class="text-uppercase text-xs font-weight-bolder opacity-6 text-dark">Acessos</span>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link {% if segment == 'users' %}active{% endif %}" href="{% url 'accounts:user_list' %}">
-          <i class="material-symbols-rounded opacity-10">manage_accounts</i>
-          <span class="nav-link-text ms-2">Utilizadores</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link {% if segment == 'roles' %}active{% endif %}" href="{% url 'accounts:role_list' %}">
-          <i class="material-symbols-rounded opacity-10">badge</i>
-          <span class="nav-link-text ms-2">Perfis</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link {% if segment == 'permissions' %}active{% endif %}" href="{% url 'accounts:permission_list' %}">
-          <i class="material-symbols-rounded opacity-10">verified_user</i>
-          <span class="nav-link-text ms-2">Permissoes</span>
-        </a>
-      </li>
-      <li class="nav-item mt-2">
-        <a class="nav-link" href="/admin/">
-          <i class="material-symbols-rounded opacity-10">admin_panel_settings</i>
-          <span class="nav-link-text ms-2">Administracao</span>
-        </a>
+        <div class="collapse {% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}show{% endif %}" id="sidebar-admin">
+          <ul class="nav flex-column clinic-submenu">
+            <li class="nav-item">
+              <a class="nav-link {% if segment == 'users' %}active{% endif %}" href="{% url 'accounts:user_list' %}">
+                <span class="nav-link-text">Utilizadores</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if segment == 'roles' %}active{% endif %}" href="{% url 'accounts:role_list' %}">
+                <span class="nav-link-text">Perfis</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if segment == 'permissions' %}active{% endif %}" href="{% url 'accounts:permission_list' %}">
+                <span class="nav-link-text">Permissoes</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/">
+                <span class="nav-link-text">Admin técnico</span>
+              </a>
+            </li>
+          </ul>
+        </div>
       </li>
     </ul>
   </div>

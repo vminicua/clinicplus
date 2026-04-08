@@ -96,11 +96,11 @@
                     <h6 class="mb-0 text-sm">{{ role.name }}</h6>
                   </td>
                   <td><span class="text-sm">{{ role.permissions.count }}</span></td>
-                  <td><span class="text-sm">{{ role.user_set.count }}</span></td>
+                  <td><span class="text-sm">{{ role.user_set.all|length }}</span></td>
                   <td class="text-end pe-4">
                     <a href="{% url 'accounts:role_detail' role.pk %}" class="btn btn-link text-dark text-sm mb-0">Ver</a>
-                    <a href="{% url 'accounts:role_update' role.pk %}" class="btn btn-link text-info text-sm mb-0">Editar</a>
-                    <a href="{% url 'accounts:role_delete' role.pk %}" class="btn btn-link text-danger text-sm mb-0">Eliminar</a>
+                    <a href="{% url 'accounts:role_update' role.pk %}" data-modal-url="{% url 'accounts:role_update' role.pk %}" data-modal-size="modal-xl" class="btn btn-link text-info text-sm mb-0">Editar</a>
+                    <a href="{% url 'accounts:role_delete' role.pk %}" data-modal-url="{% url 'accounts:role_delete' role.pk %}" data-modal-size="modal-lg" class="btn btn-link text-danger text-sm mb-0">Eliminar</a>
                   </td>
                 </tr>
               {% empty %}
@@ -118,4 +118,3 @@
   </div>
 </div>
 {% endblock content %}
-

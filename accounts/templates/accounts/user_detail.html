@@ -1,5 +1,4 @@
 {% extends "accounts/base.html" %}
-{% load accounts_extras %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -16,8 +15,8 @@
               </div>
 
               <div class="d-flex gap-2">
-                <a href="{% url 'accounts:user_update' object.pk %}" class="btn bg-gradient-dark mb-0">Editar</a>
-                <a href="{% url 'accounts:user_delete' object.pk %}" class="btn btn-outline-danger mb-0">Eliminar</a>
+                <a href="{% url 'accounts:user_update' object.pk %}" data-modal-url="{% url 'accounts:user_update' object.pk %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">Editar</a>
+                <a href="{% url 'accounts:user_delete' object.pk %}" data-modal-url="{% url 'accounts:user_delete' object.pk %}" data-modal-size="modal-lg" class="btn btn-outline-danger mb-0">Eliminar</a>
               </div>
             </div>
           </div>
@@ -87,16 +86,12 @@
       <div class="col-lg-4">
         <div class="card clinic-detail-card h-100">
           <div class="card-header p-4 border-0">
-            <h5 class="mb-1">Permissões directas</h5>
-            <p class="text-secondary mb-0">Acessos atribuídos fora dos perfis.</p>
+            <h5 class="mb-1">Política de acesso</h5>
+            <p class="text-secondary mb-0">As permissões são herdadas apenas a partir dos perfis atribuídos.</p>
           </div>
           <div class="card-body pt-0">
-            <div class="clinic-inline-list">
-              {% for permission in direct_permissions %}
-                <span class="clinic-inline-badge">{{ permission.name }}</span>
-              {% empty %}
-                <span class="text-sm text-secondary">Este utilizador herda acesso apenas dos perfis atribuídos.</span>
-              {% endfor %}
+            <div class="alert alert-light border mb-0">
+              Este utilizador não recebe permissões directas. Toda a gestão de acesso é feita via perfis.
             </div>
           </div>
         </div>
@@ -105,4 +100,3 @@
   </div>
 </div>
 {% endblock content %}
-

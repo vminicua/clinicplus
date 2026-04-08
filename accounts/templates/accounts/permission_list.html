@@ -96,8 +96,8 @@
                     {% if permission|permission_is_system %}
                       <span class="text-xs text-secondary">Protegida</span>
                     {% else %}
-                      <a href="{% url 'accounts:permission_update' permission.pk %}" class="btn btn-link text-info text-sm mb-0">Editar</a>
-                      <a href="{% url 'accounts:permission_delete' permission.pk %}" class="btn btn-link text-danger text-sm mb-0">Eliminar</a>
+                      <a href="{% url 'accounts:permission_update' permission.pk %}" data-modal-url="{% url 'accounts:permission_update' permission.pk %}" data-modal-size="modal-lg" class="btn btn-link text-info text-sm mb-0">Editar</a>
+                      <a href="{% url 'accounts:permission_delete' permission.pk %}" data-modal-url="{% url 'accounts:permission_delete' permission.pk %}" data-modal-size="modal-lg" class="btn btn-link text-danger text-sm mb-0">Eliminar</a>
                     {% endif %}
                   </td>
                 </tr>

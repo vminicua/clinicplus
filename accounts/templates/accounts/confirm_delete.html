@@ -6,29 +6,8 @@
     <div class="row justify-content-center">
       <div class="col-lg-7">
         <div class="card clinic-danger-card">
-          <div class="card-body p-4 p-lg-5 text-center">
-            <span class="clinic-delete-icon mb-4">
-              <i class="material-symbols-rounded">delete</i>
-            </span>
-
-            <p class="text-sm text-secondary mb-1">{{ page_title }}</p>
-            <h3 class="mb-2">{{ delete_title }}</h3>
-            <p class="text-secondary mb-4">{{ delete_description }}</p>
-
-            <div class="border rounded-4 bg-light p-4 text-start mb-4">
-              <p class="text-sm text-secondary mb-2">Registo seleccionado</p>
-              <h5 class="mb-3">{{ delete_object_name }}</h5>
-
-              {% for line in impact_lines %}
-                <div class="clinic-helper mb-2">{{ line }}</div>
-              {% endfor %}
-            </div>
-
-            <form method="post" class="d-flex justify-content-center gap-2 flex-wrap">
-              {% csrf_token %}
-              <a href="{{ cancel_url }}" class="btn btn-outline-dark mb-0">Cancelar</a>
-              <button type="submit" class="btn bg-gradient-danger mb-0">Confirmar eliminação</button>
-            </form>
+          <div class="card-body p-4 p-lg-5">
+            {% include "accounts/includes/delete_content.html" %}
           </div>
         </div>
       </div>

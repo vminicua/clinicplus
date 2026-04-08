@@ -27,7 +27,14 @@
         </form>
       {% endif %}
 
-      {% if primary_action_url and primary_action_label %}
+      {% if primary_action_modal_url and primary_action_label %}
+        <a href="{{ primary_action_modal_url }}" data-modal-url="{{ primary_action_modal_url }}" data-modal-size="{{ primary_action_modal_size|default:'modal-lg' }}" class="btn btn-sm bg-gradient-dark mb-0">
+          {% if primary_action_icon %}
+            <i class="material-symbols-rounded text-sm me-1">{{ primary_action_icon }}</i>
+          {% endif %}
+          {{ primary_action_label }}
+        </a>
+      {% elif primary_action_url and primary_action_label %}
         <a href="{{ primary_action_url }}" class="btn btn-sm bg-gradient-dark mb-0">
           {% if primary_action_icon %}
             <i class="material-symbols-rounded text-sm me-1">{{ primary_action_icon }}</i>

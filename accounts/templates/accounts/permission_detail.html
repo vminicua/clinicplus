@@ -17,8 +17,8 @@
 
               <div class="d-flex gap-2">
                 {% if not is_system_permission %}
-                  <a href="{% url 'accounts:permission_update' object.pk %}" class="btn bg-gradient-dark mb-0">Editar</a>
-                  <a href="{% url 'accounts:permission_delete' object.pk %}" class="btn btn-outline-danger mb-0">Eliminar</a>
+                  <a href="{% url 'accounts:permission_update' object.pk %}" data-modal-url="{% url 'accounts:permission_update' object.pk %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">Editar</a>
+                  <a href="{% url 'accounts:permission_delete' object.pk %}" data-modal-url="{% url 'accounts:permission_delete' object.pk %}" data-modal-size="modal-lg" class="btn btn-outline-danger mb-0">Eliminar</a>
                 {% endif %}
               </div>
             </div>
@@ -70,49 +70,6 @@
       </div>
     </div>
 
-    <div class="card clinic-page-card">
-      <div class="card-header p-4 border-0">
-        <h5 class="mb-1">Utilizadores com atribuição directa</h5>
-        <p class="text-secondary mb-0">Apenas utilizadores com permissão atribuída manualmente aparecem aqui.</p>
-      </div>
-
-      <div class="card-body px-0 pb-0">
-        <div class="table-responsive">
-          <table class="table align-items-center mb-0 clinic-data-table">
-            <thead>
-              <tr>
-                <th class="ps-4">Utilizador</th>
-                <th>Email</th>
-                <th>Estado</th>
-                <th class="text-end pe-4">Acções</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for user_item in linked_users %}
-                <tr>
-                  <td class="ps-4">{{ user_item.get_full_name|default:user_item.username }}</td>
-                  <td>{{ user_item.email|default:"Sem email" }}</td>
-                  <td>
-                    {% if user_item.is_active %}
-                      <span class="clinic-status clinic-status-success">Activo</span>
-                    {% else %}
-                      <span class="clinic-status clinic-status-muted">Inactivo</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-end pe-4">
-                    <a href="{% url 'accounts:user_detail' user_item.pk %}" class="btn btn-link text-dark text-sm mb-0">Abrir utilizador</a>
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="4" class="clinic-empty-state">Nenhum utilizador recebeu esta permissão directamente.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 {% endblock content %}

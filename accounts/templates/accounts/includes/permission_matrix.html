@@ -1,0 +1,81 @@
+{% if permission_matrix %}
+  <div class="full-width">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+      <div>
+        <h5 class="mb-1">Matriz de permissões</h5>
+        <p class="text-secondary mb-0">Marque os acessos que este perfil poderá usar no sistema.</p>
+      </div>
+      <span class="clinic-chip">
+        <i class="material-symbols-rounded" style="font-size: 1rem;">grid_view</i>
+        Agrupado por módulo
+      </span>
+    </div>
+
+    {% for section in permission_matrix %}
+      <div class="clinic-permission-section">
+        <div class="clinic-permission-header">
+          <h6 class="mb-1">{{ section.title }}</h6>
+          <p class="text-secondary mb-0">{{ section.description }}</p>
+        </div>
+
+        <div class="table-responsive">
+          <table class="clinic-permission-table">
+            <thead>
+              <tr>
+                <th class="clinic-permission-model">Modelo / área</th>
+                <th class="text-center">Tudo</th>
+                <th class="text-center">Ver</th>
+                <th class="text-center">Criar</th>
+                <th class="text-center">Editar</th>
+                <th class="text-center">Eliminar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for model in section.models %}
+                <tr data-permission-group>
+                  <td class="clinic-permission-model">
+                    <strong>{{ model.label }}</strong>
+                    <div class="clinic-inline-note">{{ model.scope }}</div>
+                  </td>
+                  <td class="text-center">
+                    <input type="checkbox" class="form-check-input clinic-permission-toggle" data-permission-toggle>
+                  </td>
+                  {% for action in model.action_items %}
+                    <td class="text-center">
+                      {% if action.permission %}
+                        <input type="checkbox" class="form-check-input" name="permissions" value="{{ action.permission.id }}" {% if action.permission.checked %}checked{% endif %}>
+                      {% else %}
+                        <span class="text-secondary">-</span>
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+
+                {% if model.extras %}
+                  <tr>
+                    <td colspan="6">
+                      <div class="clinic-inline-note mb-2">Permissões adicionais</div>
+                      <div class="clinic-inline-list">
+                        {% for extra in model.extras %}
+                          <label class="clinic-inline-badge">
+                            <input type="checkbox" class="form-check-input me-2" name="permissions" value="{{ extra.id }}" {% if extra.checked %}checked{% endif %}>
+                            {{ extra.name }}
+                          </label>
+                        {% endfor %}
+                      </div>
+                    </td>
+                  </tr>
+                {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endfor %}
+
+    {% for error in form.permissions.errors %}
+      <div class="invalid-feedback d-block mt-2">{{ error }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+

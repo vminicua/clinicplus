@@ -104,32 +104,15 @@
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.72);
     box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    right: 1rem;
+    position: relative;
+    margin: 1rem 1rem 0;
     z-index: 1030;
-    width: auto;
-  }
-
-  .main-content > .container-fluid.py-4 {
-    padding-top: 6.5rem !important;
   }
 
   @media (min-width: 1200px) {
     .clinic-navbar-card {
-      left: 16rem;
+      margin-right: 1.5rem;
     }
-  }
-
-  .clinic-search {
-    min-width: 260px;
-  }
-
-  .clinic-search .form-control,
-  .clinic-search .input-group-text {
-    border: 0;
-    background: transparent;
   }
 
   .clinic-chip {
@@ -253,11 +236,6 @@
       margin-top: 1rem;
       flex-wrap: wrap;
     }
-
-      .clinic-search {
-      min-width: 100%;
-      width: 100%;
-    }
   }
 </style>
 {% endblock extrastyle %}
@@ -282,9 +260,9 @@
                   <i class="material-symbols-rounded text-sm me-1">calendar_month</i>
                   Ver agenda de hoje
                 </a>
-                <a href="/admin/" class="btn btn-outline-white mb-0">
-                  <i class="material-symbols-rounded text-sm me-1">admin_panel_settings</i>
-                  Abrir administracao
+                <a href="#operations" class="btn btn-outline-white mb-0">
+                  <i class="material-symbols-rounded text-sm me-1">monitoring</i>
+                  Ver painel operacional
                 </a>
               </div>
             </div>
@@ -443,7 +421,10 @@
               <h6 class="mb-0">Agenda recente</h6>
               <p class="text-sm text-secondary mb-0">Leitura rapida para recepcao e equipa medica.</p>
             </div>
-            <a href="/admin/" class="btn btn-sm btn-outline-dark mb-0">Gerir no admin</a>
+            <span class="clinic-chip">
+              <i class="material-symbols-rounded" style="font-size: 1rem;">event_note</i>
+              Prioridade do turno
+            </span>
           </div>
         </div>
         <div class="card-body px-0 pb-0">
@@ -574,8 +555,11 @@
           </div>
           <div class="alert alert-light border mb-0">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div><strong>Proxima melhoria:</strong> ligar estes cards aos dados reais do MySQL para o painel ficar vivo.</div>
-              <a href="/admin/" class="btn btn-sm bg-gradient-dark mb-0">Ir para o admin</a>
+              <div><strong>Próxima melhoria:</strong> ligar estes cards aos dados reais do MySQL para o painel ficar vivo.</div>
+              <span class="clinic-chip">
+                <i class="material-symbols-rounded" style="font-size: 1rem;">data_object</i>
+                Integração em preparação
+              </span>
             </div>
           </div>
         </div>

@@ -98,13 +98,13 @@ class UserForm(StyledFormMixin, forms.ModelForm):
             "last_name": "Apelido",
             "email": "Email",
             "is_active": "Activo",
-            "is_staff": "Acesso à administração técnica",
+            "is_staff": "Acesso técnico",
         }
         help_texts = {
             "username": "Identificador usado para entrar no sistema.",
             "email": "Contacto principal do utilizador.",
             "is_active": "Desactive para bloquear o acesso sem apagar o registo.",
-            "is_staff": "Permite aceder ao painel `/admin/` do Django.",
+            "is_staff": "Use apenas quando este utilizador precisar de acesso técnico reservado.",
         }
 
     def __init__(self, *args, **kwargs):

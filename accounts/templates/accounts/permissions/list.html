@@ -1,4 +1,4 @@
-{% extends "accounts/base.html" %}
+{% extends "accounts/layouts/base.html" %}
 {% load accounts_extras %}
 
 {% block content %}
@@ -50,30 +50,36 @@
 
     <div class="card clinic-page-card">
       <div class="card-header p-4 border-0">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div class="clinic-list-toolbar">
           <div>
             <h4 class="mb-1">Permissões disponíveis</h4>
             <p class="text-secondary mb-0">As permissões base são protegidas. As personalizadas podem ser geridas aqui.</p>
           </div>
 
-          <div class="d-flex gap-2 flex-wrap">
-            <a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}kind=all" class="btn {% if current_kind == 'all' %}bg-gradient-dark{% else %}btn-outline-dark{% endif %} mb-0">Todas</a>
-            <a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}kind=system" class="btn {% if current_kind == 'system' %}bg-gradient-dark{% else %}btn-outline-dark{% endif %} mb-0">Sistema</a>
-            <a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}kind=custom" class="btn {% if current_kind == 'custom' %}bg-gradient-dark{% else %}btn-outline-dark{% endif %} mb-0">Personalizadas</a>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="clinic-pill-group">
+              <a href="?kind=all" class="clinic-pill {% if current_kind == 'all' %}active{% endif %}">Todas</a>
+              <a href="?kind=system" class="clinic-pill {% if current_kind == 'system' %}active{% endif %}">Sistema</a>
+              <a href="?kind=custom" class="clinic-pill {% if current_kind == 'custom' %}active{% endif %}">Personalizadas</a>
+            </div>
+            <a href="{% url 'accounts:permission_create' %}" data-modal-url="{% url 'accounts:permission_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">verified_user</i>
+              Nova permissão
+            </a>
           </div>
         </div>
       </div>
 
       <div class="card-body px-0 pb-0">
         <div class="table-responsive">
-          <table class="table align-items-center mb-0 clinic-data-table">
+          <table id="permissions-table" data-page-length="15" data-export-title="Permissões Clinic Plus" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
                 <th class="ps-4">Permissão</th>
                 <th>Código</th>
                 <th>Módulo</th>
                 <th>Tipo</th>
-                <th class="text-end pe-4">Acções</th>
+                <th class="text-end pe-4 not-export">Acções</th>
               </tr>
             </thead>
             <tbody>
@@ -92,13 +98,16 @@
                     {% endif %}
                   </td>
                   <td class="text-end pe-4">
-                    <a href="{% url 'accounts:permission_detail' permission.pk %}" class="btn btn-link text-dark text-sm mb-0">Ver</a>
-                    {% if permission|permission_is_system %}
-                      <span class="text-xs text-secondary">Protegida</span>
-                    {% else %}
-                      <a href="{% url 'accounts:permission_update' permission.pk %}" data-modal-url="{% url 'accounts:permission_update' permission.pk %}" data-modal-size="modal-lg" class="btn btn-link text-info text-sm mb-0">Editar</a>
-                      <a href="{% url 'accounts:permission_delete' permission.pk %}" data-modal-url="{% url 'accounts:permission_delete' permission.pk %}" data-modal-size="modal-lg" class="btn btn-link text-danger text-sm mb-0">Eliminar</a>
-                    {% endif %}
+                    <div class="clinic-action-stack">
+                      <a href="{% url 'accounts:permission_detail' permission.pk %}" class="clinic-action-btn is-muted" title="Ver detalhes">
+                        <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
+                      </a>
+                      {% if not permission|permission_is_system %}
+                        <a href="{% url 'accounts:permission_update' permission.pk %}" data-modal-url="{% url 'accounts:permission_update' permission.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="Editar permissão">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                        </a>
+                      {% endif %}
+                    </div>
                   </td>
                 </tr>
               {% empty %}
@@ -109,8 +118,6 @@
             </tbody>
           </table>
         </div>
-
-        {% include "accounts/includes/pagination.html" %}
       </div>
     </div>
   </div>

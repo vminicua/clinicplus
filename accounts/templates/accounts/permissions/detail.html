@@ -1,4 +1,4 @@
-{% extends "accounts/base.html" %}
+{% extends "accounts/layouts/base.html" %}
 {% load accounts_extras %}
 
 {% block content %}
@@ -18,7 +18,6 @@
               <div class="d-flex gap-2">
                 {% if not is_system_permission %}
                   <a href="{% url 'accounts:permission_update' object.pk %}" data-modal-url="{% url 'accounts:permission_update' object.pk %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">Editar</a>
-                  <a href="{% url 'accounts:permission_delete' object.pk %}" data-modal-url="{% url 'accounts:permission_delete' object.pk %}" data-modal-size="modal-lg" class="btn btn-outline-danger mb-0">Eliminar</a>
                 {% endif %}
               </div>
             </div>

@@ -1,4 +1,12 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 <script>
   window.CLINIC_FLASH_MESSAGES = [
     {% for message in messages %}
@@ -27,6 +35,13 @@
         return 'success';
       }
       return 'info';
+    }
+
+    function getCsrfToken() {
+      const cookie = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('csrftoken='));
+      return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
     }
 
     function showProcessing(title, text) {
@@ -220,6 +235,7 @@
           body: formData,
           headers: {
             'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCsrfToken(),
           },
         });
 
@@ -280,11 +296,177 @@
       });
     }
 
+    function initDataTables(root) {
+      if (!window.jQuery || !jQuery.fn.DataTable) {
+        return;
+      }
+
+      root.querySelectorAll('.js-clinic-datatable').forEach((tableElement) => {
+        if (tableElement.dataset.datatableReady === '1') {
+          return;
+        }
+        tableElement.dataset.datatableReady = '1';
+
+        const $table = jQuery(tableElement);
+        const defaultLength = Number(tableElement.dataset.pageLength || 10);
+        const exportTitle = tableElement.dataset.exportTitle || document.title || 'Clinic Plus';
+
+        const instance = $table.DataTable({
+          pageLength: defaultLength,
+          lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Todos']],
+          ordering: true,
+          responsive: false,
+          autoWidth: false,
+          language: {
+            search: 'Pesquisar:',
+            lengthMenu: 'Mostrar _MENU_ registos',
+            info: 'A mostrar _START_ até _END_ de _TOTAL_ registos',
+            infoEmpty: 'Sem registos para mostrar',
+            infoFiltered: '(filtrado de _MAX_ registos)',
+            zeroRecords: 'Nenhum registo encontrado',
+            paginate: {
+              first: 'Primeiro',
+              previous: 'Anterior',
+              next: 'Seguinte',
+              last: 'Último'
+            }
+          },
+          dom:
+            "<'row align-items-center mb-3'<'col-md-6 d-flex flex-wrap gap-2'Bl><'col-md-6 text-md-end'f>>" +
+            "t" +
+            "<'row align-items-center mt-3'<'col-md-5'i><'col-md-7'p>>",
+          buttons: [
+            {
+              extend: 'pageLength',
+              className: 'btn btn-outline-dark btn-sm'
+            },
+            {
+              extend: 'copyHtml5',
+              text: 'Copiar',
+              className: 'btn btn-outline-dark btn-sm',
+              exportOptions: {
+                columns: ':not(.not-export)'
+              }
+            },
+            {
+              extend: 'csvHtml5',
+              text: 'CSV',
+              title: exportTitle,
+              className: 'btn btn-outline-dark btn-sm',
+              exportOptions: {
+                columns: ':not(.not-export)'
+              }
+            },
+            {
+              extend: 'excelHtml5',
+              text: 'Excel',
+              title: exportTitle,
+              className: 'btn btn-outline-dark btn-sm',
+              exportOptions: {
+                columns: ':not(.not-export)'
+              }
+            },
+            {
+              extend: 'print',
+              text: 'Imprimir',
+              title: exportTitle,
+              className: 'btn btn-outline-dark btn-sm',
+              exportOptions: {
+                columns: ':not(.not-export)'
+              }
+            }
+          ]
+        });
+
+        const tableId = tableElement.id;
+        root.querySelectorAll(`[data-table-pill="${tableId}"]`).forEach((pill) => {
+          if (pill.dataset.ready === '1') {
+            return;
+          }
+          pill.dataset.ready = '1';
+          pill.addEventListener('click', (event) => {
+            event.preventDefault();
+            const value = pill.dataset.value || '';
+            const column = Number(pill.dataset.column || 0);
+            root.querySelectorAll(`[data-table-pill="${tableId}"]`).forEach((otherPill) => {
+              otherPill.classList.remove('active');
+            });
+            pill.classList.add('active');
+
+            if (!value) {
+              instance.column(column).search('').draw();
+              return;
+            }
+            instance.column(column).search(`^${value}$`, true, false).draw();
+          });
+        });
+      });
+    }
+
+    async function submitConfirmedAction(trigger) {
+      const response = await fetch(trigger.dataset.actionUrl, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCsrfToken(),
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'O processamento falhou.');
+      }
+
+      showFeedback('success', 'Sucesso', data.message || 'Operação concluída com sucesso.');
+      setTimeout(() => {
+        if (data.redirect_url) {
+          window.location.href = data.redirect_url;
+          return;
+        }
+        window.location.reload();
+      }, 900);
+    }
+
+    function initConfirmActions(root) {
+      root.querySelectorAll('[data-confirm-action]').forEach((trigger) => {
+        if (trigger.dataset.ready === '1') {
+          return;
+        }
+        trigger.dataset.ready = '1';
+        trigger.addEventListener('click', async (event) => {
+          event.preventDefault();
+
+          const result = await Swal.fire({
+            icon: trigger.dataset.confirmIcon || 'warning',
+            title: trigger.dataset.confirmTitle || 'Confirmar',
+            text: trigger.dataset.confirmText || 'Deseja continuar?',
+            showCancelButton: true,
+            confirmButtonText: trigger.dataset.confirmButton || 'Confirmar',
+            cancelButtonText: 'Cancelar',
+          });
+
+          if (!result.isConfirmed) {
+            return;
+          }
+
+          try {
+            showProcessing('Processando...', 'Estamos a actualizar o estado.');
+            await submitConfirmedAction(trigger);
+          } catch (error) {
+            console.error(error);
+            showFeedback('error', 'Erro', error.message || 'A operação falhou.');
+          }
+        });
+      });
+    }
+
     function initClinicShell(root) {
       initModalTriggers(root);
       initFormSubmits(root);
       initWizards(root);
       initPermissionTables(root);
+      initDataTables(root);
+      initConfirmActions(root);
     }
 
     window.clinicShell = {

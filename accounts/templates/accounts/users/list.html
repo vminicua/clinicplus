@@ -1,4 +1,4 @@
-{% extends "accounts/base.html" %}
+{% extends "accounts/layouts/base.html" %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -63,24 +63,28 @@
 
     <div class="card clinic-page-card">
       <div class="card-header p-4 border-0">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div class="clinic-list-toolbar">
           <div>
             <h4 class="mb-1">Lista de utilizadores</h4>
-            <p class="text-secondary mb-0">Gestão de contas com perfis, permissões directas e estado de acesso.</p>
+            <p class="text-secondary mb-0">Gestão de contas com perfis, estado e idioma preferido.</p>
           </div>
-
-          {% if search_query %}
-            <span class="clinic-chip">
-              <i class="material-symbols-rounded" style="font-size: 1rem;">filter_alt</i>
-              Filtro activo: "{{ search_query }}"
-            </span>
-          {% endif %}
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="clinic-pill-group">
+              <a href="#" class="clinic-pill active" data-table-pill="users-table" data-column="3" data-value="">Todos</a>
+              <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="3" data-value="Activo">Activos</a>
+              <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="3" data-value="Inactivo">Inactivos</a>
+            </div>
+            <a href="{% url 'accounts:user_create' %}" data-modal-url="{% url 'accounts:user_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">person_add</i>
+              Novo utilizador
+            </a>
+          </div>
         </div>
       </div>
 
       <div class="card-body px-0 pb-0">
         <div class="table-responsive">
-          <table class="table align-items-center mb-0 clinic-data-table">
+          <table id="users-table" data-page-length="10" data-export-title="Utilizadores Clinic Plus" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
                 <th class="ps-4">Utilizador</th>
@@ -88,7 +92,7 @@
                 <th>Idioma</th>
                 <th>Estado</th>
                 <th>Último acesso</th>
-                <th class="text-end pe-4">Acções</th>
+                <th class="text-end pe-4 not-export">Acções</th>
               </tr>
             </thead>
             <tbody>
@@ -131,9 +135,23 @@
                     </span>
                   </td>
                   <td class="text-end pe-4">
-                    <a href="{% url 'accounts:user_detail' user_item.pk %}" class="btn btn-link text-dark text-sm mb-0">Ver</a>
-                    <a href="{% url 'accounts:user_update' user_item.pk %}" data-modal-url="{% url 'accounts:user_update' user_item.pk %}" data-modal-size="modal-lg" class="btn btn-link text-info text-sm mb-0">Editar</a>
-                    <a href="{% url 'accounts:user_delete' user_item.pk %}" data-modal-url="{% url 'accounts:user_delete' user_item.pk %}" data-modal-size="modal-lg" class="btn btn-link text-danger text-sm mb-0">Eliminar</a>
+                    <div class="clinic-action-stack">
+                      <a href="{% url 'accounts:user_detail' user_item.pk %}" class="clinic-action-btn is-muted" title="Ver detalhes">
+                        <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
+                      </a>
+                      <a href="{% url 'accounts:user_update' user_item.pk %}" data-modal-url="{% url 'accounts:user_update' user_item.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="Editar utilizador">
+                        <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                      </a>
+                      {% if user_item.is_active %}
+                        <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' user_item.pk %}" data-confirm-title="Desactivar utilizador" data-confirm-text="O acesso deste utilizador será bloqueado até nova activação." data-confirm-button="Desactivar" data-confirm-icon="warning" class="clinic-action-btn is-warning" title="Desactivar utilizador">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">block</i>
+                        </a>
+                      {% else %}
+                        <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' user_item.pk %}" data-confirm-title="Activar utilizador" data-confirm-text="O utilizador voltará a poder entrar no sistema." data-confirm-button="Activar" data-confirm-icon="question" class="clinic-action-btn is-info" title="Activar utilizador">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">check_circle</i>
+                        </a>
+                      {% endif %}
+                    </div>
                   </td>
                 </tr>
               {% empty %}
@@ -146,8 +164,6 @@
             </tbody>
           </table>
         </div>
-
-        {% include "accounts/includes/pagination.html" %}
       </div>
     </div>
   </div>

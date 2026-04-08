@@ -118,32 +118,15 @@
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.72);
     box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    right: 1rem;
+    position: relative;
+    margin: 1rem 1rem 0;
     z-index: 1030;
-    width: auto;
-  }
-
-  .main-content > .container-fluid.py-4 {
-    padding-top: 6.5rem !important;
   }
 
   @media (min-width: 1200px) {
     .clinic-navbar-card {
-      left: 16rem;
+      margin-right: 1.5rem;
     }
-  }
-
-  .clinic-search {
-    min-width: 280px;
-  }
-
-  .clinic-search .form-control,
-  .clinic-search .input-group-text {
-    border: 0;
-    background: transparent;
   }
 
   .clinic-chip {
@@ -181,7 +164,7 @@
   }
 
   .clinic-page-shell {
-    padding-top: 6.5rem;
+    padding-top: 0;
   }
 
   .clinic-page-card,
@@ -451,6 +434,100 @@
     font-size: 0.9rem;
   }
 
+  .clinic-action-stack {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.35rem;
+  }
+
+  .clinic-action-btn {
+    width: 2.1rem;
+    height: 2.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(255, 255, 255, 0.92);
+    color: #334155;
+    transition: 0.2s ease;
+  }
+
+  .clinic-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .clinic-action-btn.is-info {
+    color: #0f766e;
+  }
+
+  .clinic-action-btn.is-warning {
+    color: #c2410c;
+  }
+
+  .clinic-action-btn.is-muted {
+    color: #475569;
+  }
+
+  .clinic-list-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .clinic-pill-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .clinic-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(248, 250, 252, 0.85);
+    color: #334155;
+    font-size: 0.83rem;
+    font-weight: 600;
+  }
+
+  .clinic-pill.active {
+    border-color: rgba(15, 118, 110, 0.25);
+    background: rgba(20, 184, 166, 0.12);
+    color: #0f766e;
+  }
+
+  .dt-buttons .btn {
+    border-radius: 999px !important;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .dataTables_wrapper .dataTables_filter input,
+  .dataTables_wrapper .dataTables_length select {
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    padding: 0.45rem 0.8rem;
+    background: #fff;
+  }
+
+  .dataTables_wrapper .dataTables_info,
+  .dataTables_wrapper .dataTables_filter,
+  .dataTables_wrapper .dataTables_length {
+    color: #64748b;
+    margin-bottom: 1rem;
+  }
+
+  .dataTables_wrapper .paginate_button .page-link {
+    border-radius: 999px !important;
+  }
+
   .clinic-delete-icon {
     width: 68px;
     height: 68px;
@@ -468,15 +545,6 @@
       width: 100%;
       margin-top: 1rem;
       flex-wrap: wrap;
-    }
-
-    .clinic-search {
-      min-width: 100%;
-      width: 100%;
-    }
-
-    .clinic-page-shell {
-      padding-top: 7.2rem;
     }
 
     .clinic-form-grid,

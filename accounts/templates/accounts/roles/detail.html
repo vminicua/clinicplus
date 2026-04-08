@@ -1,4 +1,4 @@
-{% extends "accounts/base.html" %}
+{% extends "accounts/layouts/base.html" %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -16,7 +16,6 @@
 
               <div class="d-flex gap-2">
                 <a href="{% url 'accounts:role_update' object.pk %}" data-modal-url="{% url 'accounts:role_update' object.pk %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">Editar</a>
-                <a href="{% url 'accounts:role_delete' object.pk %}" data-modal-url="{% url 'accounts:role_delete' object.pk %}" data-modal-size="modal-lg" class="btn btn-outline-danger mb-0">Eliminar</a>
               </div>
             </div>
           </div>
@@ -65,13 +64,13 @@
 
       <div class="card-body px-0 pb-0">
         <div class="table-responsive">
-          <table class="table align-items-center mb-0 clinic-data-table">
+          <table id="role-users-table" data-page-length="10" data-export-title="Utilizadores do perfil {{ object.name }}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
                 <th class="ps-4">Utilizador</th>
                 <th>Email</th>
                 <th>Estado</th>
-                <th class="text-end pe-4">Acções</th>
+                <th class="text-end pe-4 not-export">Acções</th>
               </tr>
             </thead>
             <tbody>
@@ -87,7 +86,11 @@
                     {% endif %}
                   </td>
                   <td class="text-end pe-4">
-                    <a href="{% url 'accounts:user_detail' user_item.pk %}" class="btn btn-link text-dark text-sm mb-0">Abrir utilizador</a>
+                    <div class="clinic-action-stack">
+                      <a href="{% url 'accounts:user_detail' user_item.pk %}" class="clinic-action-btn is-muted" title="Abrir utilizador">
+                        <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
+                      </a>
+                    </div>
                   </td>
                 </tr>
               {% empty %}

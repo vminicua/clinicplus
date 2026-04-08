@@ -1,74 +1,27 @@
 <nav class="navbar navbar-main navbar-expand-lg px-0 mx-3 shadow-none border-radius-xl clinic-navbar-card" id="navbarBlur" data-scroll="true">
-  <div class="container-fluid py-2 px-3">
-    <div class="d-flex align-items-center flex-wrap gap-3">
-      <div class="nav-item d-xl-none d-flex align-items-center">
-        <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
-          <div class="sidenav-toggler-inner">
-            <i class="sidenav-toggler-line"></i>
-            <i class="sidenav-toggler-line"></i>
-            <i class="sidenav-toggler-line"></i>
-          </div>
-        </a>
-      </div>
-
-      <div>
-        <p class="text-sm text-secondary mb-0">{{ current_date|date:"l, d \\d\\e F" }}</p>
-        <h5 class="font-weight-bolder mb-0">{{ page_title }}</h5>
-      </div>
+  <div class="container-fluid py-2 px-3 d-flex align-items-center">
+    <div class="nav-item d-xl-none d-flex align-items-center me-auto">
+      <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
+        <div class="sidenav-toggler-inner">
+          <i class="sidenav-toggler-line"></i>
+          <i class="sidenav-toggler-line"></i>
+          <i class="sidenav-toggler-line"></i>
+        </div>
+      </a>
     </div>
 
-    <div class="ms-md-auto d-flex align-items-center clinic-navbar-actions">
-      {% if search_enabled %}
-        <form method="get" action="{{ search_action|default:request.path }}" class="input-group input-group-outline clinic-search">
-          <span class="input-group-text">
-            <i class="material-symbols-rounded">search</i>
-          </span>
-          <input type="text" name="q" value="{{ search_query|default:'' }}" class="form-control" placeholder="{{ nav_search_placeholder|default:'Pesquisar no sistema' }}">
-        </form>
-      {% endif %}
-
-      {% if primary_action_modal_url and primary_action_label %}
-        <a href="{{ primary_action_modal_url }}" data-modal-url="{{ primary_action_modal_url }}" data-modal-size="{{ primary_action_modal_size|default:'modal-lg' }}" class="btn btn-sm bg-gradient-dark mb-0">
-          {% if primary_action_icon %}
-            <i class="material-symbols-rounded text-sm me-1">{{ primary_action_icon }}</i>
-          {% endif %}
-          {{ primary_action_label }}
-        </a>
-      {% elif primary_action_url and primary_action_label %}
-        <a href="{{ primary_action_url }}" class="btn btn-sm bg-gradient-dark mb-0">
-          {% if primary_action_icon %}
-            <i class="material-symbols-rounded text-sm me-1">{{ primary_action_icon }}</i>
-          {% endif %}
-          {{ primary_action_label }}
-        </a>
-      {% else %}
-        <a href="{% url 'clinic:index' %}#agenda" class="btn btn-sm bg-gradient-dark mb-0">
-          <i class="material-symbols-rounded text-sm me-1">event</i>
-          Agenda
-        </a>
-      {% endif %}
-
-      {% if secondary_action_url and secondary_action_label %}
-        <a href="{{ secondary_action_url }}" class="btn btn-sm btn-outline-dark mb-0">
-          {% if secondary_action_icon %}
-            <i class="material-symbols-rounded text-sm me-1">{{ secondary_action_icon }}</i>
-          {% endif %}
-          {{ secondary_action_label }}
-        </a>
-      {% else %}
-        <a href="/admin/" class="btn btn-sm btn-outline-dark mb-0">
-          <i class="material-symbols-rounded text-sm me-1">tune</i>
-          Admin
-        </a>
-      {% endif %}
-
-      <div class="clinic-user-pill ms-lg-3">
+    <div class="ms-auto d-flex align-items-center clinic-navbar-actions">
+      <div class="clinic-user-pill">
         <span class="clinic-avatar">{{ greeting_name|first|upper }}</span>
         <div>
-          <div class="text-xs text-secondary">Sessao ativa</div>
           <div class="text-sm font-weight-bold">{{ greeting_name }}</div>
         </div>
       </div>
+
+      <a href="{% url 'clinic:logout' %}" class="btn btn-sm btn-outline-dark mb-0">
+        <i class="material-symbols-rounded text-sm me-1">logout</i>
+        Sair
+      </a>
     </div>
   </div>
 </nav>

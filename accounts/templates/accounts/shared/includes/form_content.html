@@ -33,18 +33,18 @@
 
       <div data-step-panel="0">
         <div class="clinic-form-grid">
-          {% include "accounts/includes/form_field.html" with field=form.username wide_fields="" %}
-          {% include "accounts/includes/form_field.html" with field=form.first_name wide_fields="" %}
-          {% include "accounts/includes/form_field.html" with field=form.last_name wide_fields="" %}
-          {% include "accounts/includes/form_field.html" with field=form.email wide_fields="" %}
-          {% include "accounts/includes/form_field.html" with field=form.password1 wide_fields="" %}
-          {% include "accounts/includes/form_field.html" with field=form.password2 wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.username wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.first_name wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.last_name wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.email wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.password1 wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.password2 wide_fields="" %}
         </div>
       </div>
 
       <div data-step-panel="1" class="d-none">
         <div class="clinic-form-grid">
-          {% include "accounts/includes/form_field.html" with field=form.preferred_language wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.preferred_language wide_fields="" %}
           <div class="full-width">
             <label class="form-label fw-semibold">{{ form.groups.label }}</label>
             <div class="clinic-choice-grid">
@@ -66,8 +66,8 @@
               <div class="invalid-feedback d-block">{{ error }}</div>
             {% endfor %}
           </div>
-          {% include "accounts/includes/form_field.html" with field=form.is_active wide_fields="" %}
-          {% include "accounts/includes/form_field.html" with field=form.is_staff wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.is_active wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.is_staff wide_fields="" %}
         </div>
       </div>
 
@@ -90,12 +90,12 @@
     <div class="clinic-form-grid">
       {% for field in form.visible_fields %}
         {% if field.name != "permissions" %}
-          {% include "accounts/includes/form_field.html" with field=field wide_fields=wide_fields %}
+          {% include "accounts/shared/includes/form_field.html" with field=field wide_fields=wide_fields %}
         {% endif %}
       {% endfor %}
 
       {% if form_mode == "role" %}
-        {% include "accounts/includes/permission_matrix.html" with permission_matrix=permission_matrix %}
+        {% include "accounts/shared/includes/permission_matrix.html" with permission_matrix=permission_matrix %}
       {% endif %}
     </div>
 

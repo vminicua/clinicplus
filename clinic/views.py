@@ -51,7 +51,7 @@ def custom_login(request):
 def custom_logout(request):
     """Logout personalizado"""
     logout(request)
-    messages.info(request, 'Você foi desconectado com sucesso.')
+    messages.info(request, 'Sessão terminada com sucesso.')
     return redirect('clinic:login')
 
 @login_required(login_url='clinic:login')

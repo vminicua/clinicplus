@@ -1,13 +1,14 @@
+{% load ui_extras %}
 {% if permission_matrix %}
   <div class="full-width">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
       <div>
-        <h5 class="mb-1">Matriz de permissões</h5>
-        <p class="text-secondary mb-0">Marque os acessos que este perfil poderá usar no sistema.</p>
+        <h5 class="mb-1">{% ui "Matriz de permissões" "Permission matrix" %}</h5>
+        <p class="text-secondary mb-0">{% ui "Marque os acessos que este perfil poderá usar no sistema." "Select the accesses this role may use in the system." %}</p>
       </div>
       <span class="clinic-chip">
         <i class="material-symbols-rounded" style="font-size: 1rem;">grid_view</i>
-        Agrupado por módulo
+        {% ui "Agrupado por módulo" "Grouped by module" %}
       </span>
     </div>
 
@@ -22,12 +23,12 @@
           <table class="clinic-permission-table">
             <thead>
               <tr>
-                <th class="clinic-permission-model">Modelo / área</th>
-                <th class="text-center">Tudo</th>
-                <th class="text-center">Ver</th>
-                <th class="text-center">Criar</th>
-                <th class="text-center">Editar</th>
-                <th class="text-center">Eliminar</th>
+                <th class="clinic-permission-model">{% ui "Modelo / área" "Model / area" %}</th>
+                <th class="text-center">{% ui "Tudo" "All" %}</th>
+                <th class="text-center">{% ui "Ver" "View" %}</th>
+                <th class="text-center">{% ui "Criar" "Create" %}</th>
+                <th class="text-center">{% ui "Editar" "Edit" %}</th>
+                <th class="text-center">{% ui "Eliminar" "Delete" %}</th>
               </tr>
             </thead>
             <tbody>
@@ -54,7 +55,7 @@
                 {% if model.extras %}
                   <tr>
                     <td colspan="6">
-                      <div class="clinic-inline-note mb-2">Permissões adicionais</div>
+                      <div class="clinic-inline-note mb-2">{% ui "Permissões adicionais" "Additional permissions" %}</div>
                       <div class="clinic-inline-list">
                         {% for extra in model.extras %}
                           <label class="clinic-inline-badge">
@@ -78,4 +79,3 @@
     {% endfor %}
   </div>
 {% endif %}
-

@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.utils import timezone
 
-from accounts.ui import get_system_preferences
+from accounts.ui import get_system_preferences, ui_text
 
 
 def is_modal_request(request) -> bool:
@@ -23,7 +23,11 @@ class AppPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
         if self.request.user.is_authenticated:
             messages.error(
                 self.request,
-                "Não tem permissões suficientes para aceder a esta área de gestão.",
+                ui_text(
+                    self.request,
+                    "Não tem permissões suficientes para aceder a esta área de gestão.",
+                    "You do not have enough permissions to access this management area.",
+                ),
             )
             return redirect("clinic:index")
         return super().handle_no_permission()
@@ -62,6 +66,7 @@ class ClinicPageMixin(LoginRequiredMixin):
         context.setdefault("current_date", timezone.localdate())
         context.setdefault("greeting_name", greeting_name)
         context.setdefault("current_language", getattr(self.request, "LANGUAGE_CODE", "pt"))
+        context.setdefault("current_branch", getattr(self.request, "clinic_current_branch", None))
         context.setdefault("system_preferences", get_system_preferences())
         context.setdefault("is_modal_request", is_modal_request(self.request))
         return context

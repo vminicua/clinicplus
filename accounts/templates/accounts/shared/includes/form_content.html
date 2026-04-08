@@ -1,4 +1,5 @@
-<form method="post" action="{{ request.path }}" class="{% if is_modal_request %}js-modal-form{% endif %}" data-swal-submit data-processing-title="Processando..." data-processing-text="Estamos a guardar os dados.">
+{% load ui_extras %}
+<form method="post" action="{{ request.path }}" class="{% if is_modal_request %}js-modal-form{% endif %}" data-swal-submit data-processing-title="{% ui 'Processando...' 'Processing...' %}" data-processing-text="{% ui 'Estamos a guardar os dados.' 'We are saving the data.' %}">
   {% csrf_token %}
   {% if is_modal_request %}
     <input type="hidden" name="modal" value="1">
@@ -22,16 +23,16 @@
     <div class="js-wizard">
       <div class="clinic-wizard-nav">
         <div class="clinic-wizard-pill" data-step-target="0">
-          <div class="text-xs text-secondary text-uppercase">Passo 1</div>
-          <strong>Dados da conta</strong>
+          <div class="text-xs text-secondary text-uppercase">{% ui "Passo 1" "Step 1" %}</div>
+          <strong>{% ui "Dados da conta" "Account details" %}</strong>
         </div>
         <div class="clinic-wizard-pill" data-step-target="1">
-          <div class="text-xs text-secondary text-uppercase">Passo 2</div>
-          <strong>Acesso e perfis</strong>
+          <div class="text-xs text-secondary text-uppercase">{% ui "Passo 2" "Step 2" %}</div>
+          <strong>{% ui "Acesso e perfis" "Access and roles" %}</strong>
         </div>
         <div class="clinic-wizard-pill" data-step-target="2">
-          <div class="text-xs text-secondary text-uppercase">Passo 3</div>
-          <strong>Sucursais</strong>
+          <div class="text-xs text-secondary text-uppercase">{% ui "Passo 3" "Step 3" %}</div>
+          <strong>{% ui "Sucursais" "Branches" %}</strong>
         </div>
       </div>
 
@@ -60,7 +61,7 @@
                   </label>
                 </div>
               {% empty %}
-                <p class="text-secondary mb-0">Nenhum perfil disponível.</p>
+                <p class="text-secondary mb-0">{% ui "Nenhum perfil disponível." "No roles available." %}</p>
               {% endfor %}
             </div>
             {% if form.groups.help_text %}
@@ -84,14 +85,14 @@
 
       <div class="d-flex justify-content-between gap-2 mt-4 flex-wrap">
         <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-dark mb-0" data-wizard-prev>Voltar</button>
-          <button type="button" class="btn btn-outline-dark mb-0" data-wizard-next>Seguinte</button>
+          <button type="button" class="btn btn-outline-dark mb-0" data-wizard-prev>{% ui "Voltar" "Back" %}</button>
+          <button type="button" class="btn btn-outline-dark mb-0" data-wizard-next>{% ui "Seguinte" "Next" %}</button>
         </div>
         <div class="d-flex gap-2">
           {% if is_modal_request %}
-            <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">{% ui "Cancelar" "Cancel" %}</button>
           {% else %}
-            <a href="{{ cancel_url }}" class="btn btn-outline-secondary mb-0">Cancelar</a>
+            <a href="{{ cancel_url }}" class="btn btn-outline-secondary mb-0">{% ui "Cancelar" "Cancel" %}</a>
           {% endif %}
           <button type="submit" class="btn bg-gradient-dark mb-0 d-none" data-wizard-submit>{{ submit_label }}</button>
         </div>
@@ -112,9 +113,9 @@
 
     <div class="d-flex justify-content-end gap-2 mt-4">
       {% if is_modal_request %}
-        <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">{% ui "Cancelar" "Cancel" %}</button>
       {% else %}
-        <a href="{{ cancel_url }}" class="btn btn-outline-secondary mb-0">Cancelar</a>
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary mb-0">{% ui "Cancelar" "Cancel" %}</a>
       {% endif %}
       <button type="submit" class="btn bg-gradient-dark mb-0">{{ submit_label }}</button>
     </div>

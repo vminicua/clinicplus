@@ -4,6 +4,7 @@ from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from accounts.forms import PermissionForm
+from accounts.ui import ui_text
 from accounts.utils import is_system_permission
 
 from .base_view import AppPermissionMixin, ClinicPageMixin, ModalDetailMixin, ModalFormMixin
@@ -25,8 +26,15 @@ class PermissionListView(AppPermissionMixin, ClinicPageMixin, ListView):
     context_object_name = "permissions"
     permission_required = "auth.view_permission"
     segment = "permissions"
-    page_title = "Permissões"
-    page_subtitle = "Consulte permissões do sistema e crie permissões personalizadas quando necessário."
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Permissões", "Permissions")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Consulte permissões do sistema e crie permissões personalizadas quando necessário.",
+            "Review system permissions and create custom permissions when needed.",
+        )
 
     def get_kind_filter(self) -> str:
         return (self.request.GET.get("kind") or "all").strip().lower()
@@ -65,9 +73,17 @@ class PermissionDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin
     template_name = "accounts/permissions/detail.html"
     permission_required = "auth.view_permission"
     segment = "permissions"
-    page_title = "Detalhes da permissão"
-    page_subtitle = "Veja onde a permissão é usada e se faz parte do sistema base."
     modal_size = "modal-lg"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Detalhes da permissão", "Permission details")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Veja onde a permissão é usada e se faz parte do sistema base.",
+            "See where the permission is used and whether it belongs to the base system.",
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -75,7 +91,11 @@ class PermissionDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin
         context["linked_roles"] = self.object.group_set.order_by("name")
         context["detail_partial"] = "accounts/permissions/includes/detail_content.html"
         context["modal_heading"] = self.object.name
-        context["modal_description"] = "Escopo, tipo e perfis que herdam esta permissão."
+        context["modal_description"] = ui_text(
+            self.request,
+            "Escopo, tipo e perfis que herdam esta permissão.",
+            "Scope, type, and roles that inherit this permission.",
+        )
         return context
 
 
@@ -85,20 +105,38 @@ class PermissionCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, 
     template_name = "accounts/shared/form.html"
     modal_template_name = "accounts/shared/modal_form.html"
     success_url = reverse_lazy("accounts:permission_list")
-    success_message = "Permissão criada com sucesso."
     permission_required = "auth.add_permission"
     segment = "permissions"
-    page_title = "Nova permissão"
-    page_subtitle = "Crie permissões personalizadas para fluxos específicos do sistema."
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Nova permissão", "New permission")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Crie permissões personalizadas para fluxos específicos do sistema.",
+            "Create custom permissions for system-specific workflows.",
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form_title"] = "Criar permissão"
-        context["form_description"] = "Permissões personalizadas ajudam a cobrir fluxos que ainda não existem no modelo base."
-        context["submit_label"] = "Guardar permissão"
+        context["form_title"] = ui_text(self.request, "Criar permissão", "Create permission")
+        context["form_description"] = ui_text(
+            self.request,
+            "Permissões personalizadas ajudam a cobrir fluxos que ainda não existem no modelo base.",
+            "Custom permissions help cover workflows that do not yet exist in the base model.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar permissão", "Save permission")
         context["cancel_url"] = reverse("accounts:permission_list")
         context["form_mode"] = "permission"
         return context
+
+    def get_success_message(self) -> str:
+        return ui_text(
+            self.request,
+            "Permissão criada com sucesso.",
+            "Permission created successfully.",
+        )
 
 
 class PermissionUpdateView(
@@ -113,17 +151,35 @@ class PermissionUpdateView(
     template_name = "accounts/shared/form.html"
     modal_template_name = "accounts/shared/modal_form.html"
     success_url = reverse_lazy("accounts:permission_list")
-    success_message = "Permissão actualizada com sucesso."
     permission_required = "auth.change_permission"
     segment = "permissions"
-    page_title = "Editar permissão"
-    page_subtitle = "Actualize o nome visível, o código interno ou o escopo da permissão."
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar permissão", "Edit permission")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize o nome visível, o código interno ou o escopo da permissão.",
+            "Update the visible name, internal code, or permission scope.",
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form_title"] = "Editar permissão"
-        context["form_description"] = "Ajuste apenas permissões personalizadas. As permissões base do sistema continuam protegidas."
-        context["submit_label"] = "Actualizar permissão"
+        context["form_title"] = ui_text(self.request, "Editar permissão", "Edit permission")
+        context["form_description"] = ui_text(
+            self.request,
+            "Ajuste apenas permissões personalizadas. As permissões base do sistema continuam protegidas.",
+            "Adjust only custom permissions. Base system permissions remain protected.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar permissão", "Update permission")
         context["cancel_url"] = reverse("accounts:permission_detail", args=[self.object.pk])
         context["form_mode"] = "permission"
         return context
+
+    def get_success_message(self) -> str:
+        return ui_text(
+            self.request,
+            "Permissão actualizada com sucesso.",
+            "Permission updated successfully.",
+        )

@@ -12,6 +12,35 @@
     </div>
 
     <div class="ms-auto d-flex align-items-center clinic-navbar-actions">
+      {% if available_branches %}
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-dark mb-0 clinic-language-trigger clinic-branch-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="material-symbols-rounded text-sm">apartment</i>
+            <span class="text-start">
+              <strong class="d-block">{{ current_branch.name|default:"-" }}</strong>
+              <small>{{ current_branch.code|default:"" }}</small>
+            </span>
+            <i class="material-symbols-rounded text-sm">expand_more</i>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end clinic-language-menu p-2">
+            {% for branch in available_branches %}
+              <form method="post" action="{% url 'accounts:switch_branch' %}"{% if not forloop.last %} class="mb-2"{% endif %}>
+                {% csrf_token %}
+                <input type="hidden" name="branch_id" value="{{ branch.pk }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="dropdown-item clinic-language-option{% if current_branch and current_branch.pk == branch.pk %} active{% endif %}">
+                  <i class="material-symbols-rounded text-sm">apartment</i>
+                  <span>
+                    <strong class="d-block">{{ branch.name }}</strong>
+                    <small>{{ branch.code }}{% if branch.city %} · {{ branch.city }}{% endif %}</small>
+                  </span>
+                </button>
+              </form>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
       <div class="dropdown">
         <button class="btn btn-sm btn-outline-dark mb-0 clinic-language-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false">
           {% if request.LANGUAGE_CODE == "en" %}
@@ -54,6 +83,9 @@
         <span class="clinic-avatar">{{ greeting_name|first|upper }}</span>
         <div>
           <div class="text-sm font-weight-bold">{{ greeting_name }}</div>
+          {% if current_branch %}
+            <div class="text-xs text-secondary">{{ current_branch.name }}</div>
+          {% endif %}
         </div>
       </div>
 

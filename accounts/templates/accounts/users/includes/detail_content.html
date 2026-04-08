@@ -1,20 +1,21 @@
+{% load ui_extras %}
 <div class="row mb-4">
   <div class="col-lg-8 mb-4 mb-lg-0">
     <div class="card clinic-detail-card h-100">
       <div class="card-header p-4 border-0">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
           <div>
-            <p class="text-sm text-secondary mb-1">Ficha do utilizador</p>
+            <p class="text-sm text-secondary mb-1">{% ui "Ficha do utilizador" "User record" %}</p>
             <h3 class="mb-1">{{ object.get_full_name|default:object.username }}</h3>
-            <p class="text-secondary mb-0">{{ object.username }} · {{ object.email|default:"Sem email registado" }}</p>
+            <p class="text-secondary mb-0">{{ object.username }} · {% if object.email %}{{ object.email }}{% else %}{% ui "Sem email registado" "No registered email" %}{% endif %}</p>
           </div>
 
           <div class="d-flex gap-2 flex-wrap">
-            <a href="{% url 'accounts:user_update' object.pk %}" data-modal-url="{% url 'accounts:user_update' object.pk %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">Editar</a>
+            <a href="{% url 'accounts:user_update' object.pk %}" data-modal-url="{% url 'accounts:user_update' object.pk %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">{% ui "Editar" "Edit" %}</a>
             {% if object.is_active %}
-              <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' object.pk %}" data-confirm-title="Desactivar utilizador" data-confirm-text="O acesso deste utilizador será bloqueado até nova activação." data-confirm-button="Desactivar" data-confirm-icon="warning" class="btn btn-outline-warning mb-0">Desactivar</a>
+              <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' object.pk %}" data-confirm-title="{% ui 'Desactivar utilizador' 'Deactivate user' %}" data-confirm-text="{% ui 'O acesso deste utilizador será bloqueado até nova activação.' 'This user will be blocked until reactivated.' %}" data-confirm-button="{% ui 'Desactivar' 'Deactivate' %}" data-confirm-icon="warning" class="btn btn-outline-warning mb-0">{% ui "Desactivar" "Deactivate" %}</a>
             {% else %}
-              <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' object.pk %}" data-confirm-title="Activar utilizador" data-confirm-text="O utilizador voltará a poder entrar no sistema." data-confirm-button="Activar" data-confirm-icon="question" class="btn btn-outline-success mb-0">Activar</a>
+              <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' object.pk %}" data-confirm-title="{% ui 'Activar utilizador' 'Activate user' %}" data-confirm-text="{% ui 'O utilizador voltará a poder entrar no sistema.' 'The user will be able to sign in again.' %}" data-confirm-button="{% ui 'Activar' 'Activate' %}" data-confirm-icon="question" class="btn btn-outline-success mb-0">{% ui "Activar" "Activate" %}</a>
             {% endif %}
           </div>
         </div>
@@ -23,38 +24,38 @@
       <div class="card-body pt-0">
         <div class="clinic-detail-grid">
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Estado</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Estado" "Status" %}</p>
             {% if object.is_active %}
-              <span class="clinic-status clinic-status-success">Activo</span>
+              <span class="clinic-status clinic-status-success">{% ui "Activo" "Active" %}</span>
             {% else %}
-              <span class="clinic-status clinic-status-muted">Inactivo</span>
+              <span class="clinic-status clinic-status-muted">{% ui "Inactivo" "Inactive" %}</span>
             {% endif %}
           </div>
 
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Idioma</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Idioma" "Language" %}</p>
             <h6 class="mb-0">{{ object.profile.get_preferred_language_display }}</h6>
           </div>
 
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Último acesso</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Último acesso" "Last access" %}</p>
             <h6 class="mb-0">
               {% if object.last_login %}
                 {{ object.last_login|date:"d/m/Y H:i" }}
               {% else %}
-                Nunca entrou
+                {% ui "Nunca entrou" "Never signed in" %}
               {% endif %}
             </h6>
           </div>
 
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Criado em</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Criado em" "Created at" %}</p>
             <h6 class="mb-0">{{ object.date_joined|date:"d/m/Y H:i" }}</h6>
           </div>
 
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Sucursal principal</p>
-            <h6 class="mb-0">{{ object.profile.default_branch.name|default:"Sem sucursal principal" }}</h6>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Sucursal principal" "Primary branch" %}</p>
+            <h6 class="mb-0">{% if object.profile.default_branch %}{{ object.profile.default_branch.name }}{% else %}{% ui "Sem sucursal principal" "No primary branch" %}{% endif %}</h6>
           </div>
         </div>
 
@@ -62,34 +63,34 @@
 
         <div class="clinic-detail-grid">
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Permissões elevadas</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Permissões elevadas" "Elevated permissions" %}</p>
             <div class="clinic-inline-list">
-              {% if object.is_staff %}<span class="clinic-inline-badge">Acesso técnico</span>{% endif %}
-              {% if object.is_superuser %}<span class="clinic-inline-badge">Acesso total</span>{% endif %}
+              {% if object.is_staff %}<span class="clinic-inline-badge">{% ui "Acesso técnico" "Technical access" %}</span>{% endif %}
+              {% if object.is_superuser %}<span class="clinic-inline-badge">{% ui "Acesso total" "Full access" %}</span>{% endif %}
               {% if not object.is_staff and not object.is_superuser %}
-                <span class="text-sm text-secondary">Sem privilégios elevados</span>
+                <span class="text-sm text-secondary">{% ui "Sem privilégios elevados" "No elevated privileges" %}</span>
               {% endif %}
             </div>
           </div>
 
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Perfis atribuídos</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Perfis atribuídos" "Assigned roles" %}</p>
             <div class="clinic-inline-list">
               {% for role in object.groups.all %}
                 <span class="clinic-inline-badge">{{ role.name }}</span>
               {% empty %}
-                <span class="text-sm text-secondary">Sem perfis associados</span>
+                <span class="text-sm text-secondary">{% ui "Sem perfis associados" "No roles assigned" %}</span>
               {% endfor %}
             </div>
           </div>
 
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Sucursais atribuídas</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Sucursais atribuídas" "Assigned branches" %}</p>
             <div class="clinic-inline-list">
               {% for branch in object.profile.assigned_branches.all %}
                 <span class="clinic-inline-badge">{{ branch.name }}</span>
               {% empty %}
-                <span class="text-sm text-secondary">Sem sucursais associadas</span>
+                <span class="text-sm text-secondary">{% ui "Sem sucursais associadas" "No branches assigned" %}</span>
               {% endfor %}
             </div>
           </div>
@@ -101,12 +102,12 @@
   <div class="col-lg-4">
     <div class="card clinic-detail-card h-100">
       <div class="card-header p-4 border-0">
-        <h5 class="mb-1">Política de acesso</h5>
-        <p class="text-secondary mb-0">As permissões são herdadas apenas a partir dos perfis atribuídos.</p>
+        <h5 class="mb-1">{% ui "Política de acesso" "Access policy" %}</h5>
+        <p class="text-secondary mb-0">{% ui "As permissões são herdadas apenas a partir dos perfis atribuídos." "Permissions are inherited only from assigned roles." %}</p>
       </div>
       <div class="card-body pt-0">
         <div class="alert alert-light border mb-0">
-          Este utilizador não recebe permissões directas. Toda a gestão de acesso é feita via perfis.
+          {% ui "Este utilizador não recebe permissões directas. Toda a gestão de acesso é feita via perfis." "This user does not receive direct permissions. All access management happens through roles." %}
         </div>
       </div>
     </div>

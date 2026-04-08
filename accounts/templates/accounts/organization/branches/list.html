@@ -73,8 +73,8 @@
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <div class="clinic-pill-group">
               <a href="#" class="clinic-pill active" data-table-pill="branches-table" data-column="3" data-value="">{% ui "Todas" "All" %}</a>
-              <a href="#" class="clinic-pill" data-table-pill="branches-table" data-column="3" data-value="Activa">{% ui "Activas" "Active" %}</a>
-              <a href="#" class="clinic-pill" data-table-pill="branches-table" data-column="3" data-value="Inactiva">{% ui "Inactivas" "Inactive" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="branches-table" data-column="3" data-value="{% ui 'Activa' 'Active' %}">{% ui "Activas" "Active" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="branches-table" data-column="3" data-value="{% ui 'Inactiva' 'Inactive' %}">{% ui "Inactivas" "Inactive" %}</a>
             </div>
             <a href="{% url 'accounts:branch_create' %}" data-modal-url="{% url 'accounts:branch_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
               <i class="material-symbols-rounded text-sm me-1">add_business</i>
@@ -86,7 +86,7 @@
 
       <div class="card-body px-0 pb-0">
         <div class="clinic-datatable-shell">
-          <table id="branches-table" data-page-length="10" data-export-title="Sucursais Clinic Plus" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+          <table id="branches-table" data-page-length="10" data-export-title="{% ui 'Sucursais Clinic Plus' 'Clinic Plus Branches' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
                 <th class="ps-4">{% ui "Sucursal" "Branch" %}</th>

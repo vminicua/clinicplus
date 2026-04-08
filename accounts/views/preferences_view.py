@@ -6,7 +6,13 @@ from django.views.generic import UpdateView
 
 from accounts.forms import SystemPreferenceForm
 from accounts.models import SystemPreference, UserProfile
-from accounts.ui import LANGUAGE_SESSION_KEY, normalize_language, ui_text
+from accounts.ui import (
+    BRANCH_SESSION_KEY,
+    LANGUAGE_SESSION_KEY,
+    available_branches_for_user,
+    normalize_language,
+    ui_text,
+)
 
 from .base_view import AppPermissionMixin, ClinicPageMixin
 
@@ -89,5 +95,46 @@ class LanguageSwitchView(View):
         else:
             messages.success(request, "Idioma actualizado com sucesso.")
 
+        next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or reverse_lazy("clinic:index")
+        return redirect(next_url)
+
+
+class BranchSwitchView(View):
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return redirect("clinic:login")
+
+        branch_id = request.POST.get("branch_id")
+        branch = None
+        for available_branch in available_branches_for_user(request.user):
+            if str(available_branch.pk) == str(branch_id):
+                branch = available_branch
+                break
+
+        if branch is None:
+            messages.error(
+                request,
+                ui_text(
+                    request,
+                    "Não foi possível seleccionar esta sucursal.",
+                    "We could not select this branch.",
+                ),
+            )
+            return redirect(request.POST.get("next") or reverse_lazy("clinic:index"))
+
+        request.session[BRANCH_SESSION_KEY] = branch.pk
+        if not request.user.is_superuser:
+            profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            profile.default_branch = branch
+            profile.save(update_fields=["default_branch", "updated_at"])
+
+        messages.success(
+            request,
+            ui_text(
+                request,
+                f"Sucursal activa alterada para {branch.name}.",
+                f"Active branch changed to {branch.name}.",
+            ),
+        )
         next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or reverse_lazy("clinic:index")
         return redirect(next_url)

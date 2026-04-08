@@ -1,3 +1,4 @@
+{% load ui_extras %}
 <div class="{% if field.name in wide_fields %}full-width{% endif %}">
   {% if field.widget_type == "checkboxinput" %}
     <div class="clinic-checkbox-card">
@@ -26,7 +27,7 @@
           </label>
         </div>
       {% empty %}
-        <p class="text-secondary mb-0">Nenhuma opção disponível.</p>
+        <p class="text-secondary mb-0">{% ui "Nenhuma opção disponível." "No options available." %}</p>
       {% endfor %}
     </div>
     {% if field.help_text %}

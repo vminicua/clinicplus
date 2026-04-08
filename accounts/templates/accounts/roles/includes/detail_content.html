@@ -1,16 +1,17 @@
+{% load ui_extras %}
 <div class="row mb-4">
   <div class="col-lg-5 mb-4 mb-lg-0">
     <div class="card clinic-detail-card h-100">
       <div class="card-header p-4 border-0">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
           <div>
-            <p class="text-sm text-secondary mb-1">Perfil</p>
+            <p class="text-sm text-secondary mb-1">{% ui "Perfil" "Role" %}</p>
             <h3 class="mb-1">{{ object.name }}</h3>
-            <p class="text-secondary mb-0">Agrupamento de permissões para utilizadores da clínica.</p>
+            <p class="text-secondary mb-0">{% ui "Agrupamento de permissões para utilizadores da clínica." "Permission grouping for clinic users." %}</p>
           </div>
 
           <div class="d-flex gap-2">
-            <a href="{% url 'accounts:role_update' object.pk %}" data-modal-url="{% url 'accounts:role_update' object.pk %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">Editar</a>
+            <a href="{% url 'accounts:role_update' object.pk %}" data-modal-url="{% url 'accounts:role_update' object.pk %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">{% ui "Editar" "Edit" %}</a>
           </div>
         </div>
       </div>
@@ -18,12 +19,12 @@
       <div class="card-body pt-0">
         <div class="clinic-detail-grid">
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Permissões</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Permissões" "Permissions" %}</p>
             <h6 class="mb-0">{{ ordered_permissions|length }}</h6>
           </div>
 
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Utilizadores ligados</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Utilizadores ligados" "Linked users" %}</p>
             <h6 class="mb-0">{{ assigned_users|length }}</h6>
           </div>
         </div>
@@ -34,8 +35,8 @@
   <div class="col-lg-7">
     <div class="card clinic-detail-card h-100">
       <div class="card-header p-4 border-0">
-        <h5 class="mb-1">Permissões incluídas</h5>
-        <p class="text-secondary mb-0">Conjunto de acessos herdados por quem usar este perfil.</p>
+        <h5 class="mb-1">{% ui "Permissões incluídas" "Included permissions" %}</h5>
+        <p class="text-secondary mb-0">{% ui "Conjunto de acessos herdados por quem usar este perfil." "Set of accesses inherited by anyone using this role." %}</p>
       </div>
 
       <div class="card-body pt-0">
@@ -43,7 +44,7 @@
           {% for permission in ordered_permissions %}
             <span class="clinic-inline-badge">{{ permission.name }}</span>
           {% empty %}
-            <span class="text-sm text-secondary">Este perfil ainda não tem permissões atribuídas.</span>
+            <span class="text-sm text-secondary">{% ui "Este perfil ainda não tem permissões atribuídas." "This role does not have assigned permissions yet." %}</span>
           {% endfor %}
         </div>
       </div>
@@ -53,36 +54,36 @@
 
 <div class="card clinic-page-card">
   <div class="card-header p-4 border-0">
-    <h5 class="mb-1">Utilizadores com este perfil</h5>
-    <p class="text-secondary mb-0">Cada utilizador herda automaticamente as permissões acima.</p>
+    <h5 class="mb-1">{% ui "Utilizadores com este perfil" "Users with this role" %}</h5>
+    <p class="text-secondary mb-0">{% ui "Cada utilizador herda automaticamente as permissões acima." "Each user automatically inherits the permissions above." %}</p>
   </div>
 
   <div class="card-body px-0 pb-0">
     <div class="clinic-datatable-shell">
-      <table id="role-users-table" data-page-length="10" data-export-title="Utilizadores do perfil {{ object.name }}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+      <table id="role-users-table" data-page-length="10" data-export-title="{% ui 'Utilizadores do perfil' 'Users in role' %} {{ object.name }}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
         <thead>
           <tr>
-            <th class="ps-4">Utilizador</th>
+            <th class="ps-4">{% ui "Utilizador" "User" %}</th>
             <th>Email</th>
-            <th>Estado</th>
-            <th class="text-end pe-4 not-export">Acções</th>
+            <th>{% ui "Estado" "Status" %}</th>
+            <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
           </tr>
         </thead>
         <tbody>
           {% for user_item in assigned_users %}
             <tr>
               <td class="ps-4">{{ user_item.get_full_name|default:user_item.username }}</td>
-              <td>{{ user_item.email|default:"Sem email" }}</td>
+              <td>{% if user_item.email %}{{ user_item.email }}{% else %}{% ui "Sem email" "No email" %}{% endif %}</td>
               <td>
                 {% if user_item.is_active %}
-                  <span class="clinic-status clinic-status-success">Activo</span>
+                  <span class="clinic-status clinic-status-success">{% ui "Activo" "Active" %}</span>
                 {% else %}
-                  <span class="clinic-status clinic-status-muted">Inactivo</span>
+                  <span class="clinic-status clinic-status-muted">{% ui "Inactivo" "Inactive" %}</span>
                 {% endif %}
               </td>
               <td class="text-end pe-4">
                 <div class="clinic-action-stack">
-                  <a href="{% url 'accounts:user_detail' user_item.pk %}" data-modal-url="{% url 'accounts:user_detail' user_item.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="Abrir utilizador">
+                  <a href="{% url 'accounts:user_detail' user_item.pk %}" data-modal-url="{% url 'accounts:user_detail' user_item.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="{% ui 'Abrir utilizador' 'Open user' %}">
                     <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
                   </a>
                 </div>

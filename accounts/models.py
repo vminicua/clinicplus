@@ -1,11 +1,13 @@
 from django.conf import settings
 from django.db import models
 
+from .i18n import translate_pair
+
 
 LANGUAGE_PORTUGUESE = "pt"
 LANGUAGE_ENGLISH = "en"
 LANGUAGE_CHOICES = [
-    (LANGUAGE_PORTUGUESE, "Português (Moçambique)"),
+    (LANGUAGE_PORTUGUESE, translate_pair("Português (Moçambique)", "Portuguese (Mozambique)")),
     (LANGUAGE_ENGLISH, "English"),
 ]
 
@@ -13,27 +15,39 @@ CURRENCY_METICAL = "MZN"
 CURRENCY_US_DOLLAR = "USD"
 CURRENCY_RAND = "ZAR"
 CURRENCY_CHOICES = [
-    (CURRENCY_METICAL, "Metical (MZN)"),
+    (CURRENCY_METICAL, translate_pair("Metical (MZN)", "Metical (MZN)")),
     (CURRENCY_US_DOLLAR, "US Dollar (USD)"),
-    (CURRENCY_RAND, "Rand Sul-Africano (ZAR)"),
+    (CURRENCY_RAND, translate_pair("Rand Sul-Africano (ZAR)", "South African Rand (ZAR)")),
 ]
 
 
 class Branch(models.Model):
-    name = models.CharField(max_length=150, unique=True, verbose_name="Nome da sucursal")
-    code = models.CharField(max_length=20, unique=True, verbose_name="Código interno")
-    city = models.CharField(max_length=120, blank=True, verbose_name="Cidade")
-    address = models.CharField(max_length=255, blank=True, verbose_name="Endereço")
-    phone = models.CharField(max_length=30, blank=True, verbose_name="Telefone")
+    name = models.CharField(
+        max_length=150,
+        unique=True,
+        verbose_name=translate_pair("Nome da sucursal", "Branch name"),
+    )
+    code = models.CharField(
+        max_length=20,
+        unique=True,
+        verbose_name=translate_pair("Código interno", "Internal code"),
+    )
+    city = models.CharField(max_length=120, blank=True, verbose_name=translate_pair("Cidade", "City"))
+    address = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=translate_pair("Endereço", "Address"),
+    )
+    phone = models.CharField(max_length=30, blank=True, verbose_name=translate_pair("Telefone", "Phone"))
     email = models.EmailField(blank=True, verbose_name="Email")
-    is_active = models.BooleanField(default=True, verbose_name="Activa")
+    is_active = models.BooleanField(default=True, verbose_name=translate_pair("Activa", "Active"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ("name",)
-        verbose_name = "Sucursal"
-        verbose_name_plural = "Sucursais"
+        verbose_name = translate_pair("Sucursal", "Branch")
+        verbose_name_plural = translate_pair("Sucursais", "Branches")
 
     def __str__(self) -> str:
         return f"{self.name} ({self.code})"
@@ -50,22 +64,22 @@ class SystemPreference(models.Model):
         max_length=5,
         choices=LANGUAGE_CHOICES,
         default=LANGUAGE_PORTUGUESE,
-        verbose_name="Idioma por defeito",
+        verbose_name=translate_pair("Idioma por defeito", "Default language"),
     )
     default_currency = models.CharField(
         max_length=3,
         choices=CURRENCY_CHOICES,
         default=CURRENCY_METICAL,
-        verbose_name="Moeda por defeito",
+        verbose_name=translate_pair("Moeda por defeito", "Default currency"),
     )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Preferência do sistema"
-        verbose_name_plural = "Preferências do sistema"
+        verbose_name = translate_pair("Preferência do sistema", "System preference")
+        verbose_name_plural = translate_pair("Preferências do sistema", "System preferences")
 
     def __str__(self) -> str:
-        return "Preferências do sistema"
+        return str(translate_pair("Preferências do sistema", "System preferences"))
 
     @classmethod
     def get_solo(cls):
@@ -82,19 +96,19 @@ class UserProfile(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="profile",
-        verbose_name="Utilizador",
+        verbose_name=translate_pair("Utilizador", "User"),
     )
     preferred_language = models.CharField(
         max_length=5,
         choices=LANGUAGE_CHOICES,
         default=LANGUAGE_PORTUGUESE,
-        verbose_name="Idioma preferido",
+        verbose_name=translate_pair("Idioma preferido", "Preferred language"),
     )
     assigned_branches = models.ManyToManyField(
         Branch,
         blank=True,
         related_name="user_profiles",
-        verbose_name="Sucursais atribuídas",
+        verbose_name=translate_pair("Sucursais atribuídas", "Assigned branches"),
     )
     default_branch = models.ForeignKey(
         Branch,
@@ -102,14 +116,15 @@ class UserProfile(models.Model):
         null=True,
         blank=True,
         related_name="default_user_profiles",
-        verbose_name="Sucursal principal",
+        verbose_name=translate_pair("Sucursal principal", "Primary branch"),
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Perfil do utilizador"
-        verbose_name_plural = "Perfis dos utilizadores"
+        verbose_name = translate_pair("Perfil do utilizador", "User profile")
+        verbose_name_plural = translate_pair("Perfis dos utilizadores", "User profiles")
 
     def __str__(self) -> str:
-        return f"Perfil de {self.user.get_username()}"
+        username = self.user.get_username()
+        return str(translate_pair(f"Perfil de {username}", f"Profile for {username}"))

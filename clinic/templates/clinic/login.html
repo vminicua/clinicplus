@@ -1,9 +1,10 @@
+{% load ui_extras %}
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="{{ request.LANGUAGE_CODE|default:'pt' }}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Clinic Plus | Entrar</title>
+    <title>{% ui "Clinic Plus | Entrar" "Clinic Plus | Sign in" %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -248,28 +249,28 @@
           <i class="fas fa-clinic-medical"></i>
           Clinic Plus
         </span>
-        <h1>Gestão clínica com foco em atendimento, organização e controlo.</h1>
-        <p>Entre com as suas credenciais para continuar no sistema e acompanhar a operação da clínica de forma simples.</p>
+        <h1>{% ui "Gestão clínica com foco em atendimento, organização e controlo." "Clinical management focused on care, organization, and control." %}</h1>
+        <p>{% ui "Entre com as suas credenciais para continuar no sistema e acompanhar a operação da clínica de forma simples." "Sign in with your credentials to continue and follow the clinic operation more simply." %}</p>
 
         <div class="clinic-login-grid">
           <div class="clinic-login-stat">
-            <strong>Recepção</strong>
-            <span>Fluxo de chegada e triagem mais organizado.</span>
+            <strong>{% ui "Recepção" "Reception" %}</strong>
+            <span>{% ui "Fluxo de chegada e triagem mais organizado." "A more organized arrival and triage flow." %}</span>
           </div>
           <div class="clinic-login-stat">
-            <strong>Equipa</strong>
-            <span>Perfis, permissões e acessos sob controlo.</span>
+            <strong>{% ui "Equipa" "Team" %}</strong>
+            <span>{% ui "Perfis, permissões e acessos sob controlo." "Roles, permissions, and access under control." %}</span>
           </div>
           <div class="clinic-login-stat">
-            <strong>Painel</strong>
-            <span>Leitura rápida da operação diária da clínica.</span>
+            <strong>{% ui "Painel" "Dashboard" %}</strong>
+            <span>{% ui "Leitura rápida da operação diária da clínica." "A quick read of the clinic's daily operation." %}</span>
           </div>
         </div>
       </section>
 
       <section class="clinic-login-card">
-        <h2>Entrar no sistema</h2>
-        <p>Use o seu nome de utilizador e a sua palavra-passe.</p>
+        <h2>{% ui "Entrar no sistema" "Sign in" %}</h2>
+        <p>{% ui "Use o seu nome de utilizador e a sua palavra-passe." "Use your username and password." %}</p>
 
         {% if messages %}
           <div class="login-messages d-none">
@@ -284,7 +285,7 @@
           <input type="hidden" name="next" value="{{ next_url }}" />
 
           <div class="clinic-form-group">
-            <label for="username" class="clinic-form-label">Nome de utilizador</label>
+            <label for="username" class="clinic-form-label">{% ui "Nome de utilizador" "Username" %}</label>
             <div class="clinic-input-wrap">
               <i class="fas fa-user"></i>
               <input
@@ -292,7 +293,7 @@
                 id="username"
                 name="username"
                 class="clinic-form-control"
-                placeholder="Introduza o seu nome de utilizador"
+                placeholder="{% ui 'Introduza o seu nome de utilizador' 'Enter your username' %}"
                 value="{{ request.POST.username|default:'' }}"
                 autocomplete="username"
                 required
@@ -302,7 +303,7 @@
           </div>
 
           <div class="clinic-form-group">
-            <label for="password" class="clinic-form-label">Palavra-passe</label>
+            <label for="password" class="clinic-form-label">{% ui "Palavra-passe" "Password" %}</label>
             <div class="clinic-input-wrap">
               <i class="fas fa-lock"></i>
               <input
@@ -310,7 +311,7 @@
                 id="password"
                 name="password"
                 class="clinic-form-control"
-                placeholder="Introduza a sua palavra-passe"
+                placeholder="{% ui 'Introduza a sua palavra-passe' 'Enter your password' %}"
                 autocomplete="current-password"
                 required
               />
@@ -319,22 +320,22 @@
 
           <button type="submit" class="clinic-login-btn" id="loginBtn">
             <i class="fas fa-sign-in-alt"></i>
-            Entrar
+            {% ui "Entrar" "Sign in" %}
           </button>
         </form>
 
         <div class="clinic-login-footer">
           <span class="clinic-footer-pill">
             <i class="fas fa-shield-alt"></i>
-            Acesso seguro
+            {% ui "Acesso seguro" "Secure access" %}
           </span>
           <span class="clinic-footer-pill">
             <i class="fas fa-clock"></i>
-            Resposta rápida
+            {% ui "Resposta rápida" "Fast response" %}
           </span>
           <span class="clinic-footer-pill">
             <i class="fas fa-heartbeat"></i>
-            Operação fiável
+            {% ui "Operação fiável" "Reliable operations" %}
           </span>
         </div>
       </section>
@@ -361,8 +362,8 @@
         form.addEventListener('submit', function() {
           if (window.Swal) {
             Swal.fire({
-              title: 'Processando...',
-              text: 'Estamos a validar as credenciais.',
+              title: '{% ui "Processando..." "Processing..." %}',
+              text: '{% ui "Estamos a validar as credenciais." "We are validating the credentials." %}',
               allowOutsideClick: false,
               allowEscapeKey: false,
               didOpen: () => Swal.showLoading(),
@@ -370,7 +371,7 @@
           }
 
           loginBtn.disabled = true;
-          loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A entrar...';
+          loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% ui "A entrar..." "Signing in..." %}';
         });
 
         passwordInput.addEventListener('keydown', function(event) {

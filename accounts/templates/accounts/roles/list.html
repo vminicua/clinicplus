@@ -1,4 +1,5 @@
 {% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -11,7 +12,7 @@
               <i class="material-symbols-rounded opacity-10">badge</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Total de perfis</p>
+              <p class="text-sm mb-0">{% ui "Total de perfis" "Total roles" %}</p>
               <h4 class="mb-0">{{ total_roles }}</h4>
             </div>
           </div>
@@ -25,7 +26,7 @@
               <i class="material-symbols-rounded opacity-10">group_add</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Perfis em uso</p>
+              <p class="text-sm mb-0">{% ui "Perfis em uso" "Roles in use" %}</p>
               <h4 class="mb-0">{{ roles_in_use }}</h4>
             </div>
           </div>
@@ -39,7 +40,7 @@
               <i class="material-symbols-rounded opacity-10">rule</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Com permissões</p>
+              <p class="text-sm mb-0">{% ui "Com permissões" "With permissions" %}</p>
               <h4 class="mb-0">{{ roles_with_permissions }}</h4>
             </div>
           </div>
@@ -53,7 +54,7 @@
               <i class="material-symbols-rounded opacity-10">groups_2</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Utilizadores ligados</p>
+              <p class="text-sm mb-0">{% ui "Utilizadores ligados" "Linked users" %}</p>
               <h4 class="mb-0">{{ linked_users }}</h4>
             </div>
           </div>
@@ -65,25 +66,25 @@
       <div class="card-header p-4 border-0">
         <div class="clinic-list-toolbar">
           <div>
-            <h4 class="mb-1">Perfis do sistema</h4>
-            <p class="text-secondary mb-0">Agrupe permissões por cargo e função operacional.</p>
+            <h4 class="mb-1">{% ui "Perfis do sistema" "System roles" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Agrupe permissões por cargo e função operacional." "Group permissions by role and operational function." %}</p>
           </div>
           <a href="{% url 'accounts:role_create' %}" data-modal-url="{% url 'accounts:role_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
             <i class="material-symbols-rounded text-sm me-1">badge</i>
-            Novo perfil
+            {% ui "Novo perfil" "New role" %}
           </a>
         </div>
       </div>
 
       <div class="card-body px-0 pb-0">
         <div class="clinic-datatable-shell">
-          <table id="roles-table" data-page-length="10" data-export-title="Perfis Clinic Plus" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+          <table id="roles-table" data-page-length="10" data-export-title="{% ui 'Perfis Clinic Plus' 'Clinic Plus Roles' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
-                <th class="ps-4">Perfil</th>
-                <th>Permissões</th>
-                <th>Utilizadores</th>
-                <th class="text-end pe-4 not-export">Acções</th>
+                <th class="ps-4">{% ui "Perfil" "Role" %}</th>
+                <th>{% ui "Permissões" "Permissions" %}</th>
+                <th>{% ui "Utilizadores" "Users" %}</th>
+                <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
               </tr>
             </thead>
             <tbody>
@@ -96,10 +97,10 @@
                   <td><span class="text-sm">{{ role.user_set.all|length }}</span></td>
                   <td class="text-end pe-4">
                     <div class="clinic-action-stack">
-                      <a href="{% url 'accounts:role_detail' role.pk %}" data-modal-url="{% url 'accounts:role_detail' role.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="Ver detalhes">
+                      <a href="{% url 'accounts:role_detail' role.pk %}" data-modal-url="{% url 'accounts:role_detail' role.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="{% ui 'Ver detalhes' 'View details' %}">
                         <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
                       </a>
-                      <a href="{% url 'accounts:role_update' role.pk %}" data-modal-url="{% url 'accounts:role_update' role.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-info" title="Editar perfil">
+                      <a href="{% url 'accounts:role_update' role.pk %}" data-modal-url="{% url 'accounts:role_update' role.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-info" title="{% ui 'Editar perfil' 'Edit role' %}">
                         <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
                       </a>
                     </div>

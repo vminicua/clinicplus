@@ -6,6 +6,7 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from accounts.forms import UserForm
+from accounts.ui import filter_users_for_branch, ui_text
 from accounts.utils import visible_users_queryset
 
 from .base_view import AppPermissionMixin, ClinicPageMixin, ModalDetailMixin, ModalFormMixin
@@ -19,12 +20,19 @@ class UserListView(AppPermissionMixin, ClinicPageMixin, ListView):
     context_object_name = "users"
     permission_required = "auth.view_user"
     segment = "users"
-    page_title = "Utilizadores"
-    page_subtitle = "Gestão completa de contas, perfis de acesso e idioma preferido."
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Utilizadores", "Users")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Gestão completa de contas, perfis de acesso e idioma preferido.",
+            "Complete management of accounts, access roles, and preferred language.",
+        )
 
     def get_queryset(self):
         return (
-            visible_users_queryset()
+            filter_users_for_branch(visible_users_queryset(), self.request)
             .select_related("profile", "profile__default_branch")
             .prefetch_related("profile__assigned_branches")
             .prefetch_related("groups")
@@ -33,7 +41,7 @@ class UserListView(AppPermissionMixin, ClinicPageMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        base_queryset = visible_users_queryset()
+        base_queryset = filter_users_for_branch(visible_users_queryset(), self.request)
         context["total_users"] = base_queryset.count()
         context["active_users"] = base_queryset.filter(is_active=True).count()
         context["staff_users"] = base_queryset.filter(is_staff=True).count()
@@ -42,23 +50,37 @@ class UserListView(AppPermissionMixin, ClinicPageMixin, ListView):
 
 
 class UserDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, DetailView):
-    queryset = (
-        visible_users_queryset()
-        .select_related("profile", "profile__default_branch")
-        .prefetch_related("profile__assigned_branches", "groups")
-    )
     template_name = "accounts/users/detail.html"
     permission_required = "auth.view_user"
     segment = "users"
-    page_title = "Detalhes do utilizador"
-    page_subtitle = "Resumo do acesso e perfis atribuídos."
     modal_size = "modal-xl"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Detalhes do utilizador", "User details")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Resumo do acesso e perfis atribuídos.",
+            "Summary of access and assigned roles.",
+        )
+
+    def get_queryset(self):
+        return (
+            filter_users_for_branch(visible_users_queryset(), self.request)
+            .select_related("profile", "profile__default_branch")
+            .prefetch_related("profile__assigned_branches", "groups")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["detail_partial"] = "accounts/users/includes/detail_content.html"
         context["modal_heading"] = self.object.get_full_name() or self.object.username
-        context["modal_description"] = "Resumo do acesso, idioma, sucursais e perfis atribuídos."
+        context["modal_description"] = ui_text(
+            self.request,
+            "Resumo do acesso, idioma, sucursais e perfis atribuídos.",
+            "Summary of access, language, branches, and assigned roles.",
+        )
         return context
 
 
@@ -68,42 +90,76 @@ class UserCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, Create
     template_name = "accounts/shared/form.html"
     modal_template_name = "accounts/shared/modal_form.html"
     success_url = reverse_lazy("accounts:user_list")
-    success_message = "Utilizador criado com sucesso."
     permission_required = "auth.add_user"
     segment = "users"
-    page_title = "Novo utilizador"
-    page_subtitle = "Crie a conta, defina o idioma, os perfis e as sucursais do utilizador."
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo utilizador", "New user")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Crie a conta, defina o idioma, os perfis e as sucursais do utilizador.",
+            "Create the account and define the user's language, roles, and branches.",
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form_title"] = "Criar utilizador"
-        context["form_description"] = "Use esta área para registar uma nova conta de acesso ao sistema."
-        context["submit_label"] = "Guardar utilizador"
+        context["form_title"] = ui_text(self.request, "Criar utilizador", "Create user")
+        context["form_description"] = ui_text(
+            self.request,
+            "Use esta área para registar uma nova conta de acesso ao sistema.",
+            "Use this area to register a new access account in the system.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar utilizador", "Save user")
         context["cancel_url"] = reverse("accounts:user_list")
         context["form_mode"] = "user"
         return context
 
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Utilizador criado com sucesso.", "User created successfully.")
+
 
 class UserUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
-    queryset = visible_users_queryset().select_related("profile").prefetch_related("groups")
     form_class = UserForm
     template_name = "accounts/shared/form.html"
     modal_template_name = "accounts/shared/modal_form.html"
     success_url = reverse_lazy("accounts:user_list")
-    success_message = "Utilizador actualizado com sucesso."
     permission_required = "auth.change_user"
     segment = "users"
-    page_title = "Editar utilizador"
-    page_subtitle = "Actualize dados, perfis e sucursais da conta seleccionada."
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar utilizador", "Edit user")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize dados, perfis e sucursais da conta seleccionada.",
+            "Update data, roles, and branches for the selected account.",
+        )
+
+    def get_queryset(self):
+        return (
+            filter_users_for_branch(visible_users_queryset(), self.request)
+            .select_related("profile", "profile__default_branch")
+            .prefetch_related("profile__assigned_branches", "groups")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form_title"] = "Editar utilizador"
-        context["form_description"] = "A palavra-passe só será alterada se preencher os dois campos de confirmação."
-        context["submit_label"] = "Actualizar utilizador"
+        context["form_title"] = ui_text(self.request, "Editar utilizador", "Edit user")
+        context["form_description"] = ui_text(
+            self.request,
+            "A palavra-passe só será alterada se preencher os dois campos de confirmação.",
+            "The password will only change if you fill both confirmation fields.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar utilizador", "Update user")
         context["cancel_url"] = reverse("accounts:user_detail", args=[self.object.pk])
         context["form_mode"] = "user"
         return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Utilizador actualizado com sucesso.", "User updated successfully.")
 
 
 class UserToggleStatusView(AppPermissionMixin, View):
@@ -111,13 +167,17 @@ class UserToggleStatusView(AppPermissionMixin, View):
     login_url = "clinic:login"
 
     def post(self, request, pk):
-        user = get_object_or_404(visible_users_queryset(), pk=pk)
+        user = get_object_or_404(filter_users_for_branch(visible_users_queryset(), request), pk=pk)
 
         if user == request.user and user.is_active:
             return JsonResponse(
                 {
                     "success": False,
-                    "message": "Não pode desactivar a sua própria conta enquanto a sessão estiver activa.",
+                    "message": ui_text(
+                        request,
+                        "Não pode desactivar a sua própria conta enquanto a sessão estiver activa.",
+                        "You cannot deactivate your own account while the session is active.",
+                    ),
                 },
                 status=400,
             )
@@ -125,11 +185,15 @@ class UserToggleStatusView(AppPermissionMixin, View):
         user.is_active = not user.is_active
         user.save(update_fields=["is_active"])
 
-        action_label = "activado" if user.is_active else "desactivado"
+        action_label = ui_text(request, "activado", "activated") if user.is_active else ui_text(request, "desactivado", "deactivated")
         return JsonResponse(
             {
                 "success": True,
-                "message": f"Utilizador {action_label} com sucesso.",
+                "message": ui_text(
+                    request,
+                    f"Utilizador {action_label} com sucesso.",
+                    f"User {action_label} successfully.",
+                ),
                 "redirect_url": reverse("accounts:user_list"),
             }
         )

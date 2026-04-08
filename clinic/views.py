@@ -7,7 +7,13 @@ from django.contrib import messages
 from django.db import DatabaseError
 from django.utils import timezone
 
-from accounts.ui import LANGUAGE_SESSION_KEY, get_system_default_language, ui_text
+from accounts.ui import (
+    BRANCH_SESSION_KEY,
+    LANGUAGE_SESSION_KEY,
+    available_branches_for_user,
+    get_system_default_language,
+    ui_text,
+)
 from clinic.models import Hospital, Medico, Paciente, Agendamento, Consulta
 
 logger = logging.getLogger(__name__)
@@ -51,6 +57,16 @@ def custom_login(request):
             request.session[LANGUAGE_SESSION_KEY] = (
                 profile.preferred_language if profile and profile.preferred_language else get_system_default_language()
             )
+            available_branches = list(available_branches_for_user(user))
+            if available_branches:
+                if profile and profile.default_branch_id:
+                    selected_branch = next(
+                        (branch for branch in available_branches if branch.id == profile.default_branch_id),
+                        available_branches[0],
+                    )
+                else:
+                    selected_branch = available_branches[0]
+                request.session[BRANCH_SESSION_KEY] = selected_branch.id
             messages.success(
                 request,
                 ui_text(
@@ -80,6 +96,7 @@ def custom_logout(request):
 @login_required(login_url='clinic:login')
 def dashboard(request):
     greeting_name = request.user.get_short_name() or request.user.first_name or request.user.username
+    current_branch = getattr(request, "clinic_current_branch", None)
 
     context = {
         'segment': 'dashboard',
@@ -90,8 +107,13 @@ def dashboard(request):
             'Uma visao mais limpa da agenda, do atendimento e da saude financeira da clinica.',
             'A cleaner overview of scheduling, patient flow, and clinic financial health.',
         ),
+        'branch_scope_label': (
+            ui_text(request, 'Sucursal activa', 'Active branch') + f": {current_branch.name}"
+            if current_branch else ""
+        ),
         'current_date': timezone.localdate(),
         'greeting_name': greeting_name,
+        'current_branch': current_branch,
         'total_hospitals': 1,
         'total_doctors': 5,
         'total_patients': 24,
@@ -106,31 +128,31 @@ def dashboard(request):
         'daily_capacity': 68,
         'pending_followups': 3,
         'service_mix': [
-            {'label': 'Consultas confirmadas', 'value': 88, 'tone': 'success'},
-            {'label': 'Capacidade ocupada hoje', 'value': 68, 'tone': 'info'},
-            {'label': 'Meta de receita do mes', 'value': 76, 'tone': 'warning'},
+            {'label': ui_text(request, 'Consultas confirmadas', 'Confirmed consultations'), 'value': 88, 'tone': 'success'},
+            {'label': ui_text(request, 'Capacidade ocupada hoje', 'Capacity occupied today'), 'value': 68, 'tone': 'info'},
+            {'label': ui_text(request, 'Meta de receita do mes', 'Monthly revenue target'), 'value': 76, 'tone': 'warning'},
         ],
         'timeline_events': [
             {
-                'title': 'Checklist da recepcao concluido',
+                'title': ui_text(request, 'Checklist da recepcao concluido', 'Reception checklist completed'),
                 'time': '08:10',
                 'icon': 'task_alt',
                 'tone': 'success',
             },
             {
-                'title': '3 retornos precisam de confirmacao',
+                'title': ui_text(request, '3 retornos precisam de confirmacao', '3 follow-ups need confirmation'),
                 'time': '09:00',
                 'icon': 'call',
                 'tone': 'warning',
             },
             {
-                'title': 'Laboratorio enviou resultados pendentes',
+                'title': ui_text(request, 'Laboratorio enviou resultados pendentes', 'Laboratory sent pending results'),
                 'time': '10:25',
                 'icon': 'lab_profile',
                 'tone': 'info',
             },
             {
-                'title': 'Financeiro fechou conciliacao parcial',
+                'title': ui_text(request, 'Financeiro fechou conciliacao parcial', 'Finance closed a partial reconciliation'),
                 'time': '11:40',
                 'icon': 'payments',
                 'tone': 'primary',
@@ -140,31 +162,31 @@ def dashboard(request):
         'top_doctors': [
             {
                 'name': 'Dr. João Silva',
-                'specialty': 'Cardiologia',
+                'specialty': ui_text(request, 'Cardiologia', 'Cardiology'),
                 'appointments': 12,
                 'satisfaction': 98
             },
             {
                 'name': 'Dra. Maria Santos',
-                'specialty': 'Pediatria',
+                'specialty': ui_text(request, 'Pediatria', 'Pediatrics'),
                 'appointments': 11,
                 'satisfaction': 97
             },
             {
                 'name': 'Dr. Carlos Oliveira',
-                'specialty': 'Ortopedia',
+                'specialty': ui_text(request, 'Ortopedia', 'Orthopedics'),
                 'appointments': 10,
                 'satisfaction': 95
             },
             {
                 'name': 'Dra. Ana Costa',
-                'specialty': 'Dermatologia',
+                'specialty': ui_text(request, 'Dermatologia', 'Dermatology'),
                 'appointments': 9,
                 'satisfaction': 94
             },
             {
                 'name': 'Dr. Paulo Ferreira',
-                'specialty': 'Neurologia',
+                'specialty': ui_text(request, 'Neurologia', 'Neurology'),
                 'appointments': 8,
                 'satisfaction': 93
             },
@@ -175,37 +197,42 @@ def dashboard(request):
             {
                 'patient': 'João Dos Santos',
                 'doctor': 'Dr. João Silva',
-                'specialty': 'Cardiologia',
+                'specialty': ui_text(request, 'Cardiologia', 'Cardiology'),
                 'time': '09:00',
-                'status': 'Confirmado'
+                'status': ui_text(request, 'Confirmado', 'Confirmed'),
+                'tone': 'success',
             },
             {
                 'patient': 'Maria Silva',
                 'doctor': 'Dra. Maria Santos',
-                'specialty': 'Pediatria',
+                'specialty': ui_text(request, 'Pediatria', 'Pediatrics'),
                 'time': '09:30',
-                'status': 'Confirmado'
+                'status': ui_text(request, 'Confirmado', 'Confirmed'),
+                'tone': 'success',
             },
             {
                 'patient': 'Carlos Santos',
                 'doctor': 'Dr. Carlos Oliveira',
-                'specialty': 'Ortopedia',
+                'specialty': ui_text(request, 'Ortopedia', 'Orthopedics'),
                 'time': '10:00',
-                'status': 'Em andamento'
+                'status': ui_text(request, 'Em andamento', 'In progress'),
+                'tone': 'info',
             },
             {
                 'patient': 'Ana Costa',
                 'doctor': 'Dra. Ana Costa',
-                'specialty': 'Dermatologia',
+                'specialty': ui_text(request, 'Dermatologia', 'Dermatology'),
                 'time': '10:30',
-                'status': 'Confirmado'
+                'status': ui_text(request, 'Confirmado', 'Confirmed'),
+                'tone': 'success',
             },
             {
                 'patient': 'Paulo Oliveira',
                 'doctor': 'Dr. Paulo Ferreira',
-                'specialty': 'Neurologia',
+                'specialty': ui_text(request, 'Neurologia', 'Neurology'),
                 'time': '11:00',
-                'status': 'Confirmado'
+                'status': ui_text(request, 'Confirmado', 'Confirmed'),
+                'tone': 'success',
             },
         ],
     }

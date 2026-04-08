@@ -1,4 +1,4 @@
-{% load accounts_extras %}
+{% load accounts_extras ui_extras %}
 
 <div class="row mb-4">
   <div class="col-lg-5 mb-4 mb-lg-0">
@@ -6,14 +6,14 @@
       <div class="card-header p-4 border-0">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
           <div>
-            <p class="text-sm text-secondary mb-1">Permissão</p>
+            <p class="text-sm text-secondary mb-1">{% ui "Permissão" "Permission" %}</p>
             <h3 class="mb-1">{{ object.name }}</h3>
             <p class="text-secondary mb-0">{{ object.codename }}</p>
           </div>
 
           <div class="d-flex gap-2">
             {% if not is_system_permission %}
-              <a href="{% url 'accounts:permission_update' object.pk %}" data-modal-url="{% url 'accounts:permission_update' object.pk %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">Editar</a>
+              <a href="{% url 'accounts:permission_update' object.pk %}" data-modal-url="{% url 'accounts:permission_update' object.pk %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">{% ui "Editar" "Edit" %}</a>
             {% endif %}
           </div>
         </div>
@@ -22,23 +22,23 @@
       <div class="card-body pt-0">
         <div class="clinic-detail-grid">
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Escopo</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Escopo" "Scope" %}</p>
             <h6 class="mb-0">{{ object|permission_scope }}</h6>
           </div>
 
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">Tipo</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Tipo" "Type" %}</p>
             {% if is_system_permission %}
-              <span class="clinic-status clinic-status-info">Sistema</span>
+              <span class="clinic-status clinic-status-info">{% ui "Sistema" "System" %}</span>
             {% else %}
-              <span class="clinic-status clinic-status-warning">Personalizada</span>
+              <span class="clinic-status clinic-status-warning">{% ui "Personalizada" "Custom" %}</span>
             {% endif %}
           </div>
         </div>
 
         {% if is_system_permission %}
           <div class="alert alert-info text-white mt-4 mb-0">
-            Esta permissão faz parte do conjunto base do Django e está protegida contra edição ou remoção.
+            {% ui "Esta permissão faz parte do conjunto base do Django e está protegida contra edição ou remoção." "This permission is part of Django's base set and is protected against editing or removal." %}
           </div>
         {% endif %}
       </div>
@@ -48,8 +48,8 @@
   <div class="col-lg-7">
     <div class="card clinic-detail-card h-100">
       <div class="card-header p-4 border-0">
-        <h5 class="mb-1">Perfis ligados</h5>
-        <p class="text-secondary mb-0">Perfis que herdam este acesso automaticamente.</p>
+        <h5 class="mb-1">{% ui "Perfis ligados" "Linked roles" %}</h5>
+        <p class="text-secondary mb-0">{% ui "Perfis que herdam este acesso automaticamente." "Roles that automatically inherit this access." %}</p>
       </div>
 
       <div class="card-body pt-0">
@@ -57,7 +57,7 @@
           {% for role in linked_roles %}
             <span class="clinic-inline-badge">{{ role.name }}</span>
           {% empty %}
-            <span class="text-sm text-secondary">Nenhum perfil usa esta permissão neste momento.</span>
+            <span class="text-sm text-secondary">{% ui "Nenhum perfil usa esta permissão neste momento." "No role is using this permission right now." %}</span>
           {% endfor %}
         </div>
       </div>

@@ -1,3 +1,4 @@
+{% load ui_extras %}
 <div class="modal-content clinic-modal-card">
   <div class="modal-header">
     <div>
@@ -5,7 +6,7 @@
       <h4 class="mb-1">{{ modal_heading|default:page_title }}</h4>
       <p class="text-secondary mb-0">{{ modal_description|default:page_subtitle }}</p>
     </div>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% ui 'Fechar' 'Close' %}"></button>
   </div>
   <div class="modal-body clinic-modal-scroll-body">
     {% include detail_partial %}

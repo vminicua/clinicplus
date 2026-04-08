@@ -1,5 +1,5 @@
 {% extends "accounts/layouts/base.html" %}
-{% load accounts_extras %}
+{% load accounts_extras ui_extras %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -12,7 +12,7 @@
               <i class="material-symbols-rounded opacity-10">verified_user</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Total de permissões</p>
+              <p class="text-sm mb-0">{% ui "Total de permissões" "Total permissions" %}</p>
               <h4 class="mb-0">{{ total_permissions }}</h4>
             </div>
           </div>
@@ -26,7 +26,7 @@
               <i class="material-symbols-rounded opacity-10">shield_lock</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Permissões base</p>
+              <p class="text-sm mb-0">{% ui "Permissões base" "Base permissions" %}</p>
               <h4 class="mb-0">{{ system_permissions }}</h4>
             </div>
           </div>
@@ -40,7 +40,7 @@
               <i class="material-symbols-rounded opacity-10">new_releases</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Personalizadas</p>
+              <p class="text-sm mb-0">{% ui "Personalizadas" "Custom" %}</p>
               <h4 class="mb-0">{{ custom_permissions }}</h4>
             </div>
           </div>
@@ -52,19 +52,19 @@
       <div class="card-header p-4 border-0">
         <div class="clinic-list-toolbar">
           <div>
-            <h4 class="mb-1">Permissões disponíveis</h4>
-            <p class="text-secondary mb-0">As permissões base são protegidas. As personalizadas podem ser geridas aqui.</p>
+            <h4 class="mb-1">{% ui "Permissões disponíveis" "Available permissions" %}</h4>
+            <p class="text-secondary mb-0">{% ui "As permissões base são protegidas. As personalizadas podem ser geridas aqui." "Base permissions are protected. Custom permissions can be managed here." %}</p>
           </div>
 
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <div class="clinic-pill-group">
-              <a href="?kind=all" class="clinic-pill {% if current_kind == 'all' %}active{% endif %}">Todas</a>
-              <a href="?kind=system" class="clinic-pill {% if current_kind == 'system' %}active{% endif %}">Sistema</a>
-              <a href="?kind=custom" class="clinic-pill {% if current_kind == 'custom' %}active{% endif %}">Personalizadas</a>
+              <a href="?kind=all" class="clinic-pill {% if current_kind == 'all' %}active{% endif %}">{% ui "Todas" "All" %}</a>
+              <a href="?kind=system" class="clinic-pill {% if current_kind == 'system' %}active{% endif %}">{% ui "Sistema" "System" %}</a>
+              <a href="?kind=custom" class="clinic-pill {% if current_kind == 'custom' %}active{% endif %}">{% ui "Personalizadas" "Custom" %}</a>
             </div>
             <a href="{% url 'accounts:permission_create' %}" data-modal-url="{% url 'accounts:permission_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
               <i class="material-symbols-rounded text-sm me-1">verified_user</i>
-              Nova permissão
+              {% ui "Nova permissão" "New permission" %}
             </a>
           </div>
         </div>
@@ -72,14 +72,14 @@
 
       <div class="card-body px-0 pb-0">
         <div class="clinic-datatable-shell">
-          <table id="permissions-table" data-page-length="15" data-export-title="Permissões Clinic Plus" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+          <table id="permissions-table" data-page-length="15" data-export-title="{% ui 'Permissões Clinic Plus' 'Clinic Plus Permissions' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
-                <th class="ps-4">Permissão</th>
-                <th>Código</th>
-                <th>Módulo</th>
-                <th>Tipo</th>
-                <th class="text-end pe-4 not-export">Acções</th>
+                <th class="ps-4">{% ui "Permissão" "Permission" %}</th>
+                <th>{% ui "Código" "Code" %}</th>
+                <th>{% ui "Módulo" "Module" %}</th>
+                <th>{% ui "Tipo" "Type" %}</th>
+                <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
               </tr>
             </thead>
             <tbody>
@@ -92,18 +92,18 @@
                   <td><span class="text-sm">{{ permission|permission_scope }}</span></td>
                   <td>
                     {% if permission|permission_is_system %}
-                      <span class="clinic-status clinic-status-info">Sistema</span>
+                      <span class="clinic-status clinic-status-info">{% ui "Sistema" "System" %}</span>
                     {% else %}
-                      <span class="clinic-status clinic-status-warning">Personalizada</span>
+                      <span class="clinic-status clinic-status-warning">{% ui "Personalizada" "Custom" %}</span>
                     {% endif %}
                   </td>
                   <td class="text-end pe-4">
                     <div class="clinic-action-stack">
-                      <a href="{% url 'accounts:permission_detail' permission.pk %}" data-modal-url="{% url 'accounts:permission_detail' permission.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-muted" title="Ver detalhes">
+                      <a href="{% url 'accounts:permission_detail' permission.pk %}" data-modal-url="{% url 'accounts:permission_detail' permission.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-muted" title="{% ui 'Ver detalhes' 'View details' %}">
                         <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
                       </a>
                       {% if not permission|permission_is_system %}
-                        <a href="{% url 'accounts:permission_update' permission.pk %}" data-modal-url="{% url 'accounts:permission_update' permission.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="Editar permissão">
+                        <a href="{% url 'accounts:permission_update' permission.pk %}" data-modal-url="{% url 'accounts:permission_update' permission.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="{% ui 'Editar permissão' 'Edit permission' %}">
                           <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
                         </a>
                       {% endif %}

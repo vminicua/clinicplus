@@ -1,3 +1,4 @@
+{% load ui_extras %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -49,8 +50,8 @@
         return;
       }
       Swal.fire({
-        title: title || 'Processando...',
-        text: text || 'Aguarde um momento.',
+        title: title || '{% ui "Processando..." "Processing..." %}',
+        text: text || '{% ui "Aguarde um momento." "Please wait a moment." %}',
         allowOutsideClick: false,
         allowEscapeKey: false,
         didOpen: () => {
@@ -197,7 +198,7 @@
           const modalSize = trigger.dataset.modalSize || 'modal-lg';
 
           try {
-            showProcessing('A carregar...', 'Estamos a preparar o formulário.');
+            showProcessing('{% ui "A carregar..." "Loading..." %}', '{% ui "Estamos a preparar o formulário." "We are preparing the form." %}');
             const separator = url.includes('?') ? '&' : '?';
             const response = await fetch(`${url}${separator}modal=1`, {
               headers: {
@@ -212,7 +213,7 @@
             initClinicShell(modalElement);
           } catch (error) {
             console.error(error);
-            showFeedback('error', 'Erro', 'Não foi possível carregar este formulário.');
+            showFeedback('error', '{% ui "Erro" "Error" %}', '{% ui "Não foi possível carregar este formulário." "We could not load this form." %}');
           }
         });
       });
@@ -221,8 +222,8 @@
     async function submitModalForm(form) {
       try {
         showProcessing(
-          form.dataset.processingTitle || 'Processando...',
-          form.dataset.processingText || 'Aguarde um momento.'
+          form.dataset.processingTitle || '{% ui "Processando..." "Processing..." %}',
+          form.dataset.processingText || '{% ui "Aguarde um momento." "Please wait a moment." %}'
         );
 
         const formData = new FormData(form);
@@ -246,7 +247,7 @@
           if (modalInstance) {
             modalInstance.hide();
           }
-          showFeedback('success', 'Sucesso', data.message || 'Operação concluída com sucesso.');
+          showFeedback('success', '{% ui "Sucesso" "Success" %}', data.message || '{% ui "Operação concluída com sucesso." "Operation completed successfully." %}');
           if (data.redirect_url) {
             setTimeout(() => {
               window.location.href = data.redirect_url;
@@ -266,11 +267,11 @@
         Swal.close();
         initClinicShell(modalElement);
         if (!response.ok) {
-          showFeedback('error', 'Dados por corrigir', 'Revise os campos destacados e tente novamente.');
+          showFeedback('error', '{% ui "Dados por corrigir" "Data needs attention" %}', '{% ui "Revise os campos destacados e tente novamente." "Review the highlighted fields and try again." %}');
         }
       } catch (error) {
         console.error(error);
-        showFeedback('error', 'Erro', 'O processamento falhou. Tente novamente.');
+        showFeedback('error', '{% ui "Erro" "Error" %}', '{% ui "O processamento falhou. Tente novamente." "Processing failed. Please try again." %}');
       }
     }
 
@@ -289,8 +290,8 @@
           }
 
           showProcessing(
-            form.dataset.processingTitle || 'Processando...',
-            form.dataset.processingText || 'Aguarde um momento.'
+            form.dataset.processingTitle || '{% ui "Processando..." "Processing..." %}',
+            form.dataset.processingText || '{% ui "Aguarde um momento." "Please wait a moment." %}'
           );
         });
       });
@@ -314,19 +315,19 @@
         const instance = $table.DataTable({
           pageLength: defaultLength,
           lengthChange: true,
-          lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Todos']],
+          lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, '{% ui "Todos" "All" %}']],
           ordering: true,
           responsive: false,
           autoWidth: false,
           pagingType: 'simple_numbers',
           info: true,
           language: {
-            search: 'Pesquisar:',
-            lengthMenu: 'Mostrar _MENU_ registos',
-            info: 'A mostrar _START_ até _END_ de _TOTAL_ registos',
-            infoEmpty: 'Sem registos para mostrar',
-            infoFiltered: '(filtrado de _MAX_ registos)',
-            zeroRecords: 'Nenhum registo encontrado',
+            search: '{% ui "Pesquisar:" "Search:" %}',
+            lengthMenu: '{% ui "Mostrar _MENU_ registos" "Show _MENU_ records" %}',
+            info: '{% ui "A mostrar _START_ até _END_ de _TOTAL_ registos" "Showing _START_ to _END_ of _TOTAL_ records" %}',
+            infoEmpty: '{% ui "Sem registos para mostrar" "No records to show" %}',
+            infoFiltered: '{% ui "(filtrado de _MAX_ registos)" "(filtered from _MAX_ records)" %}',
+            zeroRecords: '{% ui "Nenhum registo encontrado" "No records found" %}',
             paginate: {
               first: '<<',
               previous: '<',
@@ -341,7 +342,7 @@
           buttons: [
             {
               extend: 'copyHtml5',
-              text: 'Copiar',
+              text: '{% ui "Copiar" "Copy" %}',
               className: 'btn btn-outline-dark btn-sm',
               exportOptions: {
                 columns: ':not(.not-export)'
@@ -367,7 +368,7 @@
             },
             {
               extend: 'print',
-              text: 'Imprimir',
+              text: '{% ui "Imprimir" "Print" %}',
               title: exportTitle,
               className: 'btn btn-outline-dark btn-sm',
               exportOptions: {
@@ -419,10 +420,10 @@
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || 'O processamento falhou.');
+        throw new Error(data.message || '{% ui "O processamento falhou." "Processing failed." %}');
       }
 
-      showFeedback('success', 'Sucesso', data.message || 'Operação concluída com sucesso.');
+      showFeedback('success', '{% ui "Sucesso" "Success" %}', data.message || '{% ui "Operação concluída com sucesso." "Operation completed successfully." %}');
       setTimeout(() => {
         if (data.redirect_url) {
           window.location.href = data.redirect_url;
@@ -443,11 +444,11 @@
 
           const result = await Swal.fire({
             icon: trigger.dataset.confirmIcon || 'warning',
-            title: trigger.dataset.confirmTitle || 'Confirmar',
-            text: trigger.dataset.confirmText || 'Deseja continuar?',
+            title: trigger.dataset.confirmTitle || '{% ui "Confirmar" "Confirm" %}',
+            text: trigger.dataset.confirmText || '{% ui "Deseja continuar?" "Do you want to continue?" %}',
             showCancelButton: true,
-            confirmButtonText: trigger.dataset.confirmButton || 'Confirmar',
-            cancelButtonText: 'Cancelar',
+            confirmButtonText: trigger.dataset.confirmButton || '{% ui "Confirmar" "Confirm" %}',
+            cancelButtonText: '{% ui "Cancelar" "Cancel" %}',
           });
 
           if (!result.isConfirmed) {
@@ -455,11 +456,11 @@
           }
 
           try {
-            showProcessing('Processando...', 'Estamos a actualizar o estado.');
+            showProcessing('{% ui "Processando..." "Processing..." %}', '{% ui "Estamos a actualizar o estado." "We are updating the status." %}');
             await submitConfirmedAction(trigger);
           } catch (error) {
             console.error(error);
-            showFeedback('error', 'Erro', error.message || 'A operação falhou.');
+            showFeedback('error', '{% ui "Erro" "Error" %}', error.message || '{% ui "A operação falhou." "The operation failed." %}');
           }
         });
       });

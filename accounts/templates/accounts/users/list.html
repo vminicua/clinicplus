@@ -1,4 +1,5 @@
 {% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -11,7 +12,7 @@
               <i class="material-symbols-rounded opacity-10">groups</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Total de utilizadores</p>
+              <p class="text-sm mb-0">{% ui "Total de utilizadores" "Total users" %}</p>
               <h4 class="mb-0">{{ total_users }}</h4>
             </div>
           </div>
@@ -25,7 +26,7 @@
               <i class="material-symbols-rounded opacity-10">verified</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Activos</p>
+              <p class="text-sm mb-0">{% ui "Activos" "Active" %}</p>
               <h4 class="mb-0">{{ active_users }}</h4>
             </div>
           </div>
@@ -39,7 +40,7 @@
               <i class="material-symbols-rounded opacity-10">admin_panel_settings</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Com acesso técnico</p>
+              <p class="text-sm mb-0">{% ui "Com acesso técnico" "With technical access" %}</p>
               <h4 class="mb-0">{{ staff_users }}</h4>
             </div>
           </div>
@@ -53,7 +54,7 @@
               <i class="material-symbols-rounded opacity-10">badge</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Com perfis</p>
+              <p class="text-sm mb-0">{% ui "Com perfis" "With roles" %}</p>
               <h4 class="mb-0">{{ users_with_roles }}</h4>
             </div>
           </div>
@@ -65,18 +66,18 @@
       <div class="card-header p-4 border-0">
         <div class="clinic-list-toolbar">
           <div>
-            <h4 class="mb-1">Lista de utilizadores</h4>
-            <p class="text-secondary mb-0">Gestão de contas com perfis, estado e idioma preferido.</p>
+            <h4 class="mb-1">{% ui "Lista de utilizadores" "User list" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Gestão de contas com perfis, estado e idioma preferido." "Account management with roles, status, and preferred language." %}</p>
           </div>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <div class="clinic-pill-group">
-              <a href="#" class="clinic-pill active" data-table-pill="users-table" data-column="4" data-value="">Todos</a>
-              <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="4" data-value="Activo">Activos</a>
-              <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="4" data-value="Inactivo">Inactivos</a>
+              <a href="#" class="clinic-pill active" data-table-pill="users-table" data-column="4" data-value="">{% ui "Todos" "All" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="4" data-value="{% ui 'Activo' 'Active' %}">{% ui "Activos" "Active" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="4" data-value="{% ui 'Inactivo' 'Inactive' %}">{% ui "Inactivos" "Inactive" %}</a>
             </div>
             <a href="{% url 'accounts:user_create' %}" data-modal-url="{% url 'accounts:user_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
               <i class="material-symbols-rounded text-sm me-1">person_add</i>
-              Novo utilizador
+              {% ui "Novo utilizador" "New user" %}
             </a>
           </div>
         </div>
@@ -84,16 +85,16 @@
 
       <div class="card-body px-0 pb-0">
         <div class="clinic-datatable-shell">
-          <table id="users-table" data-page-length="10" data-export-title="Utilizadores Clinic Plus" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+          <table id="users-table" data-page-length="10" data-export-title="{% ui 'Utilizadores Clinic Plus' 'Clinic Plus Users' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
-                <th class="ps-4">Utilizador</th>
-                <th>Perfis</th>
-                <th>Sucursais</th>
-                <th>Idioma</th>
-                <th>Estado</th>
-                <th>Último acesso</th>
-                <th class="text-end pe-4 not-export">Acções</th>
+                <th class="ps-4">{% ui "Utilizador" "User" %}</th>
+                <th>{% ui "Perfis" "Roles" %}</th>
+                <th>{% ui "Sucursais" "Branches" %}</th>
+                <th>{% ui "Idioma" "Language" %}</th>
+                <th>{% ui "Estado" "Status" %}</th>
+                <th>{% ui "Último acesso" "Last access" %}</th>
+                <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
               </tr>
             </thead>
             <tbody>
@@ -102,7 +103,9 @@
                   <td class="ps-4">
                     <div>
                       <h6 class="mb-0 text-sm">{{ user_item.get_full_name|default:user_item.username }}</h6>
-                      <p class="text-xs text-secondary mb-0">{{ user_item.username }} · {{ user_item.email|default:"Sem email" }}</p>
+                      <p class="text-xs text-secondary mb-0">
+                        {{ user_item.username }} · {% if user_item.email %}{{ user_item.email }}{% else %}{% ui "Sem email" "No email" %}{% endif %}
+                      </p>
                     </div>
                   </td>
                   <td>
@@ -110,14 +113,14 @@
                       {% for role in user_item.groups.all %}
                         <span class="clinic-inline-badge">{{ role.name }}</span>
                       {% empty %}
-                        <span class="text-sm text-secondary">Sem perfis</span>
+                        <span class="text-sm text-secondary">{% ui "Sem perfis" "No roles" %}</span>
                       {% endfor %}
                     </div>
                   </td>
                   <td>
                     <div class="clinic-inline-list">
                       {% if user_item.profile.default_branch %}
-                        <span class="clinic-inline-badge">{{ user_item.profile.default_branch.name }} · Principal</span>
+                        <span class="clinic-inline-badge">{{ user_item.profile.default_branch.name }} · {% ui "Principal" "Primary" %}</span>
                       {% endif %}
                       {% for branch in user_item.profile.assigned_branches.all %}
                         {% if not user_item.profile.default_branch or branch.pk != user_item.profile.default_branch.pk %}
@@ -125,7 +128,7 @@
                         {% endif %}
                       {% empty %}
                         {% if not user_item.profile.default_branch %}
-                          <span class="text-sm text-secondary">Sem sucursais</span>
+                          <span class="text-sm text-secondary">{% ui "Sem sucursais" "No branches" %}</span>
                         {% endif %}
                       {% endfor %}
                     </div>
@@ -135,9 +138,9 @@
                   </td>
                   <td>
                     {% if user_item.is_active %}
-                      <span class="clinic-status clinic-status-success">Activo</span>
+                      <span class="clinic-status clinic-status-success">{% ui "Activo" "Active" %}</span>
                     {% else %}
-                      <span class="clinic-status clinic-status-muted">Inactivo</span>
+                      <span class="clinic-status clinic-status-muted">{% ui "Inactivo" "Inactive" %}</span>
                     {% endif %}
                   </td>
                   <td>
@@ -145,24 +148,24 @@
                       {% if user_item.last_login %}
                         {{ user_item.last_login|date:"d/m/Y H:i" }}
                       {% else %}
-                        Nunca entrou
+                        {% ui "Nunca entrou" "Never signed in" %}
                       {% endif %}
                     </span>
                   </td>
                   <td class="text-end pe-4">
                     <div class="clinic-action-stack">
-                      <a href="{% url 'accounts:user_detail' user_item.pk %}" data-modal-url="{% url 'accounts:user_detail' user_item.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="Ver detalhes">
+                      <a href="{% url 'accounts:user_detail' user_item.pk %}" data-modal-url="{% url 'accounts:user_detail' user_item.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="{% ui 'Ver detalhes' 'View details' %}">
                         <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
                       </a>
-                      <a href="{% url 'accounts:user_update' user_item.pk %}" data-modal-url="{% url 'accounts:user_update' user_item.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="Editar utilizador">
+                      <a href="{% url 'accounts:user_update' user_item.pk %}" data-modal-url="{% url 'accounts:user_update' user_item.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="{% ui 'Editar utilizador' 'Edit user' %}">
                         <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
                       </a>
                       {% if user_item.is_active %}
-                        <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' user_item.pk %}" data-confirm-title="Desactivar utilizador" data-confirm-text="O acesso deste utilizador será bloqueado até nova activação." data-confirm-button="Desactivar" data-confirm-icon="warning" class="clinic-action-btn is-warning" title="Desactivar utilizador">
+                        <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' user_item.pk %}" data-confirm-title="{% ui 'Desactivar utilizador' 'Deactivate user' %}" data-confirm-text="{% ui 'O acesso deste utilizador será bloqueado até nova activação.' 'This user will be blocked until reactivated.' %}" data-confirm-button="{% ui 'Desactivar' 'Deactivate' %}" data-confirm-icon="warning" class="clinic-action-btn is-warning" title="{% ui 'Desactivar utilizador' 'Deactivate user' %}">
                           <i class="material-symbols-rounded" style="font-size: 1rem;">block</i>
                         </a>
                       {% else %}
-                        <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' user_item.pk %}" data-confirm-title="Activar utilizador" data-confirm-text="O utilizador voltará a poder entrar no sistema." data-confirm-button="Activar" data-confirm-icon="question" class="clinic-action-btn is-info" title="Activar utilizador">
+                        <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' user_item.pk %}" data-confirm-title="{% ui 'Activar utilizador' 'Activate user' %}" data-confirm-text="{% ui 'O utilizador voltará a poder entrar no sistema.' 'The user will be able to sign in again.' %}" data-confirm-button="{% ui 'Activar' 'Activate' %}" data-confirm-icon="question" class="clinic-action-btn is-info" title="{% ui 'Activar utilizador' 'Activate user' %}">
                           <i class="material-symbols-rounded" style="font-size: 1rem;">check_circle</i>
                         </a>
                       {% endif %}

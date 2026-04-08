@@ -6,11 +6,13 @@ from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 
+from .i18n import translate_pair
 from .models import Branch, SystemPreference, UserProfile
 from .utils import build_permission_matrix, describe_permission_scope, visible_users_queryset
 
 
 User = get_user_model()
+tr = translate_pair
 
 
 class StyledFormMixin:
@@ -59,39 +61,51 @@ class ContentTypeChoiceField(forms.ModelChoiceField):
 
 class UserForm(StyledFormMixin, forms.ModelForm):
     password1 = forms.CharField(
-        label="Palavra-passe",
+        label=tr("Palavra-passe", "Password"),
         required=False,
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
-        help_text="Obrigatória ao criar. Na edição, preencha apenas se quiser alterar.",
+        help_text=tr(
+            "Obrigatória ao criar. Na edição, preencha apenas se quiser alterar.",
+            "Required when creating. On edit, fill it only if you want to change it.",
+        ),
     )
     password2 = forms.CharField(
-        label="Confirmar palavra-passe",
+        label=tr("Confirmar palavra-passe", "Confirm password"),
         required=False,
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
     )
     groups = forms.ModelMultipleChoiceField(
         queryset=Group.objects.order_by("name"),
         required=False,
-        label="Perfis (roles)",
-        help_text="Perfis que definem o acesso principal deste utilizador.",
+        label=tr("Perfis (roles)", "Roles"),
+        help_text=tr(
+            "Perfis que definem o acesso principal deste utilizador.",
+            "Roles that define this user's main access.",
+        ),
         widget=forms.CheckboxSelectMultiple,
     )
     preferred_language = forms.ChoiceField(
         choices=UserProfile.LANGUAGE_CHOICES,
-        label="Idioma preferido",
+        label=tr("Idioma preferido", "Preferred language"),
     )
     assigned_branches = forms.ModelMultipleChoiceField(
         queryset=Branch.objects.order_by("name"),
         required=False,
-        label="Sucursais atribuídas",
-        help_text="Defina em que sucursais este utilizador pode operar.",
+        label=tr("Sucursais atribuídas", "Assigned branches"),
+        help_text=tr(
+            "Defina em que sucursais este utilizador pode operar.",
+            "Choose which branches this user can operate in.",
+        ),
         widget=forms.CheckboxSelectMultiple,
     )
     default_branch = forms.ModelChoiceField(
         queryset=Branch.objects.order_by("name"),
         required=False,
-        label="Sucursal principal",
-        help_text="Opcional. Deve fazer parte das sucursais atribuídas.",
+        label=tr("Sucursal principal", "Primary branch"),
+        help_text=tr(
+            "Opcional. Deve fazer parte das sucursais atribuídas.",
+            "Optional. It must be one of the assigned branches.",
+        ),
     )
 
     class Meta:
@@ -106,18 +120,24 @@ class UserForm(StyledFormMixin, forms.ModelForm):
             "groups",
         ]
         labels = {
-            "username": "Nome de utilizador",
-            "first_name": "Nome",
-            "last_name": "Apelido",
+            "username": tr("Nome de utilizador", "Username"),
+            "first_name": tr("Nome", "First name"),
+            "last_name": tr("Apelido", "Last name"),
             "email": "Email",
-            "is_active": "Activo",
-            "is_staff": "Acesso técnico",
+            "is_active": tr("Activo", "Active"),
+            "is_staff": tr("Acesso técnico", "Technical access"),
         }
         help_texts = {
-            "username": "Identificador usado para entrar no sistema.",
-            "email": "Contacto principal do utilizador.",
-            "is_active": "Desactive para bloquear o acesso sem apagar o registo.",
-            "is_staff": "Use apenas quando este utilizador precisar de acesso técnico reservado.",
+            "username": tr("Identificador usado para entrar no sistema.", "Identifier used to sign in."),
+            "email": tr("Contacto principal do utilizador.", "Main contact for this user."),
+            "is_active": tr(
+                "Desactive para bloquear o acesso sem apagar o registo.",
+                "Disable to block access without deleting the record.",
+            ),
+            "is_staff": tr(
+                "Use apenas quando este utilizador precisar de acesso técnico reservado.",
+                "Use only when this user needs reserved technical access.",
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -147,16 +167,31 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         default_branch = cleaned_data.get("default_branch")
 
         if self.is_create and not password1:
-            self.add_error("password1", "A palavra-passe é obrigatória ao criar um utilizador.")
+            self.add_error(
+                "password1",
+                tr(
+                    "A palavra-passe é obrigatória ao criar um utilizador.",
+                    "Password is required when creating a user.",
+                ),
+            )
 
         if password1 or password2:
             if password1 != password2:
-                self.add_error("password2", "A confirmação da palavra-passe não coincide.")
+                self.add_error(
+                    "password2",
+                    tr(
+                        "A confirmação da palavra-passe não coincide.",
+                        "The password confirmation does not match.",
+                    ),
+                )
 
         if default_branch and assigned_branches is not None and default_branch not in assigned_branches:
             self.add_error(
                 "default_branch",
-                "Seleccione a sucursal principal a partir das sucursais atribuídas.",
+                tr(
+                    "Seleccione a sucursal principal a partir das sucursais atribuídas.",
+                    "Select the primary branch from the assigned branches.",
+                ),
             )
 
         return cleaned_data
@@ -189,8 +224,11 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
     assigned_users = forms.ModelMultipleChoiceField(
         queryset=User.objects.order_by("first_name", "last_name", "username"),
         required=False,
-        label="Utilizadores alocados",
-        help_text="Escolha quem pode operar nesta sucursal.",
+        label=tr("Utilizadores alocados", "Allocated users"),
+        help_text=tr(
+            "Escolha quem pode operar nesta sucursal.",
+            "Choose who can operate in this branch.",
+        ),
         widget=forms.CheckboxSelectMultiple,
     )
 
@@ -206,18 +244,24 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
             "is_active",
         ]
         labels = {
-            "name": "Nome da sucursal",
-            "code": "Código",
-            "city": "Cidade",
-            "address": "Endereço",
-            "phone": "Telefone",
+            "name": tr("Nome da sucursal", "Branch name"),
+            "code": tr("Código", "Code"),
+            "city": tr("Cidade", "City"),
+            "address": tr("Endereço", "Address"),
+            "phone": tr("Telefone", "Phone"),
             "email": "Email",
-            "is_active": "Activa",
+            "is_active": tr("Activa", "Active"),
         }
         help_texts = {
-            "code": "Use um código curto para identificar a sucursal internamente.",
-            "city": "Cidade principal desta unidade.",
-            "address": "Morada física ou referência da unidade.",
+            "code": tr(
+                "Use um código curto para identificar a sucursal internamente.",
+                "Use a short code to identify the branch internally.",
+            ),
+            "city": tr("Cidade principal desta unidade.", "Main city for this branch."),
+            "address": tr(
+                "Morada física ou referência da unidade.",
+                "Physical address or a location reference for this branch.",
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -264,12 +308,18 @@ class SystemPreferenceForm(StyledFormMixin, forms.ModelForm):
         model = SystemPreference
         fields = ["default_language", "default_currency"]
         labels = {
-            "default_language": "Idioma do sistema",
-            "default_currency": "Moeda base",
+            "default_language": tr("Idioma do sistema", "System language"),
+            "default_currency": tr("Moeda base", "Base currency"),
         }
         help_texts = {
-            "default_language": "Usado como idioma inicial quando o utilizador ainda não escolheu um idioma.",
-            "default_currency": "Moeda usada por defeito no sistema. O valor inicial é Metical.",
+            "default_language": tr(
+                "Usado como idioma inicial quando o utilizador ainda não escolheu um idioma.",
+                "Used as the initial language when the user has not chosen one yet.",
+            ),
+            "default_currency": tr(
+                "Moeda usada por defeito no sistema. O valor inicial é Metical.",
+                "Default currency used by the system. The initial value is Metical.",
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -285,8 +335,11 @@ class RoleForm(StyledFormMixin, forms.ModelForm):
             "name",
         ),
         required=False,
-        label="Permissões atribuídas",
-        help_text="Seleccione as permissões que compõem este perfil.",
+        label=tr("Permissões atribuídas", "Assigned permissions"),
+        help_text=tr(
+            "Seleccione as permissões que compõem este perfil.",
+            "Select the permissions that make up this role.",
+        ),
         widget=forms.MultipleHiddenInput,
     )
 
@@ -294,10 +347,13 @@ class RoleForm(StyledFormMixin, forms.ModelForm):
         model = Group
         fields = ["name", "permissions"]
         labels = {
-            "name": "Nome do perfil",
+            "name": tr("Nome do perfil", "Role name"),
         }
         help_texts = {
-            "name": "Ex.: Administrador do Sistema, Recepcionista, Médico.",
+            "name": tr(
+                "Ex.: Administrador do Sistema, Recepcionista, Médico.",
+                "Example: System Administrator, Receptionist, Doctor.",
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -318,19 +374,25 @@ class RoleForm(StyledFormMixin, forms.ModelForm):
 class PermissionForm(StyledFormMixin, forms.ModelForm):
     content_type = ContentTypeChoiceField(
         queryset=ContentType.objects.order_by("app_label", "model"),
-        label="Módulo / entidade",
+        label=tr("Módulo / entidade", "Module / entity"),
     )
 
     class Meta:
         model = Permission
         fields = ["name", "codename", "content_type"]
         labels = {
-            "name": "Nome visível",
-            "codename": "Código interno",
+            "name": tr("Nome visível", "Visible name"),
+            "codename": tr("Código interno", "Internal code"),
         }
         help_texts = {
-            "name": "Nome que será mostrado nas listas de permissões.",
-            "codename": "Use letras minúsculas, números e underscore.",
+            "name": tr(
+                "Nome que será mostrado nas listas de permissões.",
+                "Name that will be shown in permission lists.",
+            ),
+            "codename": tr(
+                "Use letras minúsculas, números e underscore.",
+                "Use lowercase letters, numbers, and underscore.",
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -341,6 +403,9 @@ class PermissionForm(StyledFormMixin, forms.ModelForm):
         codename = (self.cleaned_data.get("codename") or "").strip().lower()
         if not re.fullmatch(r"[a-z0-9_]+", codename):
             raise forms.ValidationError(
-                "Use apenas letras minúsculas, números e underscore no código interno."
+                tr(
+                    "Use apenas letras minúsculas, números e underscore no código interno.",
+                    "Use only lowercase letters, numbers, and underscore in the internal code.",
+                )
             )
         return codename

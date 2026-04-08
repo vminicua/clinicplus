@@ -22,6 +22,7 @@ urlpatterns = [
     ),
     path("preferencias/", views.SystemPreferenceView.as_view(), name="system_preferences"),
     path("preferencias/idioma/", views.LanguageSwitchView.as_view(), name="switch_language"),
+    path("preferencias/sucursal/", views.BranchSwitchView.as_view(), name="switch_branch"),
     path("perfis/", views.RoleListView.as_view(), name="role_list"),
     path("perfis/novo/", views.RoleCreateView.as_view(), name="role_create"),
     path("perfis/<int:pk>/", views.RoleDetailView.as_view(), name="role_detail"),

@@ -3,48 +3,66 @@ from collections import OrderedDict
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 
+from .i18n import translate_pair
+
 
 User = get_user_model()
+tr = translate_pair
 
 SYSTEM_PERMISSION_ACTIONS = ("add", "change", "delete", "view")
 STANDARD_PERMISSION_LABELS = OrderedDict(
     [
-        ("view", "Ver"),
-        ("add", "Criar"),
-        ("change", "Editar"),
-        ("delete", "Eliminar"),
+        ("view", tr("Ver", "View")),
+        ("add", tr("Criar", "Create")),
+        ("change", tr("Editar", "Edit")),
+        ("delete", tr("Eliminar", "Delete")),
     ]
 )
 
 APP_SECTION_METADATA = {
     "auth": {
-        "title": "Acessos e segurança",
-        "description": "Controlo de utilizadores, perfis e permissões do sistema.",
+        "title": tr("Acessos e segurança", "Access and security"),
+        "description": tr(
+            "Controlo de utilizadores, perfis e permissões do sistema.",
+            "Control of users, roles, and system permissions.",
+        ),
         "order": 10,
     },
     "accounts": {
-        "title": "Organização e preferências",
-        "description": "Sucursais, preferências globais e definições complementares das contas.",
+        "title": tr("Organização e preferências", "Organization and preferences"),
+        "description": tr(
+            "Sucursais, preferências globais e definições complementares das contas.",
+            "Branches, global preferences, and complementary account settings.",
+        ),
         "order": 20,
     },
     "clinic": {
-        "title": "Operação clínica",
-        "description": "Permissões ligadas aos módulos operacionais da clínica.",
+        "title": tr("Operação clínica", "Clinical operations"),
+        "description": tr(
+            "Permissões ligadas aos módulos operacionais da clínica.",
+            "Permissions tied to the clinic operational modules.",
+        ),
         "order": 30,
     },
     "admin": {
-        "title": "Auditoria técnica",
-        "description": "Registos técnicos e logs do painel administrativo.",
+        "title": tr("Auditoria técnica", "Technical audit"),
+        "description": tr(
+            "Registos técnicos e logs do painel administrativo.",
+            "Technical records and admin panel logs.",
+        ),
         "order": 40,
     },
     "contenttypes": {
-        "title": "Infra-estrutura Django",
-        "description": "Permissões internas do framework.",
+        "title": tr("Infra-estrutura Django", "Django infrastructure"),
+        "description": tr("Permissões internas do framework.", "Internal framework permissions."),
         "order": 50,
     },
     "sessions": {
-        "title": "Sessões",
-        "description": "Controlo técnico de sessões de autenticação.",
+        "title": tr("Sessões", "Sessions"),
+        "description": tr(
+            "Controlo técnico de sessões de autenticação.",
+            "Technical control of authentication sessions.",
+        ),
         "order": 60,
     },
 }
@@ -243,7 +261,10 @@ def build_permission_matrix(selected_permission_ids=None):
             app_label,
             {
                 "title": app_label.replace("_", " ").title(),
-                "description": "Permissões agrupadas automaticamente por módulo.",
+                "description": tr(
+                    "Permissões agrupadas automaticamente por módulo.",
+                    "Permissions grouped automatically by module.",
+                ),
                 "order": 999,
             },
         )

@@ -1,4 +1,5 @@
 {% extends 'layouts/base.html' %}
+{% load ui_extras %}
 
 {% block sidebar %}
   {% include 'clinic/partials/sidebar.html' %}
@@ -246,18 +247,21 @@
               <div class="col-lg-7">
                 <span class="clinic-chip mb-3">
                   <i class="material-symbols-rounded" style="font-size: 1rem;">favorite</i>
-                  Clinica em operacao
+                  {% ui "Clinica em operacao" "Clinic in operation" %}
                 </span>
                 <h2 class="text-white mb-2">{{ page_title }}</h2>
                 <p class="text-white opacity-8 mb-4">{{ page_subtitle }}</p>
+                {% if branch_scope_label %}
+                  <div class="clinic-chip mb-4">{{ branch_scope_label }}</div>
+                {% endif %}
                 <div class="d-flex flex-wrap gap-2">
                   <a href="#agenda" class="btn bg-white text-dark mb-0">
                     <i class="material-symbols-rounded text-sm me-1">calendar_month</i>
-                    Ver agenda de hoje
+                    {% ui "Ver agenda de hoje" "View today's schedule" %}
                   </a>
                   <a href="#operations" class="btn btn-outline-white mb-0">
                     <i class="material-symbols-rounded text-sm me-1">monitoring</i>
-                    Ver painel operacional
+                    {% ui "Ver painel operacional" "View operations panel" %}
                   </a>
                 </div>
               </div>
@@ -265,30 +269,30 @@
                 <div class="row g-3">
                   <div class="col-sm-6">
                     <div class="clinic-mini-stat h-100">
-                      <p class="text-sm text-white opacity-8 mb-1">Consultas hoje</p>
+                      <p class="text-sm text-white opacity-8 mb-1">{% ui "Consultas hoje" "Appointments today" %}</p>
                       <h3 class="text-white mb-1">{{ appointments_today }}</h3>
-                      <p class="text-sm text-white opacity-8 mb-0">Fluxo sem atraso critico</p>
+                      <p class="text-sm text-white opacity-8 mb-0">{% ui "Fluxo sem atraso critico" "Flow with no critical delay" %}</p>
                     </div>
                   </div>
                   <div class="col-sm-6">
                     <div class="clinic-mini-stat h-100">
-                      <p class="text-sm text-white opacity-8 mb-1">Satisfacao</p>
+                      <p class="text-sm text-white opacity-8 mb-1">{% ui "Satisfacao" "Satisfaction" %}</p>
                       <h3 class="text-white mb-1">{{ satisfaction_rate }}%</h3>
-                      <p class="text-sm text-white opacity-8 mb-0">Experiencia positiva</p>
+                      <p class="text-sm text-white opacity-8 mb-0">{% ui "Experiencia positiva" "Positive experience" %}</p>
                     </div>
                   </div>
                   <div class="col-sm-6">
                     <div class="clinic-mini-stat h-100">
-                      <p class="text-sm text-white opacity-8 mb-1">Receita do dia</p>
+                      <p class="text-sm text-white opacity-8 mb-1">{% ui "Receita do dia" "Revenue today" %}</p>
                       <h3 class="text-white mb-1">{{ revenue_today }}</h3>
-                      <p class="text-sm text-white opacity-8 mb-0">Bom ritmo de faturacao</p>
+                      <p class="text-sm text-white opacity-8 mb-0">{% ui "Bom ritmo de faturacao" "Healthy billing pace" %}</p>
                     </div>
                   </div>
                   <div class="col-sm-6">
                     <div class="clinic-mini-stat h-100">
-                      <p class="text-sm text-white opacity-8 mb-1">Follow-ups</p>
+                      <p class="text-sm text-white opacity-8 mb-1">{% ui "Acompanhamentos" "Follow-ups" %}</p>
                       <h3 class="text-white mb-1">{{ pending_followups }}</h3>
-                      <p class="text-sm text-white opacity-8 mb-0">Retornos para confirmar</p>
+                      <p class="text-sm text-white opacity-8 mb-0">{% ui "Retornos para confirmar" "Follow-up returns to confirm" %}</p>
                     </div>
                   </div>
                 </div>
@@ -307,7 +311,7 @@
               <i class="material-symbols-rounded opacity-10">groups</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Pacientes</p>
+              <p class="text-sm mb-0">{% ui "Pacientes" "Patients" %}</p>
               <h4 class="mb-0">{{ total_patients }}</h4>
             </div>
           </div>
@@ -326,7 +330,7 @@
               <i class="material-symbols-rounded opacity-10">stethoscope</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Medicos ativos</p>
+              <p class="text-sm mb-0">{% ui "Medicos ativos" "Active doctors" %}</p>
               <h4 class="mb-0">{{ total_doctors }}</h4>
             </div>
           </div>
@@ -345,7 +349,7 @@
               <i class="material-symbols-rounded opacity-10">event_available</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Agendamentos</p>
+              <p class="text-sm mb-0">{% ui "Agendamentos" "Appointments" %}</p>
               <h4 class="mb-0">{{ total_appointments }}</h4>
             </div>
           </div>
@@ -364,7 +368,7 @@
               <i class="material-symbols-rounded opacity-10">monitoring</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Receita do mes</p>
+              <p class="text-sm mb-0">{% ui "Receita do mes" "Revenue this month" %}</p>
               <h4 class="mb-0">{{ revenue_month }}</h4>
             </div>
           </div>
@@ -385,10 +389,10 @@
           <div class="card-header p-3">
             <div class="d-flex justify-content-between align-items-center">
               <div>
-                <h6 class="mb-0">Ritmo semanal da clinica</h6>
-                <p class="text-sm text-secondary mb-0">Consultas realizadas e faturacao projetada.</p>
+                <h6 class="mb-0">{% ui "Ritmo semanal da clinica" "Clinic weekly pace" %}</h6>
+                <p class="text-sm text-secondary mb-0">{% ui "Consultas realizadas e faturacao projetada." "Completed appointments and projected billing." %}</p>
               </div>
-              <span class="badge bg-gradient-light text-dark">Atualizado hoje</span>
+              <span class="badge bg-gradient-light text-dark">{% ui "Atualizado hoje" "Updated today" %}</span>
             </div>
           </div>
           <div class="card-body">
@@ -399,7 +403,7 @@
       <div class="col-lg-4">
         <div class="card clinic-panel h-100">
           <div class="card-header p-3">
-            <h6 class="mb-0">Indicadores de desempenho</h6>
+            <h6 class="mb-0">{% ui "Indicadores de desempenho" "Performance indicators" %}</h6>
           </div>
           <div class="card-body">
             {% for item in service_mix %}
@@ -417,7 +421,7 @@
               <div class="d-flex align-items-start">
                 <i class="material-symbols-rounded text-dark me-2">pulse_alert</i>
                 <div>
-                  <strong>Foco do turno:</strong> manter retornos e encaixes da tarde sob controlo.
+                  <strong>{% ui "Foco do turno:" "Shift focus:" %}</strong> {% ui "manter retornos e encaixes da tarde sob controlo." "keep afternoon follow-ups and extra appointments under control." %}
                 </div>
               </div>
             </div>
@@ -433,12 +437,12 @@
           <div class="card-header p-3">
             <div class="d-flex justify-content-between align-items-center">
               <div>
-                <h6 class="mb-0">Agenda recente</h6>
-                <p class="text-sm text-secondary mb-0">Leitura rapida para recepcao e equipa medica.</p>
+                <h6 class="mb-0">{% ui "Agenda recente" "Recent schedule" %}</h6>
+                <p class="text-sm text-secondary mb-0">{% ui "Leitura rapida para recepcao e equipa medica." "Quick reading for reception and the medical team." %}</p>
               </div>
               <span class="clinic-chip">
                 <i class="material-symbols-rounded" style="font-size: 1rem;">event_note</i>
-                Prioridade do turno
+                {% ui "Prioridade do turno" "Shift priority" %}
               </span>
             </div>
           </div>
@@ -447,9 +451,9 @@
               <table class="table align-items-center mb-0 clinic-table">
                 <thead>
                   <tr>
-                    <th class="ps-4">Paciente</th>
-                    <th>Medico</th>
-                    <th>Horario</th>
+                    <th class="ps-4">{% ui "Paciente" "Patient" %}</th>
+                    <th>{% ui "Medico" "Doctor" %}</th>
+                    <th>{% ui "Horario" "Time" %}</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -468,15 +472,7 @@
                       <td>
                         <span class="text-sm font-weight-bold">{{ appointment.time }}</span>
                       </td>
-                      <td>
-                        {% if appointment.status == 'Confirmado' %}
-                          <span class="badge bg-gradient-success">{{ appointment.status }}</span>
-                        {% elif appointment.status == 'Em andamento' %}
-                          <span class="badge bg-gradient-info">{{ appointment.status }}</span>
-                        {% else %}
-                          <span class="badge bg-gradient-warning">{{ appointment.status }}</span>
-                        {% endif %}
-                      </td>
+                      <td><span class="badge bg-gradient-{{ appointment.tone }}">{{ appointment.status }}</span></td>
                     </tr>
                   {% endfor %}
                 </tbody>
@@ -490,7 +486,7 @@
         <span id="team" class="clinic-section-anchor"></span>
         <div class="card clinic-panel h-100">
           <div class="card-header p-3">
-            <h6 class="mb-0">Top medicos da semana</h6>
+            <h6 class="mb-0">{% ui "Top medicos da semana" "Top doctors of the week" %}</h6>
           </div>
           <div class="card-body">
             {% for doctor in top_doctors %}
@@ -518,7 +514,7 @@
         <span id="operations" class="clinic-section-anchor"></span>
         <div class="card clinic-panel h-100">
           <div class="card-header p-3">
-            <h6 class="mb-0">Painel operacional</h6>
+            <h6 class="mb-0">{% ui "Painel operacional" "Operations panel" %}</h6>
           </div>
           <div class="card-body">
             <div class="timeline timeline-one-side">
@@ -541,12 +537,12 @@
           <div class="card-header p-3">
             <div class="d-flex justify-content-between align-items-center">
               <div>
-                <h6 class="mb-0">Resumo financeiro e capacidade</h6>
-                <p class="text-sm text-secondary mb-0">Leitura rapida para decisao do turno.</p>
+                <h6 class="mb-0">{% ui "Resumo financeiro e capacidade" "Financial and capacity summary" %}</h6>
+                <p class="text-sm text-secondary mb-0">{% ui "Leitura rapida para decisao do turno." "Quick read for shift decisions." %}</p>
               </div>
               <span class="clinic-chip">
                 <i class="material-symbols-rounded" style="font-size: 1rem;">acute</i>
-                Capacidade {{ daily_capacity }}%
+                {% ui "Capacidade" "Capacity" %} {{ daily_capacity }}%
               </span>
             </div>
           </div>
@@ -554,34 +550,34 @@
             <div class="row">
               <div class="col-md-4 mb-3">
                 <div class="border border-radius-lg p-3 h-100">
-                  <p class="text-sm text-secondary mb-1">Receita de hoje</p>
+                  <p class="text-sm text-secondary mb-1">{% ui "Receita de hoje" "Revenue today" %}</p>
                   <h5 class="mb-1">{{ revenue_today }}</h5>
-                  <span class="text-xs text-success">Fluxo de caixa saudavel</span>
+                  <span class="text-xs text-success">{% ui "Fluxo de caixa saudavel" "Healthy cash flow" %}</span>
                 </div>
               </div>
               <div class="col-md-4 mb-3">
                 <div class="border border-radius-lg p-3 h-100">
-                  <p class="text-sm text-secondary mb-1">Consultas concluidas</p>
+                  <p class="text-sm text-secondary mb-1">{% ui "Consultas concluidas" "Completed consultations" %}</p>
                   <h5 class="mb-1">{{ completed_consultations }}</h5>
-                  <span class="text-xs text-info">Bom aproveitamento</span>
+                  <span class="text-xs text-info">{% ui "Bom aproveitamento" "Good utilization" %}</span>
                 </div>
               </div>
               <div class="col-md-4 mb-3">
                 <div class="border border-radius-lg p-3 h-100">
-                  <p class="text-sm text-secondary mb-1">Hospitais</p>
+                  <p class="text-sm text-secondary mb-1">{% ui "Hospitais" "Hospitals" %}</p>
                   <h5 class="mb-1">{{ total_hospitals }}</h5>
-                  <span class="text-xs text-warning">Estrutura pronta para expandir</span>
+                  <span class="text-xs text-warning">{% ui "Estrutura pronta para expandir" "Structure ready to expand" %}</span>
                 </div>
               </div>
             </div>
             <div class="alert alert-light border mb-0">
               <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                  <strong>Próxima melhoria:</strong> ligar estes cards aos dados reais do MySQL para o painel ficar vivo.
+                  <strong>{% ui "Próxima melhoria:" "Next improvement:" %}</strong> {% ui "ligar estes cards aos dados reais do MySQL para o painel ficar vivo." "connect these cards to real MySQL data so the dashboard becomes live." %}
                 </div>
                 <span class="clinic-chip">
                   <i class="material-symbols-rounded" style="font-size: 1rem;">data_object</i>
-                  Integração em preparação
+                  {% ui "Integração em preparação" "Integration in progress" %}
                 </span>
               </div>
             </div>
@@ -604,7 +600,7 @@
           labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'],
           datasets: [
             {
-              label: 'Consultas',
+              label: '{% ui "Consultas" "Consultations" %}',
               data: [12, 19, 15, 22, 20, 11, 8],
               borderColor: '#0f766e',
               backgroundColor: 'rgba(15, 118, 110, 0.12)',
@@ -616,7 +612,7 @@
               fill: true
             },
             {
-              label: 'Receita projetada',
+              label: '{% ui "Receita projetada" "Projected revenue" %}',
               data: [8, 13, 11, 17, 16, 9, 7],
               borderColor: '#f97316',
               pointBackgroundColor: '#f97316',

@@ -34,22 +34,22 @@
 
           <div class="clinic-detail-item">
             <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Cidade" "City" %}</p>
-            <h6 class="mb-0">{{ object.city|default:"Sem cidade registada" }}</h6>
+            <h6 class="mb-0">{% if object.city %}{{ object.city }}{% else %}{% ui "Sem cidade registada" "No city registered" %}{% endif %}</h6>
           </div>
 
           <div class="clinic-detail-item">
             <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Telefone" "Phone" %}</p>
-            <h6 class="mb-0">{{ object.phone|default:"Sem telefone" }}</h6>
+            <h6 class="mb-0">{% if object.phone %}{{ object.phone }}{% else %}{% ui "Sem telefone" "No phone" %}{% endif %}</h6>
           </div>
 
           <div class="clinic-detail-item">
             <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Email" "Email" %}</p>
-            <h6 class="mb-0">{{ object.email|default:"Sem email" }}</h6>
+            <h6 class="mb-0">{% if object.email %}{{ object.email }}{% else %}{% ui "Sem email" "No email" %}{% endif %}</h6>
           </div>
 
           <div class="clinic-detail-item full-width">
             <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Endereço" "Address" %}</p>
-            <h6 class="mb-0">{{ object.address|default:"Sem endereço registado" }}</h6>
+            <h6 class="mb-0">{% if object.address %}{{ object.address }}{% else %}{% ui "Sem endereço registado" "No address registered" %}{% endif %}</h6>
           </div>
         </div>
 

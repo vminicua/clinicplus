@@ -1,512 +1,510 @@
-{% extends "layouts/base.html" %}
+{% extends 'layouts/base.html' %}
 
 {% block sidebar %}
-  {% include "clinic/partials/sidebar.html" %}
-{% endblock sidebar %}
+  {% include 'clinic/partials/sidebar.html' %}
+{% endblock %}
 
 {% block navigation %}
-  {% include "clinic/partials/navigation.html" %}
-{% endblock navigation %}
+  {% include 'clinic/partials/navigation.html' %}
+{% endblock %}
 
-{% block configurator %}{% endblock configurator %}
+{% block configurator %}
+{% endblock %}
 
 {% block extrastyle %}
-<style>
-  :root {
-    --clinic-line: rgba(15, 23, 42, 0.08);
-    --clinic-teal: #0f766e;
-    --clinic-teal-soft: #14b8a6;
-    --clinic-orange: #f97316;
-  }
-
-  body {
-    background:
-      radial-gradient(circle at top right, rgba(20, 184, 166, 0.16), transparent 24%),
-      linear-gradient(180deg, #f5f8fb 0%, #eff4f7 100%);
-  }
-
-  .clinic-sidenav {
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    overflow: hidden;
-  }
-
-  .clinic-sidenav::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 20%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(15, 118, 110, 0.03) 100%);
-    pointer-events: none;
-  }
-
-  .clinic-brand-icon {
-    width: 44px;
-    height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #14b8a6 0%, #f97316 100%);
-    color: #fff;
-    box-shadow: 0 12px 24px rgba(20, 184, 166, 0.28);
-  }
-
-  .clinic-brand-text {
-    color: #0f172a;
-    line-height: 1.1;
-  }
-
-  .clinic-brand-text small {
-    display: block;
-    color: #64748b;
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .clinic-sidenav .nav-link {
-    color: #334155;
-    margin: 0.22rem 0.85rem;
-    border-radius: 14px;
-    padding: 0.8rem 0.9rem;
-    transition: 0.2s ease;
-  }
-
-  .clinic-sidenav .nav-link:hover,
-  .clinic-sidenav .nav-link.active {
-    color: #0f172a;
-    background: linear-gradient(135deg, rgba(20, 184, 166, 0.16) 0%, rgba(249, 115, 22, 0.12) 100%);
-    box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
-  }
-
-  .clinic-sidenav .nav-link i,
-  .clinic-sidenav .nav-link .nav-link-text {
-    position: relative;
-    z-index: 1;
-  }
-
-  .clinic-sidenav .nav-link-text,
-  .clinic-sidenav .navbar-brand,
-  .clinic-sidenav .text-dark,
-  .clinic-sidenav .text-white {
-    color: #0f172a !important;
-  }
-
-  .clinic-sidenav .nav-link i {
-    color: var(--clinic-teal);
-  }
-
-  .clinic-navbar-card {
-    background: rgba(255, 255, 255, 0.78);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.72);
-    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
-    position: relative;
-    margin: 1rem 1rem 0;
-    z-index: 1030;
-  }
-
-  @media (min-width: 1200px) {
+  <style>
+    :root {
+      --clinic-line: rgba(15, 23, 42, 0.08);
+      --clinic-teal: #0f766e;
+      --clinic-teal-soft: #14b8a6;
+      --clinic-orange: #f97316;
+    }
+    
+    body {
+      background: radial-gradient(circle at top right, rgba(20, 184, 166, 0.16), transparent 24%), linear-gradient(180deg, #f5f8fb 0%, #eff4f7 100%);
+    }
+    
+    .clinic-sidenav {
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+      border: 1px solid rgba(15, 23, 42, 0.06);
+      overflow: hidden;
+    }
+    
+    .clinic-sidenav::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 20%), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(15, 118, 110, 0.03) 100%);
+      pointer-events: none;
+    }
+    
+    .clinic-brand-icon {
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #14b8a6 0%, #f97316 100%);
+      color: #fff;
+      box-shadow: 0 12px 24px rgba(20, 184, 166, 0.28);
+    }
+    
+    .clinic-brand-text {
+      color: #0f172a;
+      line-height: 1.1;
+    }
+    
+    .clinic-brand-text small {
+      display: block;
+      color: #64748b;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    
+    .clinic-sidenav .nav-link {
+      color: #334155;
+      margin: 0.22rem 0.85rem;
+      border-radius: 14px;
+      padding: 0.8rem 0.9rem;
+      transition: 0.2s ease;
+    }
+    
+    .clinic-sidenav .nav-link:hover,
+    .clinic-sidenav .nav-link.active {
+      color: #0f172a;
+      background: linear-gradient(135deg, rgba(20, 184, 166, 0.16) 0%, rgba(249, 115, 22, 0.12) 100%);
+      box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
+    }
+    
+    .clinic-sidenav .nav-link i,
+    .clinic-sidenav .nav-link .nav-link-text {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .clinic-sidenav .nav-link-text,
+    .clinic-sidenav .navbar-brand,
+    .clinic-sidenav .text-dark,
+    .clinic-sidenav .text-white {
+      color: #0f172a !important;
+    }
+    
+    .clinic-sidenav .nav-link i {
+      color: var(--clinic-teal);
+    }
+    
     .clinic-navbar-card {
-      margin-right: 1.5rem;
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+      position: relative;
+      margin: 1rem 1rem 0;
+      z-index: 1030;
     }
-  }
-
-  .clinic-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 0.7rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    background: rgba(15, 118, 110, 0.08);
-    color: var(--clinic-teal);
-  }
-
-  .clinic-user-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.45rem 0.8rem;
-    border-radius: 999px;
-    background: #fff;
-    border: 1px solid var(--clinic-line);
-  }
-
-  .clinic-avatar {
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--clinic-teal) 0%, var(--clinic-teal-soft) 100%);
-    color: #fff;
-    font-weight: 700;
-  }
-
-  .clinic-hero {
-    position: relative;
-    overflow: hidden;
-    background: linear-gradient(135deg, #0f172a 0%, #153c58 48%, #0f766e 100%);
-    color: #fff;
-    border: 0;
-  }
-
-  .clinic-hero::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 18%),
-      radial-gradient(circle at bottom left, rgba(249, 115, 22, 0.22), transparent 22%);
-    pointer-events: none;
-  }
-
-  .clinic-mini-stat {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
-    padding: 1rem;
-  }
-
-  .clinic-panel {
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.72);
-    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05);
-  }
-
-  .clinic-panel .card-header {
-    background: transparent;
-    border-bottom: 1px solid var(--clinic-line);
-  }
-
-  .clinic-section-anchor {
-    position: relative;
-    top: -100px;
-  }
-
-  .clinic-doctor-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.9rem 0;
-    border-bottom: 1px solid var(--clinic-line);
-  }
-
-  .clinic-doctor-item:last-child {
-    border-bottom: 0;
-  }
-
-  .clinic-icon-badge {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(15, 118, 110, 0.1);
-    color: var(--clinic-teal);
-  }
-
-  .clinic-table thead th {
-    border-bottom-width: 1px;
-    color: #64748b;
-    font-size: 0.73rem;
-    letter-spacing: 0.06em;
-  }
-
-  .clinic-progress-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.4rem;
-    font-size: 0.86rem;
-  }
-
-  @media (max-width: 991.98px) {
-    .clinic-navbar-actions {
+    
+    @media (min-width: 1200px) {
+      .clinic-navbar-card {
+        margin-right: 1.5rem;
+      }
+    }
+    
+    .clinic-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(15, 118, 110, 0.08);
+      color: var(--clinic-teal);
+    }
+    
+    .clinic-user-pill {
+      display: inline-flex;
+      align-items: center;
       gap: 0.75rem;
-      width: 100%;
-      margin-top: 1rem;
-      flex-wrap: wrap;
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--clinic-line);
     }
-  }
-</style>
-{% endblock extrastyle %}
+    
+    .clinic-avatar {
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--clinic-teal) 0%, var(--clinic-teal-soft) 100%);
+      color: #fff;
+      font-weight: 700;
+    }
+    
+    .clinic-hero {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0f172a 0%, #153c58 48%, #0f766e 100%);
+      color: #fff;
+      border: 0;
+    }
+    
+    .clinic-hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 18%), radial-gradient(circle at bottom left, rgba(249, 115, 22, 0.22), transparent 22%);
+      pointer-events: none;
+    }
+    
+    .clinic-mini-stat {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 1rem;
+    }
+    
+    .clinic-panel {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05);
+    }
+    
+    .clinic-panel .card-header {
+      background: transparent;
+      border-bottom: 1px solid var(--clinic-line);
+    }
+    
+    .clinic-section-anchor {
+      position: relative;
+      top: -100px;
+    }
+    
+    .clinic-doctor-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 0;
+      border-bottom: 1px solid var(--clinic-line);
+    }
+    
+    .clinic-doctor-item:last-child {
+      border-bottom: 0;
+    }
+    
+    .clinic-icon-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 118, 110, 0.1);
+      color: var(--clinic-teal);
+    }
+    
+    .clinic-table thead th {
+      border-bottom-width: 1px;
+      color: #64748b;
+      font-size: 0.73rem;
+      letter-spacing: 0.06em;
+    }
+    
+    .clinic-progress-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      font-size: 0.86rem;
+    }
+    
+    @media (max-width: 991.98px) {
+      .clinic-navbar-actions {
+        gap: 0.75rem;
+        width: 100%;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <span id="overview" class="clinic-section-anchor"></span>
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card clinic-hero">
-        <div class="card-body p-4 p-lg-5">
-          <div class="row align-items-center">
-            <div class="col-lg-7">
-              <span class="clinic-chip mb-3">
-                <i class="material-symbols-rounded" style="font-size: 1rem;">favorite</i>
-                Clinica em operacao
-              </span>
-              <h2 class="text-white mb-2">{{ page_title }}</h2>
-              <p class="text-white opacity-8 mb-4">{{ page_subtitle }}</p>
-              <div class="d-flex flex-wrap gap-2">
-                <a href="#agenda" class="btn bg-white text-dark mb-0">
-                  <i class="material-symbols-rounded text-sm me-1">calendar_month</i>
-                  Ver agenda de hoje
-                </a>
-                <a href="#operations" class="btn btn-outline-white mb-0">
-                  <i class="material-symbols-rounded text-sm me-1">monitoring</i>
-                  Ver painel operacional
-                </a>
-              </div>
-            </div>
-            <div class="col-lg-5 mt-4 mt-lg-0">
-              <div class="row g-3">
-                <div class="col-sm-6">
-                  <div class="clinic-mini-stat h-100">
-                    <p class="text-sm text-white opacity-8 mb-1">Consultas hoje</p>
-                    <h3 class="text-white mb-1">{{ appointments_today }}</h3>
-                    <p class="text-sm text-white opacity-8 mb-0">Fluxo sem atraso critico</p>
-                  </div>
-                </div>
-                <div class="col-sm-6">
-                  <div class="clinic-mini-stat h-100">
-                    <p class="text-sm text-white opacity-8 mb-1">Satisfacao</p>
-                    <h3 class="text-white mb-1">{{ satisfaction_rate }}%</h3>
-                    <p class="text-sm text-white opacity-8 mb-0">Experiencia positiva</p>
-                  </div>
-                </div>
-                <div class="col-sm-6">
-                  <div class="clinic-mini-stat h-100">
-                    <p class="text-sm text-white opacity-8 mb-1">Receita do dia</p>
-                    <h3 class="text-white mb-1">{{ revenue_today }}</h3>
-                    <p class="text-sm text-white opacity-8 mb-0">Bom ritmo de faturacao</p>
-                  </div>
-                </div>
-                <div class="col-sm-6">
-                  <div class="clinic-mini-stat h-100">
-                    <p class="text-sm text-white opacity-8 mb-1">Follow-ups</p>
-                    <h3 class="text-white mb-1">{{ pending_followups }}</h3>
-                    <p class="text-sm text-white opacity-8 mb-0">Retornos para confirmar</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-xl-3 col-sm-6 mb-4">
-      <div class="card clinic-panel h-100">
-        <div class="card-header p-3 position-relative">
-          <div class="icon icon-lg icon-shape bg-gradient-dark shadow text-center border-radius-xl mt-n4 position-absolute">
-            <i class="material-symbols-rounded opacity-10">groups</i>
-          </div>
-          <div class="text-end pt-1">
-            <p class="text-sm mb-0">Pacientes</p>
-            <h4 class="mb-0">{{ total_patients }}</h4>
-          </div>
-        </div>
-        <hr class="dark horizontal my-0">
-        <div class="card-footer p-3"><p class="mb-0 text-sm"><span class="text-success font-weight-bolder">+6% </span>nas ultimas 4 semanas</p></div>
-      </div>
-    </div>
-    <div class="col-xl-3 col-sm-6 mb-4">
-      <div class="card clinic-panel h-100">
-        <div class="card-header p-3 position-relative">
-          <div class="icon icon-lg icon-shape bg-gradient-info shadow text-center border-radius-xl mt-n4 position-absolute">
-            <i class="material-symbols-rounded opacity-10">stethoscope</i>
-          </div>
-          <div class="text-end pt-1">
-            <p class="text-sm mb-0">Medicos ativos</p>
-            <h4 class="mb-0">{{ total_doctors }}</h4>
-          </div>
-        </div>
-        <hr class="dark horizontal my-0">
-        <div class="card-footer p-3"><p class="mb-0 text-sm"><span class="text-success font-weight-bolder">{{ confirmed_rate }}% </span>da agenda confirmada</p></div>
-      </div>
-    </div>
-    <div class="col-xl-3 col-sm-6 mb-4">
-      <div class="card clinic-panel h-100">
-        <div class="card-header p-3 position-relative">
-          <div class="icon icon-lg icon-shape bg-gradient-success shadow text-center border-radius-xl mt-n4 position-absolute">
-            <i class="material-symbols-rounded opacity-10">event_available</i>
-          </div>
-          <div class="text-end pt-1">
-            <p class="text-sm mb-0">Agendamentos</p>
-            <h4 class="mb-0">{{ total_appointments }}</h4>
-          </div>
-        </div>
-        <hr class="dark horizontal my-0">
-        <div class="card-footer p-3"><p class="mb-0 text-sm"><span class="text-success font-weight-bolder">{{ completed_consultations }} </span>consultas concluidas</p></div>
-      </div>
-    </div>
-    <div class="col-xl-3 col-sm-6 mb-4">
-      <div class="card clinic-panel h-100">
-        <div class="card-header p-3 position-relative">
-          <div class="icon icon-lg icon-shape bg-gradient-warning shadow text-center border-radius-xl mt-n4 position-absolute">
-            <i class="material-symbols-rounded opacity-10">monitoring</i>
-          </div>
-          <div class="text-end pt-1">
-            <p class="text-sm mb-0">Receita do mes</p>
-            <h4 class="mb-0">{{ revenue_month }}</h4>
-          </div>
-        </div>
-        <hr class="dark horizontal my-0">
-        <div class="card-footer p-3"><p class="mb-0 text-sm"><span class="text-warning font-weight-bolder">{{ monthly_target_progress }}% </span>da meta</p></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row mb-4">
-    <div class="col-lg-8 mb-4 mb-lg-0">
-      <span id="finance" class="clinic-section-anchor"></span>
-      <div class="card clinic-panel h-100">
-        <div class="card-header p-3">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-0">Ritmo semanal da clinica</h6>
-              <p class="text-sm text-secondary mb-0">Consultas realizadas e faturacao projetada.</p>
-            </div>
-            <span class="badge bg-gradient-light text-dark">Atualizado hoje</span>
-          </div>
-        </div>
-        <div class="card-body">
-          <canvas id="clinicActivityChart" height="110"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-4">
-      <div class="card clinic-panel h-100">
-        <div class="card-header p-3"><h6 class="mb-0">Indicadores de desempenho</h6></div>
-        <div class="card-body">
-          {% for item in service_mix %}
-            <div class="mb-4">
-              <div class="clinic-progress-label">
-                <span>{{ item.label }}</span>
-                <span class="font-weight-bold">{{ item.value }}%</span>
-              </div>
-              <div class="progress" style="height: 8px;">
-                <div class="progress-bar bg-gradient-{{ item.tone }}" role="progressbar" style="width: {{ item.value }}%;"></div>
-              </div>
-            </div>
-          {% endfor %}
-          <div class="alert alert-light border mt-4 mb-0">
-            <div class="d-flex align-items-start">
-              <i class="material-symbols-rounded text-dark me-2">pulse_alert</i>
-              <div><strong>Foco do turno:</strong> manter retornos e encaixes da tarde sob controlo.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row mb-4">
-    <div class="col-lg-7 mb-4 mb-lg-0">
-      <span id="agenda" class="clinic-section-anchor"></span>
-      <div class="card clinic-panel h-100">
-        <div class="card-header p-3">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-0">Agenda recente</h6>
-              <p class="text-sm text-secondary mb-0">Leitura rapida para recepcao e equipa medica.</p>
-            </div>
-            <span class="clinic-chip">
-              <i class="material-symbols-rounded" style="font-size: 1rem;">event_note</i>
-              Prioridade do turno
-            </span>
-          </div>
-        </div>
-        <div class="card-body px-0 pb-0">
-          <div class="table-responsive">
-            <table class="table align-items-center mb-0 clinic-table">
-              <thead>
-                <tr>
-                  <th class="ps-4">Paciente</th>
-                  <th>Medico</th>
-                  <th>Horario</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for appointment in recent_appointments %}
-                  <tr>
-                    <td class="ps-4">
-                      <div class="d-flex flex-column">
-                        <strong class="text-sm">{{ appointment.patient }}</strong>
-                        <span class="text-xs text-secondary">{{ appointment.specialty }}</span>
-                      </div>
-                    </td>
-                    <td><span class="text-sm">{{ appointment.doctor }}</span></td>
-                    <td><span class="text-sm font-weight-bold">{{ appointment.time }}</span></td>
-                    <td>
-                      {% if appointment.status == 'Confirmado' %}
-                        <span class="badge bg-gradient-success">{{ appointment.status }}</span>
-                      {% elif appointment.status == 'Em andamento' %}
-                        <span class="badge bg-gradient-info">{{ appointment.status }}</span>
-                      {% else %}
-                        <span class="badge bg-gradient-warning">{{ appointment.status }}</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-lg-5">
-      <span id="team" class="clinic-section-anchor"></span>
-      <div class="card clinic-panel h-100">
-        <div class="card-header p-3"><h6 class="mb-0">Top medicos da semana</h6></div>
-        <div class="card-body">
-          {% for doctor in top_doctors %}
-            <div class="clinic-doctor-item">
-              <div class="d-flex align-items-center gap-3">
-                <span class="clinic-icon-badge"><i class="material-symbols-rounded">medical_services</i></span>
-                <div>
-                  <h6 class="mb-0 text-sm">{{ doctor.name }}</h6>
-                  <p class="text-xs text-secondary mb-0">{{ doctor.specialty }}</p>
-                </div>
-              </div>
-              <div class="text-end">
-                <p class="text-sm font-weight-bold mb-0">{{ doctor.appointments }} consultas</p>
-                <span class="text-xs text-success">{{ doctor.satisfaction }}% satisfacao</span>
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-lg-5 mb-4 mb-lg-0">
-      <span id="operations" class="clinic-section-anchor"></span>
-      <div class="card clinic-panel h-100">
-        <div class="card-header p-3"><h6 class="mb-0">Painel operacional</h6></div>
-        <div class="card-body">
-          <div class="timeline timeline-one-side">
-            {% for event in timeline_events %}
-              <div class="timeline-block mb-3">
-                <span class="timeline-step">
-                  <i class="material-symbols-rounded text-{{ event.tone }} text-gradient">{{ event.icon }}</i>
+  <div class="container-fluid py-4">
+    <span id="overview" class="clinic-section-anchor"></span>
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card clinic-hero">
+          <div class="card-body p-4 p-lg-5">
+            <div class="row align-items-center">
+              <div class="col-lg-7">
+                <span class="clinic-chip mb-3">
+                  <i class="material-symbols-rounded" style="font-size: 1rem;">favorite</i>
+                  Clinica em operacao
                 </span>
-                <div class="timeline-content">
-                  <h6 class="text-dark text-sm font-weight-bold mb-1">{{ event.title }}</h6>
-                  <p class="text-secondary font-weight-bold text-xs mb-0">{{ event.time }}</p>
+                <h2 class="text-white mb-2">{{ page_title }}</h2>
+                <p class="text-white opacity-8 mb-4">{{ page_subtitle }}</p>
+                <div class="d-flex flex-wrap gap-2">
+                  <a href="#agenda" class="btn bg-white text-dark mb-0">
+                    <i class="material-symbols-rounded text-sm me-1">calendar_month</i>
+                    Ver agenda de hoje
+                  </a>
+                  <a href="#operations" class="btn btn-outline-white mb-0">
+                    <i class="material-symbols-rounded text-sm me-1">monitoring</i>
+                    Ver painel operacional
+                  </a>
+                </div>
+              </div>
+              <div class="col-lg-5 mt-4 mt-lg-0">
+                <div class="row g-3">
+                  <div class="col-sm-6">
+                    <div class="clinic-mini-stat h-100">
+                      <p class="text-sm text-white opacity-8 mb-1">Consultas hoje</p>
+                      <h3 class="text-white mb-1">{{ appointments_today }}</h3>
+                      <p class="text-sm text-white opacity-8 mb-0">Fluxo sem atraso critico</p>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="clinic-mini-stat h-100">
+                      <p class="text-sm text-white opacity-8 mb-1">Satisfacao</p>
+                      <h3 class="text-white mb-1">{{ satisfaction_rate }}%</h3>
+                      <p class="text-sm text-white opacity-8 mb-0">Experiencia positiva</p>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="clinic-mini-stat h-100">
+                      <p class="text-sm text-white opacity-8 mb-1">Receita do dia</p>
+                      <h3 class="text-white mb-1">{{ revenue_today }}</h3>
+                      <p class="text-sm text-white opacity-8 mb-0">Bom ritmo de faturacao</p>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="clinic-mini-stat h-100">
+                      <p class="text-sm text-white opacity-8 mb-1">Follow-ups</p>
+                      <h3 class="text-white mb-1">{{ pending_followups }}</h3>
+                      <p class="text-sm text-white opacity-8 mb-0">Retornos para confirmar</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-panel h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape bg-gradient-dark shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">groups</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">Pacientes</p>
+              <h4 class="mb-0">{{ total_patients }}</h4>
+            </div>
+          </div>
+          <hr class="dark horizontal my-0" />
+          <div class="card-footer p-3">
+            <p class="mb-0 text-sm">
+              <span class="text-success font-weight-bolder">+6%</span>nas ultimas 4 semanas
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-panel h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape bg-gradient-info shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">stethoscope</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">Medicos ativos</p>
+              <h4 class="mb-0">{{ total_doctors }}</h4>
+            </div>
+          </div>
+          <hr class="dark horizontal my-0" />
+          <div class="card-footer p-3">
+            <p class="mb-0 text-sm">
+              <span class="text-success font-weight-bolder">{{ confirmed_rate }}%</span>da agenda confirmada
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-panel h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape bg-gradient-success shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">event_available</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">Agendamentos</p>
+              <h4 class="mb-0">{{ total_appointments }}</h4>
+            </div>
+          </div>
+          <hr class="dark horizontal my-0" />
+          <div class="card-footer p-3">
+            <p class="mb-0 text-sm">
+              <span class="text-success font-weight-bolder">{{ completed_consultations }}</span>consultas concluidas
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-panel h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape bg-gradient-warning shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">monitoring</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">Receita do mes</p>
+              <h4 class="mb-0">{{ revenue_month }}</h4>
+            </div>
+          </div>
+          <hr class="dark horizontal my-0" />
+          <div class="card-footer p-3">
+            <p class="mb-0 text-sm">
+              <span class="text-warning font-weight-bolder">{{ monthly_target_progress }}%</span>da meta
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-lg-8 mb-4 mb-lg-0">
+        <span id="finance" class="clinic-section-anchor"></span>
+        <div class="card clinic-panel h-100">
+          <div class="card-header p-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-0">Ritmo semanal da clinica</h6>
+                <p class="text-sm text-secondary mb-0">Consultas realizadas e faturacao projetada.</p>
+              </div>
+              <span class="badge bg-gradient-light text-dark">Atualizado hoje</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <canvas id="clinicActivityChart" height="110"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card clinic-panel h-100">
+          <div class="card-header p-3">
+            <h6 class="mb-0">Indicadores de desempenho</h6>
+          </div>
+          <div class="card-body">
+            {% for item in service_mix %}
+              <div class="mb-4">
+                <div class="clinic-progress-label">
+                  <span>{{ item.label }}</span>
+                  <span class="font-weight-bold">{{ item.value }}%</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                  <div class="progress-bar bg-gradient-{{ item.tone }}" role="progressbar" style="width: {{ item.value }}%;"></div>
+                </div>
+              </div>
+            {% endfor %}
+            <div class="alert alert-light border mt-4 mb-0">
+              <div class="d-flex align-items-start">
+                <i class="material-symbols-rounded text-dark me-2">pulse_alert</i>
+                <div>
+                  <strong>Foco do turno:</strong> manter retornos e encaixes da tarde sob controlo.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-lg-7 mb-4 mb-lg-0">
+        <span id="agenda" class="clinic-section-anchor"></span>
+        <div class="card clinic-panel h-100">
+          <div class="card-header p-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-0">Agenda recente</h6>
+                <p class="text-sm text-secondary mb-0">Leitura rapida para recepcao e equipa medica.</p>
+              </div>
+              <span class="clinic-chip">
+                <i class="material-symbols-rounded" style="font-size: 1rem;">event_note</i>
+                Prioridade do turno
+              </span>
+            </div>
+          </div>
+          <div class="card-body px-0 pb-0">
+            <div class="table-responsive">
+              <table class="table align-items-center mb-0 clinic-table">
+                <thead>
+                  <tr>
+                    <th class="ps-4">Paciente</th>
+                    <th>Medico</th>
+                    <th>Horario</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for appointment in recent_appointments %}
+                    <tr>
+                      <td class="ps-4">
+                        <div class="d-flex flex-column">
+                          <strong class="text-sm">{{ appointment.patient }}</strong>
+                          <span class="text-xs text-secondary">{{ appointment.specialty }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="text-sm">{{ appointment.doctor }}</span>
+                      </td>
+                      <td>
+                        <span class="text-sm font-weight-bold">{{ appointment.time }}</span>
+                      </td>
+                      <td>
+                        {% if appointment.status == 'Confirmado' %}
+                          <span class="badge bg-gradient-success">{{ appointment.status }}</span>
+                        {% elif appointment.status == 'Em andamento' %}
+                          <span class="badge bg-gradient-info">{{ appointment.status }}</span>
+                        {% else %}
+                          <span class="badge bg-gradient-warning">{{ appointment.status }}</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <span id="team" class="clinic-section-anchor"></span>
+        <div class="card clinic-panel h-100">
+          <div class="card-header p-3">
+            <h6 class="mb-0">Top medicos da semana</h6>
+          </div>
+          <div class="card-body">
+            {% for doctor in top_doctors %}
+              <div class="clinic-doctor-item">
+                <div class="d-flex align-items-center gap-3">
+                  <span class="clinic-icon-badge"><i class="material-symbols-rounded">medical_services</i></span>
+                  <div>
+                    <h6 class="mb-0 text-sm">{{ doctor.name }}</h6>
+                    <p class="text-xs text-secondary mb-0">{{ doctor.specialty }}</p>
+                  </div>
+                </div>
+                <div class="text-end">
+                  <p class="text-sm font-weight-bold mb-0">{{ doctor.appointments }} consultas</p>
+                  <span class="text-xs text-success">{{ doctor.satisfaction }}% satisfacao</span>
                 </div>
               </div>
             {% endfor %}
@@ -515,65 +513,90 @@
       </div>
     </div>
 
-    <div class="col-lg-7">
-      <div class="card clinic-panel h-100">
-        <div class="card-header p-3">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-0">Resumo financeiro e capacidade</h6>
-              <p class="text-sm text-secondary mb-0">Leitura rapida para decisao do turno.</p>
+    <div class="row">
+      <div class="col-lg-5 mb-4 mb-lg-0">
+        <span id="operations" class="clinic-section-anchor"></span>
+        <div class="card clinic-panel h-100">
+          <div class="card-header p-3">
+            <h6 class="mb-0">Painel operacional</h6>
+          </div>
+          <div class="card-body">
+            <div class="timeline timeline-one-side">
+              {% for event in timeline_events %}
+                <div class="timeline-block mb-3">
+                  <span class="timeline-step"><i class="material-symbols-rounded text-{{ event.tone }} text-gradient">{{ event.icon }}</i></span>
+                  <div class="timeline-content">
+                    <h6 class="text-dark text-sm font-weight-bold mb-1">{{ event.title }}</h6>
+                    <p class="text-secondary font-weight-bold text-xs mb-0">{{ event.time }}</p>
+                  </div>
+                </div>
+              {% endfor %}
             </div>
-            <span class="clinic-chip">
-              <i class="material-symbols-rounded" style="font-size: 1rem;">acute</i>
-              Capacidade {{ daily_capacity }}%
-            </span>
           </div>
         </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <div class="border border-radius-lg p-3 h-100">
-                <p class="text-sm text-secondary mb-1">Receita de hoje</p>
-                <h5 class="mb-1">{{ revenue_today }}</h5>
-                <span class="text-xs text-success">Fluxo de caixa saudavel</span>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card clinic-panel h-100">
+          <div class="card-header p-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-0">Resumo financeiro e capacidade</h6>
+                <p class="text-sm text-secondary mb-0">Leitura rapida para decisao do turno.</p>
               </div>
-            </div>
-            <div class="col-md-4 mb-3">
-              <div class="border border-radius-lg p-3 h-100">
-                <p class="text-sm text-secondary mb-1">Consultas concluidas</p>
-                <h5 class="mb-1">{{ completed_consultations }}</h5>
-                <span class="text-xs text-info">Bom aproveitamento</span>
-              </div>
-            </div>
-            <div class="col-md-4 mb-3">
-              <div class="border border-radius-lg p-3 h-100">
-                <p class="text-sm text-secondary mb-1">Hospitais</p>
-                <h5 class="mb-1">{{ total_hospitals }}</h5>
-                <span class="text-xs text-warning">Estrutura pronta para expandir</span>
-              </div>
+              <span class="clinic-chip">
+                <i class="material-symbols-rounded" style="font-size: 1rem;">acute</i>
+                Capacidade {{ daily_capacity }}%
+              </span>
             </div>
           </div>
-          <div class="alert alert-light border mb-0">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div><strong>Próxima melhoria:</strong> ligar estes cards aos dados reais do MySQL para o painel ficar vivo.</div>
-              <span class="clinic-chip">
-                <i class="material-symbols-rounded" style="font-size: 1rem;">data_object</i>
-                Integração em preparação
-              </span>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <div class="border border-radius-lg p-3 h-100">
+                  <p class="text-sm text-secondary mb-1">Receita de hoje</p>
+                  <h5 class="mb-1">{{ revenue_today }}</h5>
+                  <span class="text-xs text-success">Fluxo de caixa saudavel</span>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="border border-radius-lg p-3 h-100">
+                  <p class="text-sm text-secondary mb-1">Consultas concluidas</p>
+                  <h5 class="mb-1">{{ completed_consultations }}</h5>
+                  <span class="text-xs text-info">Bom aproveitamento</span>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="border border-radius-lg p-3 h-100">
+                  <p class="text-sm text-secondary mb-1">Hospitais</p>
+                  <h5 class="mb-1">{{ total_hospitals }}</h5>
+                  <span class="text-xs text-warning">Estrutura pronta para expandir</span>
+                </div>
+              </div>
+            </div>
+            <div class="alert alert-light border mb-0">
+              <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                  <strong>Próxima melhoria:</strong> ligar estes cards aos dados reais do MySQL para o painel ficar vivo.
+                </div>
+                <span class="clinic-chip">
+                  <i class="material-symbols-rounded" style="font-size: 1rem;">data_object</i>
+                  Integração em preparação
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</div>
-{% endblock content %}
+{% endblock %}
 
 {% block extra_js %}
   {% load static %}
-  <script src="{% static "assets/js/plugins/chartjs.min.js" %}"></script>
+  <script src="{% static 'assets/js/plugins/chartjs.min.js' %}"></script>
   <script>
-    const clinicChart = document.getElementById('clinicActivityChart');
+    const clinicChart = document.getElementById('clinicActivityChart')
     if (clinicChart) {
       new Chart(clinicChart.getContext('2d'), {
         type: 'line',
@@ -627,7 +650,7 @@
             }
           }
         }
-      });
+      })
     }
   </script>
-{% endblock extra_js %}
+{% endblock %}

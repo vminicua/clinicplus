@@ -1,0 +1,83 @@
+CLINIC PLUS - SETUP GUIDE
+=========================
+
+Objetivo
+--------
+
+Este guia descreve um fluxo seguro para rodar o projeto sem guardar
+credenciais reais no repositorio.
+
+1. Ambiente virtual
+-------------------
+
+Windows:
+  python -m venv venv
+  venv\Scripts\activate
+
+Linux/Mac:
+  python3 -m venv venv
+  source venv/bin/activate
+
+2. Dependencias
+---------------
+
+  pip install -r requirements.txt
+
+3. Variaveis de ambiente
+------------------------
+
+1. Copie .env.example para .env
+2. Preencha o .env com os valores reais do seu ambiente
+3. Nunca comite o arquivo .env
+
+O projeto carrega .env automaticamente dentro de config/settings.py.
+
+4. Banco de dados
+-----------------
+
+Por padrao o projeto usa SQLite local.
+
+Para usar banco remoto:
+- defina DB_ENGINE com o backend desejado
+- configure DB_NAME, DB_USER, DB_PASSWORD, DB_HOST e DB_PORT no .env
+- se existir tunel SSH, abra o tunel com os seus dados reais
+
+Exemplo generico de tunel:
+  ssh -L 5522:SEU_DB_HOST:3306 SEU_USUARIO@SEU_HOST -p SUA_PORTA
+
+5. Migracoes
+------------
+
+  python manage.py makemigrations
+  python manage.py migrate
+
+6. Superuser
+------------
+
+Opcao interativa padrao:
+  python manage.py createsuperuser
+
+Opcao por script:
+  python create_superuser.py
+
+O script le estas variaveis se quiser modo nao interativo:
+- DJANGO_SUPERUSER_USERNAME
+- DJANGO_SUPERUSER_EMAIL
+- DJANGO_SUPERUSER_PASSWORD
+
+7. Executar a aplicacao
+-----------------------
+
+  python manage.py runserver
+
+URLs padrao:
+- App: http://localhost:8000/
+- Admin: http://localhost:8000/admin/
+
+Troubleshooting
+---------------
+
+- Se houver erro de conexao com banco remoto, valide o .env e o tunel SSH.
+- Se houver erro de dependencias, reinstale com pip install -r requirements.txt.
+- Se o login falhar por indisponibilidade do banco, confirme se o backend remoto
+  esta acessivel antes de tentar autenticar.

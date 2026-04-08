@@ -1,0 +1,47 @@
+<nav class="navbar navbar-main navbar-expand-lg px-0 mx-3 shadow-none border-radius-xl clinic-navbar-card" id="navbarBlur" data-scroll="true">
+  <div class="container-fluid py-2 px-3">
+    <div class="d-flex align-items-center flex-wrap gap-3">
+      <div class="nav-item d-xl-none d-flex align-items-center">
+        <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
+          <div class="sidenav-toggler-inner">
+            <i class="sidenav-toggler-line"></i>
+            <i class="sidenav-toggler-line"></i>
+            <i class="sidenav-toggler-line"></i>
+          </div>
+        </a>
+      </div>
+
+      <div>
+        <p class="text-sm text-secondary mb-0">{{ current_date|date:"l, d \\d\\e F" }}</p>
+        <h5 class="font-weight-bolder mb-0">{{ page_title }}</h5>
+      </div>
+    </div>
+
+    <div class="ms-md-auto d-flex align-items-center clinic-navbar-actions">
+      <div class="input-group input-group-outline clinic-search">
+        <span class="input-group-text">
+          <i class="material-symbols-rounded">search</i>
+        </span>
+        <input type="text" class="form-control" placeholder="Buscar paciente, medico ou consulta">
+      </div>
+
+      <a href="#agenda" class="btn btn-sm bg-gradient-dark mb-0">
+        <i class="material-symbols-rounded text-sm me-1">event</i>
+        Agenda
+      </a>
+
+      <a href="/admin/" class="btn btn-sm btn-outline-dark mb-0">
+        <i class="material-symbols-rounded text-sm me-1">tune</i>
+        Admin
+      </a>
+
+      <div class="clinic-user-pill ms-lg-3">
+        <span class="clinic-avatar">{{ greeting_name|first|upper }}</span>
+        <div>
+          <div class="text-xs text-secondary">Sessao ativa</div>
+          <div class="text-sm font-weight-bold">{{ greeting_name }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>

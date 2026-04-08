@@ -1,0 +1,57 @@
+CLINIC PLUS - QUICKSTART
+========================
+
+1. Criar e ativar o ambiente virtual
+
+Windows:
+  python -m venv venv
+  venv\Scripts\activate
+
+Linux/Mac:
+  python3 -m venv venv
+  source venv/bin/activate
+
+2. Instalar dependencias
+
+  pip install -r requirements.txt
+
+3. Configurar variaveis de ambiente
+
+  Copie .env.example para .env
+  Preencha os valores reais fora do Git
+
+4. Executar migracoes
+
+  python manage.py makemigrations
+  python manage.py migrate
+
+5. Criar superuser
+
+  python manage.py createsuperuser
+
+  Ou use o script auxiliar:
+  python create_superuser.py
+
+6. Iniciar a aplicacao
+
+  python manage.py runserver
+
+7. Acessar
+
+  App:   http://localhost:8000/
+  Admin: http://localhost:8000/admin/
+
+Banco remoto via SSH tunnel
+---------------------------
+
+Se for usar MySQL ou PostgreSQL por tunel SSH, configure o .env com os
+valores reais do seu servidor e abra o tunel com os seus proprios dados.
+
+Exemplo generico:
+  ssh -L 5522:SEU_DB_HOST:3306 SEU_USUARIO@SEU_HOST -p SUA_PORTA
+
+Notas
+-----
+
+- Nao guarde senhas, hosts reais ou tokens em arquivos versionados.
+- O projeto agora le .env automaticamente quando o arquivo existe.

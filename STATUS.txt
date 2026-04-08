@@ -1,0 +1,26 @@
+CLINIC PLUS - STATUS
+====================
+
+Situacao atual
+--------------
+
+- O projeto usa config/settings.py
+- O backend padrao agora e SQLite local
+- Configuracao sensivel foi movida para variaveis de ambiente
+- O arquivo .env continua ignorado pelo Git
+- O README foi removido para evitar nova exposicao
+
+Arquivos relevantes
+-------------------
+
+- .env.example: placeholders seguros
+- create_superuser.py: cria usuario sem credenciais fixas
+- setup.bat / setup.sh: setup inicial sem dados reais
+- QUICKSTART.txt e SETUP_GUIDE.txt: instrucoes sanitizadas
+
+Boas praticas
+-------------
+
+- Nunca guardar usuarios, passwords, hosts ou tokens em arquivos versionados
+- Rotacionar imediatamente qualquer credencial que ja tenha ido para o GitHub
+- Se for preciso banco remoto, usar .env e nao editar segredos direto no codigo

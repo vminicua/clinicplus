@@ -1,0 +1,121 @@
+{% extends "accounts/base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">badge</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">Total de perfis</p>
+              <h4 class="mb-0">{{ total_roles }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">group_add</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">Perfis em uso</p>
+              <h4 class="mb-0">{{ roles_in_use }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">rule</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">Com permissões</p>
+              <h4 class="mb-0">{{ roles_with_permissions }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">groups_2</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">Utilizadores ligados</p>
+              <h4 class="mb-0">{{ linked_users }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <h4 class="mb-1">Perfis do sistema</h4>
+            <p class="text-secondary mb-0">Agrupe permissões por cargo e função operacional.</p>
+          </div>
+
+          {% if search_query %}
+            <span class="clinic-chip">
+              <i class="material-symbols-rounded" style="font-size: 1rem;">filter_alt</i>
+              Filtro activo: "{{ search_query }}"
+            </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        <div class="table-responsive">
+          <table class="table align-items-center mb-0 clinic-data-table">
+            <thead>
+              <tr>
+                <th class="ps-4">Perfil</th>
+                <th>Permissões</th>
+                <th>Utilizadores</th>
+                <th class="text-end pe-4">Acções</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for role in roles %}
+                <tr>
+                  <td class="ps-4">
+                    <h6 class="mb-0 text-sm">{{ role.name }}</h6>
+                  </td>
+                  <td><span class="text-sm">{{ role.permissions.count }}</span></td>
+                  <td><span class="text-sm">{{ role.user_set.count }}</span></td>
+                  <td class="text-end pe-4">
+                    <a href="{% url 'accounts:role_detail' role.pk %}" class="btn btn-link text-dark text-sm mb-0">Ver</a>
+                    <a href="{% url 'accounts:role_update' role.pk %}" class="btn btn-link text-info text-sm mb-0">Editar</a>
+                    <a href="{% url 'accounts:role_delete' role.pk %}" class="btn btn-link text-danger text-sm mb-0">Eliminar</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="clinic-empty-state">Nenhum perfil encontrado.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% include "accounts/includes/pagination.html" %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+

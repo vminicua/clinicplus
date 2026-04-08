@@ -18,22 +18,42 @@
     </div>
 
     <div class="ms-md-auto d-flex align-items-center clinic-navbar-actions">
-      <div class="input-group input-group-outline clinic-search">
-        <span class="input-group-text">
-          <i class="material-symbols-rounded">search</i>
-        </span>
-        <input type="text" class="form-control" placeholder="Buscar paciente, medico ou consulta">
-      </div>
+      {% if search_enabled %}
+        <form method="get" action="{{ search_action|default:request.path }}" class="input-group input-group-outline clinic-search">
+          <span class="input-group-text">
+            <i class="material-symbols-rounded">search</i>
+          </span>
+          <input type="text" name="q" value="{{ search_query|default:'' }}" class="form-control" placeholder="{{ nav_search_placeholder|default:'Pesquisar no sistema' }}">
+        </form>
+      {% endif %}
 
-      <a href="#agenda" class="btn btn-sm bg-gradient-dark mb-0">
-        <i class="material-symbols-rounded text-sm me-1">event</i>
-        Agenda
-      </a>
+      {% if primary_action_url and primary_action_label %}
+        <a href="{{ primary_action_url }}" class="btn btn-sm bg-gradient-dark mb-0">
+          {% if primary_action_icon %}
+            <i class="material-symbols-rounded text-sm me-1">{{ primary_action_icon }}</i>
+          {% endif %}
+          {{ primary_action_label }}
+        </a>
+      {% else %}
+        <a href="{% url 'clinic:index' %}#agenda" class="btn btn-sm bg-gradient-dark mb-0">
+          <i class="material-symbols-rounded text-sm me-1">event</i>
+          Agenda
+        </a>
+      {% endif %}
 
-      <a href="/admin/" class="btn btn-sm btn-outline-dark mb-0">
-        <i class="material-symbols-rounded text-sm me-1">tune</i>
-        Admin
-      </a>
+      {% if secondary_action_url and secondary_action_label %}
+        <a href="{{ secondary_action_url }}" class="btn btn-sm btn-outline-dark mb-0">
+          {% if secondary_action_icon %}
+            <i class="material-symbols-rounded text-sm me-1">{{ secondary_action_icon }}</i>
+          {% endif %}
+          {{ secondary_action_label }}
+        </a>
+      {% else %}
+        <a href="/admin/" class="btn btn-sm btn-outline-dark mb-0">
+          <i class="material-symbols-rounded text-sm me-1">tune</i>
+          Admin
+        </a>
+      {% endif %}
 
       <div class="clinic-user-pill ms-lg-3">
         <span class="clinic-avatar">{{ greeting_name|first|upper }}</span>

@@ -20,33 +20,54 @@
         <span class="text-uppercase text-xs font-weight-bolder opacity-6 text-dark">Navegacao</span>
       </li>
       <li class="nav-item">
-        <a class="nav-link {% if segment == 'dashboard' %}active{% endif %}" href="#overview">
+        <a class="nav-link {% if segment == 'dashboard' %}active{% endif %}" href="{% url 'clinic:index' %}#overview">
           <i class="material-symbols-rounded opacity-10">dashboard</i>
           <span class="nav-link-text ms-2">Visao geral</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="#agenda">
+        <a class="nav-link" href="{% url 'clinic:index' %}#agenda">
           <i class="material-symbols-rounded opacity-10">calendar_month</i>
           <span class="nav-link-text ms-2">Agenda</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="#team">
+        <a class="nav-link" href="{% url 'clinic:index' %}#team">
           <i class="material-symbols-rounded opacity-10">groups</i>
           <span class="nav-link-text ms-2">Equipa medica</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="#finance">
+        <a class="nav-link" href="{% url 'clinic:index' %}#finance">
           <i class="material-symbols-rounded opacity-10">monitoring</i>
           <span class="nav-link-text ms-2">Financeiro</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="#operations">
+        <a class="nav-link" href="{% url 'clinic:index' %}#operations">
           <i class="material-symbols-rounded opacity-10">speed</i>
           <span class="nav-link-text ms-2">Operacao</span>
+        </a>
+      </li>
+      <li class="nav-item px-3 mt-3 mb-2">
+        <span class="text-uppercase text-xs font-weight-bolder opacity-6 text-dark">Acessos</span>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if segment == 'users' %}active{% endif %}" href="{% url 'accounts:user_list' %}">
+          <i class="material-symbols-rounded opacity-10">manage_accounts</i>
+          <span class="nav-link-text ms-2">Utilizadores</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if segment == 'roles' %}active{% endif %}" href="{% url 'accounts:role_list' %}">
+          <i class="material-symbols-rounded opacity-10">badge</i>
+          <span class="nav-link-text ms-2">Perfis</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if segment == 'permissions' %}active{% endif %}" href="{% url 'accounts:permission_list' %}">
+          <i class="material-symbols-rounded opacity-10">verified_user</i>
+          <span class="nav-link-text ms-2">Permissoes</span>
         </a>
       </li>
       <li class="nav-item mt-2">

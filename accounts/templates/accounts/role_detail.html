@@ -1,0 +1,106 @@
+{% extends "accounts/base.html" %}
+{% load accounts_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-lg-5 mb-4 mb-lg-0">
+        <div class="card clinic-detail-card h-100">
+          <div class="card-header p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+              <div>
+                <p class="text-sm text-secondary mb-1">Perfil</p>
+                <h3 class="mb-1">{{ object.name }}</h3>
+                <p class="text-secondary mb-0">Agrupamento de permissões para utilizadores da clínica.</p>
+              </div>
+
+              <div class="d-flex gap-2">
+                <a href="{% url 'accounts:role_update' object.pk %}" class="btn bg-gradient-dark mb-0">Editar</a>
+                <a href="{% url 'accounts:role_delete' object.pk %}" class="btn btn-outline-danger mb-0">Eliminar</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body pt-0">
+            <div class="clinic-detail-grid">
+              <div class="clinic-detail-item">
+                <p class="text-xs text-secondary text-uppercase mb-2">Permissões</p>
+                <h6 class="mb-0">{{ ordered_permissions|length }}</h6>
+              </div>
+
+              <div class="clinic-detail-item">
+                <p class="text-xs text-secondary text-uppercase mb-2">Utilizadores ligados</p>
+                <h6 class="mb-0">{{ assigned_users|length }}</h6>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card clinic-detail-card h-100">
+          <div class="card-header p-4 border-0">
+            <h5 class="mb-1">Permissões incluídas</h5>
+            <p class="text-secondary mb-0">Conjunto de acessos herdados por quem usar este perfil.</p>
+          </div>
+
+          <div class="card-body pt-0">
+            <div class="clinic-inline-list">
+              {% for permission in ordered_permissions %}
+                <span class="clinic-inline-badge">{{ permission.name }}</span>
+              {% empty %}
+                <span class="text-sm text-secondary">Este perfil ainda não tem permissões atribuídas.</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <h5 class="mb-1">Utilizadores com este perfil</h5>
+        <p class="text-secondary mb-0">Cada utilizador herda automaticamente as permissões acima.</p>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        <div class="table-responsive">
+          <table class="table align-items-center mb-0 clinic-data-table">
+            <thead>
+              <tr>
+                <th class="ps-4">Utilizador</th>
+                <th>Email</th>
+                <th>Estado</th>
+                <th class="text-end pe-4">Acções</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user_item in assigned_users %}
+                <tr>
+                  <td class="ps-4">{{ user_item.get_full_name|default:user_item.username }}</td>
+                  <td>{{ user_item.email|default:"Sem email" }}</td>
+                  <td>
+                    {% if user_item.is_active %}
+                      <span class="clinic-status clinic-status-success">Activo</span>
+                    {% else %}
+                      <span class="clinic-status clinic-status-muted">Inactivo</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end pe-4">
+                    <a href="{% url 'accounts:user_detail' user_item.pk %}" class="btn btn-link text-dark text-sm mb-0">Abrir utilizador</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="clinic-empty-state">Nenhum utilizador está associado a este perfil.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

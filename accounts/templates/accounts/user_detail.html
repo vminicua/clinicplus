@@ -1,0 +1,108 @@
+{% extends "accounts/base.html" %}
+{% load accounts_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-lg-8 mb-4 mb-lg-0">
+        <div class="card clinic-detail-card h-100">
+          <div class="card-header p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+              <div>
+                <p class="text-sm text-secondary mb-1">Ficha do utilizador</p>
+                <h3 class="mb-1">{{ object.get_full_name|default:object.username }}</h3>
+                <p class="text-secondary mb-0">{{ object.username }} · {{ object.email|default:"Sem email registado" }}</p>
+              </div>
+
+              <div class="d-flex gap-2">
+                <a href="{% url 'accounts:user_update' object.pk %}" class="btn bg-gradient-dark mb-0">Editar</a>
+                <a href="{% url 'accounts:user_delete' object.pk %}" class="btn btn-outline-danger mb-0">Eliminar</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body pt-0">
+            <div class="clinic-detail-grid">
+              <div class="clinic-detail-item">
+                <p class="text-xs text-secondary text-uppercase mb-2">Estado</p>
+                {% if object.is_active %}
+                  <span class="clinic-status clinic-status-success">Activo</span>
+                {% else %}
+                  <span class="clinic-status clinic-status-muted">Inactivo</span>
+                {% endif %}
+              </div>
+
+              <div class="clinic-detail-item">
+                <p class="text-xs text-secondary text-uppercase mb-2">Idioma</p>
+                <h6 class="mb-0">{{ object.profile.get_preferred_language_display }}</h6>
+              </div>
+
+              <div class="clinic-detail-item">
+                <p class="text-xs text-secondary text-uppercase mb-2">Último acesso</p>
+                <h6 class="mb-0">
+                  {% if object.last_login %}
+                    {{ object.last_login|date:"d/m/Y H:i" }}
+                  {% else %}
+                    Nunca entrou
+                  {% endif %}
+                </h6>
+              </div>
+
+              <div class="clinic-detail-item">
+                <p class="text-xs text-secondary text-uppercase mb-2">Criado em</p>
+                <h6 class="mb-0">{{ object.date_joined|date:"d/m/Y H:i" }}</h6>
+              </div>
+            </div>
+
+            <hr>
+
+            <div class="clinic-detail-grid">
+              <div class="clinic-detail-item">
+                <p class="text-xs text-secondary text-uppercase mb-2">Permissões elevadas</p>
+                <div class="clinic-inline-list">
+                  {% if object.is_staff %}<span class="clinic-inline-badge">Admin</span>{% endif %}
+                  {% if object.is_superuser %}<span class="clinic-inline-badge">Acesso total</span>{% endif %}
+                  {% if not object.is_staff and not object.is_superuser %}
+                    <span class="text-sm text-secondary">Sem privilégios elevados</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="clinic-detail-item">
+                <p class="text-xs text-secondary text-uppercase mb-2">Perfis atribuídos</p>
+                <div class="clinic-inline-list">
+                  {% for role in object.groups.all %}
+                    <span class="clinic-inline-badge">{{ role.name }}</span>
+                  {% empty %}
+                    <span class="text-sm text-secondary">Sem perfis associados</span>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card clinic-detail-card h-100">
+          <div class="card-header p-4 border-0">
+            <h5 class="mb-1">Permissões directas</h5>
+            <p class="text-secondary mb-0">Acessos atribuídos fora dos perfis.</p>
+          </div>
+          <div class="card-body pt-0">
+            <div class="clinic-inline-list">
+              {% for permission in direct_permissions %}
+                <span class="clinic-inline-badge">{{ permission.name }}</span>
+              {% empty %}
+                <span class="text-sm text-secondary">Este utilizador herda acesso apenas dos perfis atribuídos.</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+

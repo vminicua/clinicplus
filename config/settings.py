@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
+    "accounts",
     "clinic",
 ]
 
@@ -155,10 +156,15 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-LANGUAGE_CODE = "pt-br"
+LANGUAGE_CODE = "pt"
+LANGUAGES = [
+    ("pt", "Português (Moçambique)"),
+    ("en", "English"),
+]
 TIME_ZONE = "Africa/Maputo"
 USE_I18N = True
 USE_TZ = True
+LOCALE_PATHS = [BASE_DIR / "locale"]
 
 
 STATIC_URL = "static/"

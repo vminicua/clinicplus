@@ -1,0 +1,74 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row justify-content-center">
+      <div class="col-xl-10">
+        <div class="card clinic-form-card">
+          <div class="card-header p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+              <div>
+                <p class="text-sm text-secondary mb-1">{{ page_title }}</p>
+                <h3 class="mb-1">{% ui "Preferências do sistema" "System preferences" %}</h3>
+                <p class="text-secondary mb-0">{{ page_subtitle }}</p>
+              </div>
+
+              <div class="clinic-inline-badge">
+                {% ui "Moeda base" "Base currency" %}: {{ object.get_default_currency_display }}
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body p-4 pt-0">
+            <form method="post" data-swal-submit data-processing-title="{% ui 'Processando...' 'Processing...' %}" data-processing-text="{% ui 'Estamos a guardar as preferências.' 'We are saving your preferences.' %}">
+              {% csrf_token %}
+
+              {% for hidden_field in form.hidden_fields %}
+                {{ hidden_field }}
+              {% endfor %}
+
+              {% if form.non_field_errors %}
+                <div class="alert alert-danger text-white mb-4">
+                  {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+              <div class="accordion clinic-preferences-accordion" id="system-preferences-accordion">
+                {% for group in preference_groups %}
+                  <div class="accordion-item clinic-preference-group mb-3">
+                    <h2 class="accordion-header" id="heading-{{ group.id }}">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ group.id }}" aria-expanded="false" aria-controls="collapse-{{ group.id }}">
+                        <span>
+                          <strong class="d-block">{{ group.title }}</strong>
+                          <span class="clinic-inline-note">{{ group.description }}</span>
+                        </span>
+                      </button>
+                    </h2>
+                    <div id="collapse-{{ group.id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ group.id }}" data-bs-parent="#system-preferences-accordion">
+                      <div class="accordion-body">
+                        <div class="clinic-form-grid">
+                          {% for field in group.fields %}
+                            {% include "accounts/shared/includes/form_field.html" with field=field wide_fields="" %}
+                          {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+
+              <div class="d-flex justify-content-end gap-2 mt-4">
+                <button type="submit" class="btn bg-gradient-dark mb-0">{{ submit_label }}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,100 @@
+{% load ui_extras %}
+<div class="row mb-4">
+  <div class="col-lg-8 mb-4 mb-lg-0">
+    <div class="card clinic-detail-card h-100">
+      <div class="card-header p-4 border-0">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <p class="text-sm text-secondary mb-1">{% ui "Ficha da sucursal" "Branch record" %}</p>
+            <h3 class="mb-1">{{ object.name }}</h3>
+            <p class="text-secondary mb-0">{{ object.code }}{% if object.city %} · {{ object.city }}{% endif %}</p>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'accounts:branch_update' object.pk %}" data-modal-url="{% url 'accounts:branch_update' object.pk %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">{% ui "Editar" "Edit" %}</a>
+            {% if object.is_active %}
+              <a href="#" data-confirm-action data-action-url="{% url 'accounts:branch_toggle_status' object.pk %}" data-confirm-title="{% ui 'Desactivar sucursal' 'Deactivate branch' %}" data-confirm-text="{% ui 'Esta unidade deixará de aparecer como activa.' 'This branch will stop appearing as active.' %}" data-confirm-button="{% ui 'Desactivar' 'Deactivate' %}" data-confirm-icon="warning" class="btn btn-outline-warning mb-0">{% ui "Desactivar" "Deactivate" %}</a>
+            {% else %}
+              <a href="#" data-confirm-action data-action-url="{% url 'accounts:branch_toggle_status' object.pk %}" data-confirm-title="{% ui 'Activar sucursal' 'Activate branch' %}" data-confirm-text="{% ui 'A unidade voltará a estar disponível para operação.' 'The branch will be available for operations again.' %}" data-confirm-button="{% ui 'Activar' 'Activate' %}" data-confirm-icon="question" class="btn btn-outline-success mb-0">{% ui "Activar" "Activate" %}</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body pt-0">
+        <div class="clinic-detail-grid">
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Estado" "Status" %}</p>
+            {% if object.is_active %}
+              <span class="clinic-status clinic-status-success">{% ui "Activa" "Active" %}</span>
+            {% else %}
+              <span class="clinic-status clinic-status-muted">{% ui "Inactiva" "Inactive" %}</span>
+            {% endif %}
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Cidade" "City" %}</p>
+            <h6 class="mb-0">{{ object.city|default:"Sem cidade registada" }}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Telefone" "Phone" %}</p>
+            <h6 class="mb-0">{{ object.phone|default:"Sem telefone" }}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Email" "Email" %}</p>
+            <h6 class="mb-0">{{ object.email|default:"Sem email" }}</h6>
+          </div>
+
+          <div class="clinic-detail-item full-width">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Endereço" "Address" %}</p>
+            <h6 class="mb-0">{{ object.address|default:"Sem endereço registado" }}</h6>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="clinic-detail-item">
+          <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Utilizadores alocados" "Allocated users" %}</p>
+          <div class="clinic-inline-list">
+            {% for user_item in assigned_users %}
+              <span class="clinic-inline-badge">
+                {{ user_item.get_full_name|default:user_item.username }}
+                {% if user_item.profile.default_branch_id == object.id %} · {% ui "Principal" "Primary" %}{% endif %}
+              </span>
+            {% empty %}
+              <span class="text-sm text-secondary">{% ui "Nenhum utilizador alocado a esta sucursal." "No users are assigned to this branch." %}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card clinic-detail-card h-100">
+      <div class="card-header p-4 border-0">
+        <h5 class="mb-1">{% ui "Resumo da alocação" "Allocation summary" %}</h5>
+        <p class="text-secondary mb-0">{% ui "Visão rápida da equipa principal desta unidade." "A quick view of the team centered on this branch." %}</p>
+      </div>
+      <div class="card-body pt-0">
+        <div class="clinic-detail-item mb-3">
+          <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Total de utilizadores" "Total users" %}</p>
+          <h4 class="mb-0">{{ assigned_users|length }}</h4>
+        </div>
+
+        <div class="clinic-detail-item">
+          <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Sucursal principal para" "Primary branch for" %}</p>
+          <div class="clinic-inline-list">
+            {% for user_item in default_users %}
+              <span class="clinic-inline-badge">{{ user_item.get_full_name|default:user_item.username }}</span>
+            {% empty %}
+              <span class="text-sm text-secondary">{% ui "Nenhum utilizador definiu esta sucursal como principal." "No user has set this as the primary branch." %}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

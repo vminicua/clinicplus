@@ -70,9 +70,9 @@
           </div>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <div class="clinic-pill-group">
-              <a href="#" class="clinic-pill active" data-table-pill="users-table" data-column="3" data-value="">Todos</a>
-              <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="3" data-value="Activo">Activos</a>
-              <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="3" data-value="Inactivo">Inactivos</a>
+              <a href="#" class="clinic-pill active" data-table-pill="users-table" data-column="4" data-value="">Todos</a>
+              <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="4" data-value="Activo">Activos</a>
+              <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="4" data-value="Inactivo">Inactivos</a>
             </div>
             <a href="{% url 'accounts:user_create' %}" data-modal-url="{% url 'accounts:user_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
               <i class="material-symbols-rounded text-sm me-1">person_add</i>
@@ -89,6 +89,7 @@
               <tr>
                 <th class="ps-4">Utilizador</th>
                 <th>Perfis</th>
+                <th>Sucursais</th>
                 <th>Idioma</th>
                 <th>Estado</th>
                 <th>Último acesso</th>
@@ -110,6 +111,22 @@
                         <span class="clinic-inline-badge">{{ role.name }}</span>
                       {% empty %}
                         <span class="text-sm text-secondary">Sem perfis</span>
+                      {% endfor %}
+                    </div>
+                  </td>
+                  <td>
+                    <div class="clinic-inline-list">
+                      {% if user_item.profile.default_branch %}
+                        <span class="clinic-inline-badge">{{ user_item.profile.default_branch.name }} · Principal</span>
+                      {% endif %}
+                      {% for branch in user_item.profile.assigned_branches.all %}
+                        {% if not user_item.profile.default_branch or branch.pk != user_item.profile.default_branch.pk %}
+                          <span class="clinic-inline-badge">{{ branch.name }}</span>
+                        {% endif %}
+                      {% empty %}
+                        {% if not user_item.profile.default_branch %}
+                          <span class="text-sm text-secondary">Sem sucursais</span>
+                        {% endif %}
                       {% endfor %}
                     </div>
                   </td>

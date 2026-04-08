@@ -1,3 +1,4 @@
+{% load ui_extras %}
 <aside class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl fixed-start ms-3 my-3 clinic-sidenav" id="sidenav-main">
   <div class="sidenav-header">
     <i class="fas fa-times p-3 cursor-pointer text-dark opacity-5 position-absolute end-0 top-0 d-none d-xl-none" aria-hidden="true" id="iconSidenav"></i>
@@ -7,7 +8,7 @@
       </span>
       <span class="clinic-brand-text">
         <strong>Clinic Plus</strong>
-        <small>Central de Operacoes</small>
+        <small>{% ui "Central de Operações" "Operations Hub" %}</small>
       </span>
     </a>
   </div>
@@ -19,14 +20,50 @@
       <li class="nav-item">
         <a class="nav-link {% if segment == 'dashboard' %}active{% endif %}" href="{% url 'clinic:index' %}">
           <i class="material-symbols-rounded opacity-10">dashboard</i>
-          <span class="nav-link-text ms-2">Dashboard</span>
+          <span class="nav-link-text ms-2">{% ui "Dashboard" "Dashboard" %}</span>
         </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link clinic-nav-parent {% if segment == 'branches' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-organization" role="button" aria-expanded="{% if segment == 'branches' %}true{% else %}false{% endif %}" aria-controls="sidebar-organization">
+          <span class="d-flex align-items-center">
+            <i class="material-symbols-rounded opacity-10">apartment</i>
+            <span class="nav-link-text ms-2">{% ui "Organização" "Organization" %}</span>
+          </span>
+          <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
+        </a>
+        <div class="collapse {% if segment == 'branches' %}show{% endif %}" id="sidebar-organization">
+          <ul class="nav flex-column clinic-submenu">
+            <li class="nav-item">
+              <a class="nav-link {% if segment == 'branches' %}active{% endif %}" href="{% url 'accounts:branch_list' %}">
+                <span class="nav-link-text">{% ui "Sucursais" "Branches" %}</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link clinic-nav-parent {% if segment == 'preferences' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-preferences" role="button" aria-expanded="{% if segment == 'preferences' %}true{% else %}false{% endif %}" aria-controls="sidebar-preferences">
+          <span class="d-flex align-items-center">
+            <i class="material-symbols-rounded opacity-10">tune</i>
+            <span class="nav-link-text ms-2">{% ui "Preferências" "Preferences" %}</span>
+          </span>
+          <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
+        </a>
+        <div class="collapse {% if segment == 'preferences' %}show{% endif %}" id="sidebar-preferences">
+          <ul class="nav flex-column clinic-submenu">
+            <li class="nav-item">
+              <a class="nav-link {% if segment == 'preferences' %}active{% endif %}" href="{% url 'accounts:system_preferences' %}">
+                <span class="nav-link-text">{% ui "Sistema" "System" %}</span>
+              </a>
+            </li>
+          </ul>
+        </div>
       </li>
       <li class="nav-item">
         <a class="nav-link clinic-nav-parent {% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-access" role="button" aria-expanded="{% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}true{% else %}false{% endif %}" aria-controls="sidebar-access">
           <span class="d-flex align-items-center">
             <i class="material-symbols-rounded opacity-10">manage_accounts</i>
-            <span class="nav-link-text ms-2">Perfis & Permissões</span>
+            <span class="nav-link-text ms-2">{% ui "Perfis & Permissões" "Roles & Permissions" %}</span>
           </span>
           <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
         </a>
@@ -34,17 +71,17 @@
           <ul class="nav flex-column clinic-submenu">
             <li class="nav-item">
               <a class="nav-link {% if segment == 'users' %}active{% endif %}" href="{% url 'accounts:user_list' %}">
-                <span class="nav-link-text">Utilizadores</span>
+                <span class="nav-link-text">{% ui "Utilizadores" "Users" %}</span>
               </a>
             </li>
             <li class="nav-item">
               <a class="nav-link {% if segment == 'roles' %}active{% endif %}" href="{% url 'accounts:role_list' %}">
-                <span class="nav-link-text">Perfis</span>
+                <span class="nav-link-text">{% ui "Perfis" "Roles" %}</span>
               </a>
             </li>
             <li class="nav-item">
               <a class="nav-link {% if segment == 'permissions' %}active{% endif %}" href="{% url 'accounts:permission_list' %}">
-                <span class="nav-link-text">Permissoes</span>
+                <span class="nav-link-text">{% ui "Permissões" "Permissions" %}</span>
               </a>
             </li>
           </ul>

@@ -4,6 +4,14 @@ from .permissions_view import (
     PermissionListView,
     PermissionUpdateView,
 )
+from .preferences_view import LanguageSwitchView, SystemPreferenceView
+from .organization_view import (
+    BranchCreateView,
+    BranchDetailView,
+    BranchListView,
+    BranchToggleStatusView,
+    BranchUpdateView,
+)
 from .roles_view import (
     RoleCreateView,
     RoleDetailView,
@@ -32,4 +40,11 @@ __all__ = [
     "PermissionDetailView",
     "PermissionCreateView",
     "PermissionUpdateView",
+    "BranchListView",
+    "BranchDetailView",
+    "BranchCreateView",
+    "BranchUpdateView",
+    "BranchToggleStatusView",
+    "SystemPreferenceView",
+    "LanguageSwitchView",
 ]

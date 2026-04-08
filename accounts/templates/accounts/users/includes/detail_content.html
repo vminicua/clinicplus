@@ -51,6 +51,11 @@
             <p class="text-xs text-secondary text-uppercase mb-2">Criado em</p>
             <h6 class="mb-0">{{ object.date_joined|date:"d/m/Y H:i" }}</h6>
           </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">Sucursal principal</p>
+            <h6 class="mb-0">{{ object.profile.default_branch.name|default:"Sem sucursal principal" }}</h6>
+          </div>
         </div>
 
         <hr>
@@ -74,6 +79,17 @@
                 <span class="clinic-inline-badge">{{ role.name }}</span>
               {% empty %}
                 <span class="text-sm text-secondary">Sem perfis associados</span>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">Sucursais atribuídas</p>
+            <div class="clinic-inline-list">
+              {% for branch in object.profile.assigned_branches.all %}
+                <span class="clinic-inline-badge">{{ branch.name }}</span>
+              {% empty %}
+                <span class="text-sm text-secondary">Sem sucursais associadas</span>
               {% endfor %}
             </div>
           </div>

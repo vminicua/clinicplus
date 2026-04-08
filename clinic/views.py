@@ -6,6 +6,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.db import DatabaseError
 from django.utils import timezone
+
+from accounts.ui import LANGUAGE_SESSION_KEY, get_system_default_language, ui_text
 from clinic.models import Hospital, Medico, Paciente, Agendamento, Consulta
 
 logger = logging.getLogger(__name__)
@@ -36,22 +38,43 @@ def custom_login(request):
             )
             messages.error(
                 request,
-                'Nao foi possivel conectar ao banco de dados. Verifique o tunel SSH/MySQL e tente novamente.',
+                ui_text(
+                    request,
+                    'Nao foi possivel conectar ao banco de dados. Verifique o tunel SSH/MySQL e tente novamente.',
+                    'The database connection is unavailable. Check the SSH/MySQL tunnel and try again.',
+                ),
             )
             return render(request, 'clinic/login.html', context, status=503)
 
         if user is not None:
-            messages.success(request, f'Bem-vindo, {user.get_full_name() or user.username}!')
+            profile = getattr(user, "profile", None)
+            request.session[LANGUAGE_SESSION_KEY] = (
+                profile.preferred_language if profile and profile.preferred_language else get_system_default_language()
+            )
+            messages.success(
+                request,
+                ui_text(
+                    request,
+                    f'Bem-vindo, {user.get_full_name() or user.username}!',
+                    f'Welcome, {user.get_full_name() or user.username}!',
+                ),
+            )
             return redirect(next_url or 'clinic:index')
         else:
-            messages.error(request, 'Credenciais inválidas. Tente novamente.')
+            messages.error(
+                request,
+                ui_text(request, 'Credenciais inválidas. Tente novamente.', 'Invalid credentials. Please try again.'),
+            )
 
     return render(request, 'clinic/login.html', context)
 
 def custom_logout(request):
     """Logout personalizado"""
     logout(request)
-    messages.info(request, 'Sessão terminada com sucesso.')
+    messages.info(
+        request,
+        ui_text(request, 'Sessão terminada com sucesso.', 'You have been signed out successfully.'),
+    )
     return redirect('clinic:login')
 
 @login_required(login_url='clinic:login')
@@ -60,9 +83,13 @@ def dashboard(request):
 
     context = {
         'segment': 'dashboard',
-        'meta_title': 'Clinic Plus | Painel de Operacoes',
-        'page_title': 'Painel de Operacoes',
-        'page_subtitle': 'Uma visao mais limpa da agenda, do atendimento e da saude financeira da clinica.',
+        'meta_title': ui_text(request, 'Clinic Plus | Painel de Operacoes', 'Clinic Plus | Operations dashboard'),
+        'page_title': ui_text(request, 'Painel de Operacoes', 'Operations dashboard'),
+        'page_subtitle': ui_text(
+            request,
+            'Uma visao mais limpa da agenda, do atendimento e da saude financeira da clinica.',
+            'A cleaner overview of scheduling, patient flow, and clinic financial health.',
+        ),
         'current_date': timezone.localdate(),
         'greeting_name': greeting_name,
         'total_hospitals': 1,
@@ -71,8 +98,8 @@ def dashboard(request):
         'total_appointments': 48,
         'completed_consultations': 42,
         'appointments_today': 6,
-        'revenue_today': 'R$ 2,850.00',
-        'revenue_month': 'R$ 45,230.00',
+        'revenue_today': 'MZN 2 850,00',
+        'revenue_month': 'MZN 45 230,00',
         'satisfaction_rate': 96,
         'confirmed_rate': 88,
         'monthly_target_progress': 76,

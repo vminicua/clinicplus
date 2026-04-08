@@ -1,11 +1,23 @@
 from django.contrib import admin
 
-from .models import UserProfile
+from .models import Branch, SystemPreference, UserProfile
+
+
+@admin.register(Branch)
+class BranchAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "city", "is_active", "updated_at")
+    search_fields = ("name", "code", "city", "email")
+    list_filter = ("is_active", "city")
+
+
+@admin.register(SystemPreference)
+class SystemPreferenceAdmin(admin.ModelAdmin):
+    list_display = ("default_language", "default_currency", "updated_at")
 
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "preferred_language", "updated_at")
+    list_display = ("user", "preferred_language", "default_branch", "updated_at")
     search_fields = ("user__username", "user__first_name", "user__last_name", "user__email")
-    list_filter = ("preferred_language", "updated_at")
-
+    list_filter = ("preferred_language", "default_branch", "updated_at")
+    filter_horizontal = ("assigned_branches",)

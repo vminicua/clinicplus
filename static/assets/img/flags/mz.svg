@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Bandeira de Moçambique</title>
+  <desc id="desc">Ícone circular simplificado da bandeira de Moçambique.</desc>
+  <defs>
+    <clipPath id="circle">
+      <circle cx="32" cy="32" r="32"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#circle)">
+    <rect width="64" height="64" fill="#d21034"/>
+    <rect width="64" height="18" y="0" fill="#007168"/>
+    <rect width="64" height="4" y="18" fill="#ffffff"/>
+    <rect width="64" height="10" y="22" fill="#000000"/>
+    <rect width="64" height="4" y="32" fill="#ffffff"/>
+    <rect width="64" height="28" y="36" fill="#fce100"/>
+    <polygon points="0,0 0,64 34,32" fill="#d21034"/>
+    <polygon points="12,32 16,44 28,44 18,51 22,63 12,55 2,63 6,51 -4,44 8,44" fill="#fce100"/>
+  </g>
+</svg>

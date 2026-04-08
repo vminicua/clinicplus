@@ -23,8 +23,8 @@ APP_SECTION_METADATA = {
         "order": 10,
     },
     "accounts": {
-        "title": "Preferências do utilizador",
-        "description": "Definições complementares das contas de acesso.",
+        "title": "Organização e preferências",
+        "description": "Sucursais, preferências globais e definições complementares das contas.",
         "order": 20,
     },
     "clinic": {
@@ -65,6 +65,14 @@ DEFAULT_ROLE_PERMISSION_MAP = {
         "view_permission",
         "view_userprofile",
         "change_userprofile",
+        "add_branch",
+        "change_branch",
+        "delete_branch",
+        "view_branch",
+        "add_systempreference",
+        "change_systempreference",
+        "delete_systempreference",
+        "view_systempreference",
         "add_hospital",
         "change_hospital",
         "delete_hospital",
@@ -101,7 +109,14 @@ DEFAULT_ROLE_PERMISSION_MAP = {
     "Gestor da Clínica / Sucursal": {
         "view_user",
         "change_user",
+        "view_userprofile",
+        "change_userprofile",
         "view_group",
+        "view_branch",
+        "add_branch",
+        "change_branch",
+        "view_systempreference",
+        "change_systempreference",
         "view_hospital",
         "change_hospital",
         "view_especialidade",
@@ -132,6 +147,7 @@ DEFAULT_ROLE_PERMISSION_MAP = {
         "view_medico",
         "view_especialidade",
         "view_hospital",
+        "view_branch",
     },
     "Médico": {
         "view_paciente",
@@ -142,6 +158,7 @@ DEFAULT_ROLE_PERMISSION_MAP = {
         "change_consulta",
         "view_medico",
         "view_especialidade",
+        "view_branch",
     },
     "Enfermeiro(a)": {
         "view_paciente",
@@ -155,6 +172,7 @@ DEFAULT_ROLE_PERMISSION_MAP = {
         "add_medicamento",
         "change_medicamento",
         "view_hospital",
+        "view_branch",
     },
     "Financeiro / Caixa": {
         "view_paciente",
@@ -166,6 +184,8 @@ DEFAULT_ROLE_PERMISSION_MAP = {
         "view_user",
         "view_group",
         "view_permission",
+        "view_branch",
+        "view_systempreference",
         "view_hospital",
         "view_especialidade",
         "view_medico",
@@ -289,12 +309,19 @@ def sync_default_roles():
 
     for role_name, codenames in DEFAULT_ROLE_PERMISSION_MAP.items():
         group, created = Group.objects.get_or_create(name=role_name)
-        if not created:
-            continue
 
         matched_permissions = [
             permissions_by_codename[codename]
             for codename in sorted(codenames)
             if codename in permissions_by_codename
         ]
-        group.permissions.set(matched_permissions)
+        if created:
+            group.permissions.set(matched_permissions)
+            continue
+
+        existing_ids = set(group.permissions.values_list("id", flat=True))
+        missing_permissions = [
+            permission for permission in matched_permissions if permission.id not in existing_ids
+        ]
+        if missing_permissions:
+            group.permissions.add(*missing_permissions)

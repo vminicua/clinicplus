@@ -29,6 +29,10 @@
           <div class="text-xs text-secondary text-uppercase">Passo 2</div>
           <strong>Acesso e perfis</strong>
         </div>
+        <div class="clinic-wizard-pill" data-step-target="2">
+          <div class="text-xs text-secondary text-uppercase">Passo 3</div>
+          <strong>Sucursais</strong>
+        </div>
       </div>
 
       <div data-step-panel="0">
@@ -68,6 +72,13 @@
           </div>
           {% include "accounts/shared/includes/form_field.html" with field=form.is_active wide_fields="" %}
           {% include "accounts/shared/includes/form_field.html" with field=form.is_staff wide_fields="" %}
+        </div>
+      </div>
+
+      <div data-step-panel="2" class="d-none">
+        <div class="clinic-form-grid">
+          {% include "accounts/shared/includes/form_field.html" with field=form.default_branch wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.assigned_branches wide_fields="assigned_branches" %}
         </div>
       </div>
 

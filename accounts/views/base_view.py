@@ -4,6 +4,8 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.utils import timezone
 
+from accounts.ui import get_system_preferences
+
 
 def is_modal_request(request) -> bool:
     return (
@@ -33,6 +35,18 @@ class ClinicPageMixin(LoginRequiredMixin):
     page_subtitle = ""
     segment = ""
 
+    def get_page_title(self) -> str:
+        return self.page_title
+
+    def get_page_subtitle(self) -> str:
+        return self.page_subtitle
+
+    def get_meta_title(self) -> str:
+        page_title = self.get_page_title()
+        if not page_title:
+            return "Clinic Plus"
+        return f"Clinic Plus | {page_title}"
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         greeting_name = (
@@ -42,11 +56,13 @@ class ClinicPageMixin(LoginRequiredMixin):
         )
 
         context.setdefault("segment", self.segment)
-        context.setdefault("page_title", self.page_title)
-        context.setdefault("page_subtitle", self.page_subtitle)
-        context.setdefault("meta_title", f"Clinic Plus | {self.page_title}")
+        context.setdefault("page_title", self.get_page_title())
+        context.setdefault("page_subtitle", self.get_page_subtitle())
+        context.setdefault("meta_title", self.get_meta_title())
         context.setdefault("current_date", timezone.localdate())
         context.setdefault("greeting_name", greeting_name)
+        context.setdefault("current_language", getattr(self.request, "LANGUAGE_CODE", "pt"))
+        context.setdefault("system_preferences", get_system_preferences())
         context.setdefault("is_modal_request", is_modal_request(self.request))
         return context
 

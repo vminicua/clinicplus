@@ -6,8 +6,8 @@ from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 
-from .models import UserProfile
-from .utils import build_permission_matrix, describe_permission_scope
+from .models import Branch, SystemPreference, UserProfile
+from .utils import build_permission_matrix, describe_permission_scope, visible_users_queryset
 
 
 User = get_user_model()
@@ -80,6 +80,19 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         choices=UserProfile.LANGUAGE_CHOICES,
         label="Idioma preferido",
     )
+    assigned_branches = forms.ModelMultipleChoiceField(
+        queryset=Branch.objects.order_by("name"),
+        required=False,
+        label="Sucursais atribuídas",
+        help_text="Defina em que sucursais este utilizador pode operar.",
+        widget=forms.CheckboxSelectMultiple,
+    )
+    default_branch = forms.ModelChoiceField(
+        queryset=Branch.objects.order_by("name"),
+        required=False,
+        label="Sucursal principal",
+        help_text="Opcional. Deve fazer parte das sucursais atribuídas.",
+    )
 
     class Meta:
         model = User
@@ -115,10 +128,14 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         self.fields["username"].widget.attrs["autocomplete"] = "username"
         self.fields["email"].widget.attrs["autocomplete"] = "email"
         self.fields["groups"].queryset = Group.objects.order_by("name")
+        self.fields["assigned_branches"].queryset = Branch.objects.order_by("name")
+        self.fields["default_branch"].queryset = Branch.objects.order_by("name")
 
         if self.instance and self.instance.pk:
             profile, _ = UserProfile.objects.get_or_create(user=self.instance)
             self.fields["preferred_language"].initial = profile.preferred_language
+            self.fields["assigned_branches"].initial = profile.assigned_branches.all()
+            self.fields["default_branch"].initial = profile.default_branch
         else:
             self.fields["preferred_language"].initial = UserProfile.LANGUAGE_PORTUGUESE
 
@@ -126,6 +143,8 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         cleaned_data = super().clean()
         password1 = cleaned_data.get("password1", "")
         password2 = cleaned_data.get("password2", "")
+        assigned_branches = cleaned_data.get("assigned_branches")
+        default_branch = cleaned_data.get("default_branch")
 
         if self.is_create and not password1:
             self.add_error("password1", "A palavra-passe é obrigatória ao criar um utilizador.")
@@ -133,6 +152,12 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         if password1 or password2:
             if password1 != password2:
                 self.add_error("password2", "A confirmação da palavra-passe não coincide.")
+
+        if default_branch and assigned_branches is not None and default_branch not in assigned_branches:
+            self.add_error(
+                "default_branch",
+                "Seleccione a sucursal principal a partir das sucursais atribuídas.",
+            )
 
         return cleaned_data
 
@@ -153,9 +178,103 @@ class UserForm(StyledFormMixin, forms.ModelForm):
 
         profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.preferred_language = self.cleaned_data["preferred_language"]
+        profile.default_branch = self.cleaned_data.get("default_branch")
         profile.save()
+        profile.assigned_branches.set(self.cleaned_data.get("assigned_branches") or [])
 
         return user
+
+
+class BranchForm(StyledFormMixin, forms.ModelForm):
+    assigned_users = forms.ModelMultipleChoiceField(
+        queryset=User.objects.order_by("first_name", "last_name", "username"),
+        required=False,
+        label="Utilizadores alocados",
+        help_text="Escolha quem pode operar nesta sucursal.",
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    class Meta:
+        model = Branch
+        fields = [
+            "name",
+            "code",
+            "city",
+            "address",
+            "phone",
+            "email",
+            "is_active",
+        ]
+        labels = {
+            "name": "Nome da sucursal",
+            "code": "Código",
+            "city": "Cidade",
+            "address": "Endereço",
+            "phone": "Telefone",
+            "email": "Email",
+            "is_active": "Activa",
+        }
+        help_texts = {
+            "code": "Use um código curto para identificar a sucursal internamente.",
+            "city": "Cidade principal desta unidade.",
+            "address": "Morada física ou referência da unidade.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        self.fields["assigned_users"].queryset = visible_users_queryset().order_by(
+            "first_name",
+            "last_name",
+            "username",
+        )
+
+        if self.instance and self.instance.pk:
+            self.fields["assigned_users"].initial = visible_users_queryset().filter(
+                profile__assigned_branches=self.instance
+            )
+
+    @transaction.atomic
+    def save(self, commit=True):
+        branch = super().save(commit=commit)
+        if not commit:
+            return branch
+
+        selected_users = self.cleaned_data.get("assigned_users") or []
+        profiles_to_remove = UserProfile.objects.filter(
+            assigned_branches=branch,
+            user__is_superuser=False,
+        ).exclude(user__in=selected_users)
+        profiles_to_remove.update(default_branch=None)
+        for profile in profiles_to_remove:
+            profile.assigned_branches.remove(branch)
+
+        for user in selected_users:
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.assigned_branches.add(branch)
+            if profile.default_branch_id is None:
+                profile.default_branch = branch
+                profile.save(update_fields=["default_branch", "updated_at"])
+
+        return branch
+
+
+class SystemPreferenceForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = SystemPreference
+        fields = ["default_language", "default_currency"]
+        labels = {
+            "default_language": "Idioma do sistema",
+            "default_currency": "Moeda base",
+        }
+        help_texts = {
+            "default_language": "Usado como idioma inicial quando o utilizador ainda não escolheu um idioma.",
+            "default_currency": "Moeda usada por defeito no sistema. O valor inicial é Metical.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
 
 
 class RoleForm(StyledFormMixin, forms.ModelForm):

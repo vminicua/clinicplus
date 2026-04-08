@@ -25,7 +25,8 @@ class UserListView(AppPermissionMixin, ClinicPageMixin, ListView):
     def get_queryset(self):
         return (
             visible_users_queryset()
-            .select_related("profile")
+            .select_related("profile", "profile__default_branch")
+            .prefetch_related("profile__assigned_branches")
             .prefetch_related("groups")
             .order_by("first_name", "last_name", "username")
         )
@@ -41,7 +42,11 @@ class UserListView(AppPermissionMixin, ClinicPageMixin, ListView):
 
 
 class UserDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, DetailView):
-    queryset = visible_users_queryset().select_related("profile").prefetch_related("groups")
+    queryset = (
+        visible_users_queryset()
+        .select_related("profile", "profile__default_branch")
+        .prefetch_related("profile__assigned_branches", "groups")
+    )
     template_name = "accounts/users/detail.html"
     permission_required = "auth.view_user"
     segment = "users"
@@ -53,7 +58,7 @@ class UserDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, Deta
         context = super().get_context_data(**kwargs)
         context["detail_partial"] = "accounts/users/includes/detail_content.html"
         context["modal_heading"] = self.object.get_full_name() or self.object.username
-        context["modal_description"] = "Resumo do acesso, idioma e perfis atribuídos."
+        context["modal_description"] = "Resumo do acesso, idioma, sucursais e perfis atribuídos."
         return context
 
 
@@ -67,7 +72,7 @@ class UserCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, Create
     permission_required = "auth.add_user"
     segment = "users"
     page_title = "Novo utilizador"
-    page_subtitle = "Crie a conta, defina o idioma e associe perfis de acesso."
+    page_subtitle = "Crie a conta, defina o idioma, os perfis e as sucursais do utilizador."
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -89,7 +94,7 @@ class UserUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, Update
     permission_required = "auth.change_user"
     segment = "users"
     page_title = "Editar utilizador"
-    page_subtitle = "Actualize dados e perfis da conta seleccionada."
+    page_subtitle = "Actualize dados, perfis e sucursais da conta seleccionada."
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

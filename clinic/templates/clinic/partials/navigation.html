@@ -1,3 +1,4 @@
+{% load static ui_extras %}
 <nav class="navbar navbar-main navbar-expand-lg px-0 mx-3 shadow-none border-radius-xl clinic-navbar-card" id="navbarBlur" data-scroll="true">
   <div class="container-fluid py-2 px-3 d-flex align-items-center">
     <div class="nav-item d-xl-none d-flex align-items-center me-auto">
@@ -11,6 +12,44 @@
     </div>
 
     <div class="ms-auto d-flex align-items-center clinic-navbar-actions">
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-dark mb-0 clinic-language-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          {% if request.LANGUAGE_CODE == "en" %}
+            <img src="{% static 'assets/img/flags/gb.svg' %}" alt="English" class="clinic-flag-icon">
+          {% else %}
+            <img src="{% static 'assets/img/flags/mz.svg' %}" alt="Português" class="clinic-flag-icon">
+          {% endif %}
+          <span>{{ request.LANGUAGE_CODE|upper }}</span>
+          <i class="material-symbols-rounded text-sm">expand_more</i>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end clinic-language-menu p-2">
+          <form method="post" action="{% url 'accounts:switch_language' %}" class="mb-2">
+            {% csrf_token %}
+            <input type="hidden" name="language" value="pt">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="dropdown-item clinic-language-option{% if request.LANGUAGE_CODE == 'pt' %} active{% endif %}">
+              <img src="{% static 'assets/img/flags/mz.svg' %}" alt="Português" class="clinic-flag-icon">
+              <span>
+                <strong class="d-block">Português</strong>
+                <small>Moçambique</small>
+              </span>
+            </button>
+          </form>
+          <form method="post" action="{% url 'accounts:switch_language' %}">
+            {% csrf_token %}
+            <input type="hidden" name="language" value="en">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="dropdown-item clinic-language-option{% if request.LANGUAGE_CODE == 'en' %} active{% endif %}">
+              <img src="{% static 'assets/img/flags/gb.svg' %}" alt="English" class="clinic-flag-icon">
+              <span>
+                <strong class="d-block">English</strong>
+                <small>{% ui "Alternar interface" "Switch interface" %}</small>
+              </span>
+            </button>
+          </form>
+        </div>
+      </div>
+
       <div class="clinic-user-pill">
         <span class="clinic-avatar">{{ greeting_name|first|upper }}</span>
         <div>
@@ -20,7 +59,7 @@
 
       <a href="{% url 'clinic:logout' %}" class="btn btn-sm btn-outline-dark mb-0">
         <i class="material-symbols-rounded text-sm me-1">logout</i>
-        Sair
+        {% ui "Sair" "Logout" %}
       </a>
     </div>
   </div>

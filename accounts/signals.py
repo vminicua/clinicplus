@@ -3,7 +3,7 @@ from django.db.models.signals import post_migrate
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from .models import UserProfile
+from .models import SystemPreference, UserProfile
 from .utils import sync_default_roles
 
 
@@ -20,3 +20,10 @@ def create_default_roles(sender, **kwargs):
     if sender.name != "clinic":
         return
     sync_default_roles()
+
+
+@receiver(post_migrate)
+def ensure_system_preferences(sender, **kwargs):
+    if sender.name != "accounts":
+        return
+    SystemPreference.get_solo()

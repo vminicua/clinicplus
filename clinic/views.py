@@ -97,6 +97,52 @@ def work_schedule_queryset():
     )
 
 
+def serialize_work_schedule(schedule):
+    linked_medico = schedule.linked_medico
+    next_shift_date = schedule.next_occurrence_date()
+    return {
+        "id": schedule.pk,
+        "professional_name": schedule.professional_name,
+        "user_id": schedule.user_id,
+        "username": schedule.user.username,
+        "email": schedule.user.email,
+        "role": schedule.role,
+        "role_label": schedule.get_role_display(),
+        "weekday": schedule.weekday,
+        "weekday_label": schedule.get_weekday_display(),
+        "shift_name": schedule.shift_name,
+        "start_time": schedule.start_time.strftime("%H:%M"),
+        "end_time": schedule.end_time.strftime("%H:%M"),
+        "break_start": schedule.break_start.strftime("%H:%M") if schedule.break_start else "",
+        "break_end": schedule.break_end.strftime("%H:%M") if schedule.break_end else "",
+        "break_label": schedule.break_label,
+        "slot_minutes": schedule.slot_minutes,
+        "valid_from": schedule.valid_from.isoformat(),
+        "valid_until": schedule.valid_until.isoformat() if schedule.valid_until else None,
+        "accepts_appointments": schedule.accepts_appointments,
+        "is_active": schedule.is_active,
+        "notes": schedule.notes,
+        "branch_id": schedule.branch_id,
+        "branch_name": schedule.branch.name,
+        "appointments_today": schedule.appointments_today or 0,
+        "future_appointments": schedule.future_appointments or 0,
+        "linked_doctor": linked_medico is not None,
+        "doctor_badge": (
+            (
+                f"{linked_medico.especialidade.name} · {linked_medico.crm}"
+                if linked_medico.especialidade_id
+                else linked_medico.crm
+            )
+            if linked_medico is not None
+            else ""
+        ),
+        "next_occurrence_date": next_shift_date.isoformat() if next_shift_date else None,
+        "detail_url": reverse("clinic:work_schedule_detail", args=[schedule.pk]),
+        "edit_url": reverse("clinic:work_schedule_update", args=[schedule.pk]),
+        "toggle_url": reverse("clinic:work_schedule_toggle_status", args=[schedule.pk]),
+    }
+
+
 def custom_login(request):
     """Tela de login personalizada para a aplicação Clinic"""
     if request.user.is_authenticated:
@@ -645,6 +691,7 @@ class WorkScheduleListView(AppPermissionMixin, ClinicPageMixin, ListView):
         today = timezone.localdate()
         schedule_list = list(context["schedules"])
         today_schedules = [schedule for schedule in schedule_list if schedule.applies_to_date(today)]
+        context["schedules"] = schedule_list
         context["total_schedule_blocks"] = len(schedule_list)
         context["active_schedule_blocks"] = sum(1 for schedule in schedule_list if schedule.is_active)
         context["scheduled_professionals"] = len({schedule.user_id for schedule in schedule_list})
@@ -656,6 +703,10 @@ class WorkScheduleListView(AppPermissionMixin, ClinicPageMixin, ListView):
             today_schedules,
             key=lambda schedule: (schedule.start_time, schedule.professional_name.lower()),
         )[:6]
+        context["schedule_calendar_payload"] = [
+            serialize_work_schedule(schedule) for schedule in schedule_list
+        ]
+        context["calendar_anchor_date"] = today.isoformat()
         return context
 
 

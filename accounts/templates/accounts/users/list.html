@@ -39,7 +39,7 @@
               <i class="material-symbols-rounded opacity-10">admin_panel_settings</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">Com acesso admin</p>
+              <p class="text-sm mb-0">Com acesso técnico</p>
               <h4 class="mb-0">{{ staff_users }}</h4>
             </div>
           </div>
@@ -105,15 +105,13 @@
                     </div>
                   </td>
                   <td>
-                    {% if user_item.groups.all %}
-                      <div class="clinic-inline-list">
-                        {% for role in user_item.groups.all %}
-                          <span class="clinic-inline-badge">{{ role.name }}</span>
-                        {% empty %}
-                          <span class="text-sm text-secondary">Sem perfis</span>
-                        {% endfor %}
-                      </div>
-                    {% endif %}
+                    <div class="clinic-inline-list">
+                      {% for role in user_item.groups.all %}
+                        <span class="clinic-inline-badge">{{ role.name }}</span>
+                      {% empty %}
+                        <span class="text-sm text-secondary">Sem perfis</span>
+                      {% endfor %}
+                    </div>
                   </td>
                   <td>
                     <span class="text-sm">{{ user_item.profile.get_preferred_language_display }}</span>
@@ -152,12 +150,6 @@
                         </a>
                       {% endif %}
                     </div>
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="6" class="clinic-empty-state">
-                    Nenhum utilizador encontrado com o filtro actual.
                   </td>
                 </tr>
               {% endfor %}

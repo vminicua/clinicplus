@@ -283,24 +283,63 @@
     color: #64748b;
   }
 
-  .clinic-form-card .form-text {
+  .clinic-form-card .form-text,
+  .clinic-modal-card .form-text {
     color: #64748b;
   }
 
-  .clinic-form-card .invalid-feedback {
+  .clinic-form-card .invalid-feedback,
+  .clinic-modal-card .invalid-feedback {
     display: block;
   }
 
   .clinic-form-card .form-control,
-  .clinic-form-card .form-select {
+  .clinic-form-card .form-select,
+  .clinic-modal-card .form-control,
+  .clinic-modal-card .form-select,
+  .clinic-modal-card textarea,
+  .clinic-modal-card input[type="text"],
+  .clinic-modal-card input[type="email"],
+  .clinic-modal-card input[type="password"],
+  .clinic-modal-card input[type="number"],
+  .clinic-modal-card input[type="search"],
+  .clinic-modal-card input[type="tel"],
+  .clinic-modal-card input[type="url"] {
     border-radius: 1.1rem;
-    border-color: rgba(148, 163, 184, 0.28);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: #fff;
     padding: 0.8rem 0.95rem;
+    box-shadow: none;
+    appearance: none;
   }
 
-  .clinic-form-card .form-check-input {
+  .clinic-form-card .form-control:focus,
+  .clinic-form-card .form-select:focus,
+  .clinic-modal-card .form-control:focus,
+  .clinic-modal-card .form-select:focus,
+  .clinic-modal-card textarea:focus,
+  .clinic-modal-card input[type="text"]:focus,
+  .clinic-modal-card input[type="email"]:focus,
+  .clinic-modal-card input[type="password"]:focus,
+  .clinic-modal-card input[type="number"]:focus,
+  .clinic-modal-card input[type="search"]:focus,
+  .clinic-modal-card input[type="tel"]:focus,
+  .clinic-modal-card input[type="url"]:focus {
+    border-color: rgba(15, 118, 110, 0.34);
+    box-shadow: 0 0 0 0.22rem rgba(20, 184, 166, 0.12);
+    outline: 0;
+  }
+
+  .clinic-form-card .form-check-input,
+  .clinic-modal-card .form-check-input {
     width: 1.1rem;
     height: 1.1rem;
+  }
+
+  .clinic-modal-card .form-label,
+  .clinic-form-card .form-label {
+    margin-bottom: 0.55rem;
+    color: #0f172a;
   }
 
   .clinic-page-card .btn,
@@ -509,6 +548,12 @@
     margin-bottom: 0.5rem;
   }
 
+  .dataTables_wrapper .dt-buttons {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
   .dataTables_wrapper .dataTables_filter input,
   .dataTables_wrapper .dataTables_length select {
     border-radius: 999px;
@@ -522,6 +567,56 @@
   .dataTables_wrapper .dataTables_length {
     color: #64748b;
     margin-bottom: 1rem;
+  }
+
+  .dataTables_wrapper .dataTables_length label,
+  .dataTables_wrapper .dataTables_filter label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+  }
+
+  .dataTables_wrapper .dataTables_paginate {
+    margin-top: 0.5rem;
+  }
+
+  .dataTables_wrapper .dataTables_paginate .pagination {
+    display: flex;
+    gap: 0.45rem;
+    margin: 0;
+  }
+
+  .dataTables_wrapper .dataTables_paginate .page-link {
+    min-width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px !important;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(255, 255, 255, 0.94);
+    color: #334155;
+    box-shadow: none;
+  }
+
+  .dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
+    border-color: rgba(15, 118, 110, 0.2);
+    background: rgba(20, 184, 166, 0.16);
+    color: #0f766e;
+  }
+
+  .dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link {
+    opacity: 0.55;
+    background: rgba(248, 250, 252, 0.86);
+  }
+
+  .dataTables_wrapper .dataTables_paginate .page-link:hover,
+  .dataTables_wrapper .dataTables_paginate .page-link:focus {
+    border-color: rgba(15, 118, 110, 0.25);
+    background: rgba(20, 184, 166, 0.1);
+    color: #0f766e;
   }
 
   .dataTables_wrapper .paginate_button .page-link {

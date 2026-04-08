@@ -72,9 +72,9 @@
 
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <div class="clinic-pill-group">
-              <a href="#" class="clinic-pill active" data-table-pill="patients-table" data-column="4" data-value="">{% ui "Todos" "All" %}</a>
-              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="4" data-value="{% ui 'Activo' 'Active' %}">{% ui "Activos" "Active" %}</a>
-              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="4" data-value="{% ui 'Inactivo' 'Inactive' %}">{% ui "Inactivos" "Inactive" %}</a>
+              <a href="#" class="clinic-pill active" data-table-pill="patients-table" data-column="5" data-value="">{% ui "Todos" "All" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="5" data-value="{% ui 'Activo' 'Active' %}">{% ui "Activos" "Active" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="5" data-value="{% ui 'Inactivo' 'Inactive' %}">{% ui "Inactivos" "Inactive" %}</a>
             </div>
             {% if perms.clinic.add_paciente %}
               <a href="{% url 'clinic:patient_create' %}" data-modal-url="{% url 'clinic:patient_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
@@ -91,6 +91,7 @@
           <table id="patients-table" data-page-length="10" data-export-title="{% ui 'Pacientes Clinic Plus' 'Clinic Plus Patients' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
+                <th class="ps-4">{% ui "ID" "ID" %}</th>
                 <th class="ps-4">{% ui "Paciente" "Patient" %}</th>
                 <th>{% ui "BI / Passaporte" "ID / Passport" %}</th>
                 <th>{% ui "Contactos" "Contacts" %}</th>
@@ -103,6 +104,9 @@
             <tbody>
               {% for patient in patients %}
                 <tr>
+                  <td class="ps-4">
+                    <h6 class="mb-0 text-sm">{{ patient.display_code }}</h6>
+                  </td>
                   <td class="ps-4">
                     <div>
                       <h6 class="mb-0 text-sm">{{ patient.full_name }}</h6>
@@ -154,6 +158,11 @@
                       {% if perms.clinic.view_paciente %}
                         <a href="{% url 'clinic:patient_detail' patient.pk %}" data-modal-url="{% url 'clinic:patient_detail' patient.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="{% ui 'Ver detalhes' 'View details' %}">
                           <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
+                        </a>
+                      {% endif %}
+                      {% if perms.clinic.view_paciente %}
+                        <a href="{% url 'clinic:patient_pdf' patient.pk %}" class="clinic-action-btn is-muted" title="{% ui 'Baixar ficha em PDF' 'Download record PDF' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">picture_as_pdf</i>
                         </a>
                       {% endif %}
                       {% if perms.clinic.view_consulta %}

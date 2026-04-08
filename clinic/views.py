@@ -1,12 +1,14 @@
 import logging
+from io import BytesIO
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import DatabaseError, transaction
 from django.db.models import Count, Max, Prefetch
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views import View
@@ -16,6 +18,7 @@ from accounts.ui import (
     BRANCH_SESSION_KEY,
     LANGUAGE_SESSION_KEY,
     available_branches_for_user,
+    get_system_preferences,
     get_system_default_language,
     ui_text,
 )
@@ -25,6 +28,24 @@ from clinic.models import Agendamento, Consulta, Paciente
 
 
 logger = logging.getLogger(__name__)
+
+
+def get_patient_code_prefix() -> str:
+    preferences = get_system_preferences()
+    if preferences and preferences.patient_code_prefix:
+        return preferences.patient_code_prefix
+    return "PCCP000"
+
+
+def format_patient_code(patient_id: int, prefix: str | None = None) -> str:
+    return f"{prefix or get_patient_code_prefix()}{patient_id}"
+
+
+def attach_patient_codes(patients, prefix: str | None = None):
+    patient_prefix = prefix or get_patient_code_prefix()
+    for patient in patients:
+        patient.display_code = format_patient_code(patient.pk, patient_prefix)
+    return patients
 
 
 def patient_queryset():
@@ -305,6 +326,8 @@ class PatientListView(AppPermissionMixin, ClinicPageMixin, ListView):
         context = super().get_context_data(**kwargs)
         base_queryset = patient_queryset()
         month_start = timezone.localdate().replace(day=1)
+        patient_code_prefix = get_patient_code_prefix()
+        attach_patient_codes(context["patients"], patient_code_prefix)
         context["total_patients"] = base_queryset.count()
         context["active_patients"] = base_queryset.filter(is_active=True).count()
         context["inactive_patients"] = base_queryset.filter(is_active=False).count()
@@ -339,6 +362,7 @@ class PatientDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, D
             (entry for entry in history_entries if getattr(entry, "consulta", None)),
             None,
         )
+        context["patient_code"] = format_patient_code(self.object.pk)
         context["detail_partial"] = "clinic/patients/includes/detail_content.html"
         context["modal_heading"] = self.object.full_name
         context["modal_description"] = ui_text(
@@ -467,6 +491,43 @@ class PatientToggleStatusView(AppPermissionMixin, View):
         )
 
 
+class PatientPdfDownloadView(AppPermissionMixin, View):
+    permission_required = "clinic.view_paciente"
+    login_url = "clinic:login"
+
+    def get(self, request, pk):
+        patient = get_object_or_404(patient_history_queryset(), pk=pk)
+        history_entries = list(getattr(patient, "history_entries", []))
+        latest_consultation = next(
+            (entry for entry in history_entries if getattr(entry, "consulta", None)),
+            None,
+        )
+
+        html = render_to_string(
+            "clinic/patients/record_pdf.html",
+            {
+                "patient": patient,
+                "patient_code": format_patient_code(patient.pk),
+                "history_entries": history_entries[:8],
+                "latest_consultation": latest_consultation,
+                "generated_at": timezone.localtime(),
+                "request": request,
+            },
+            request=request,
+        )
+
+        from weasyprint import HTML
+
+        pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
+        filename = f"ficha-paciente-{format_patient_code(patient.pk).lower()}.pdf"
+        return FileResponse(
+            BytesIO(pdf_bytes),
+            as_attachment=True,
+            filename=filename,
+            content_type="application/pdf",
+        )
+
+
 class PatientHistoryListView(AppPermissionMixin, ClinicPageMixin, ListView):
     template_name = "clinic/patients/history_list.html"
     context_object_name = "patients"
@@ -494,6 +555,7 @@ class PatientHistoryListView(AppPermissionMixin, ClinicPageMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         base_queryset = patient_queryset()
+        attach_patient_codes(context["patients"])
         context["patients_with_history"] = self.object_list.count()
         context["patients_with_consultations"] = base_queryset.filter(agendamentos__consulta__isnull=False).distinct().count()
         context["total_consultations"] = Consulta.objects.count()
@@ -524,6 +586,7 @@ class PatientHistoryDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
         history_entries = list(getattr(self.object, "history_entries", []))
         consultation_entries = [entry for entry in history_entries if getattr(entry, "consulta", None)]
         latest_consultation = consultation_entries[0] if consultation_entries else None
+        context["patient_code"] = format_patient_code(self.object.pk)
         context["history_entries"] = history_entries
         context["consultation_entries"] = consultation_entries
         context["latest_consultation"] = latest_consultation

@@ -2,7 +2,7 @@ from django.contrib.auth.models import Permission, User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from accounts.models import Branch
+from accounts.models import Branch, SystemPreference
 from clinic.forms import PatientForm
 from clinic.models import Agendamento, Consulta, Hospital, Medico, Paciente
 
@@ -71,6 +71,9 @@ class PatientViewsTests(TestCase):
             Permission.objects.get(codename="change_paciente"),
         )
         self.client.force_login(self.user)
+        self.preferences = SystemPreference.get_solo()
+        self.preferences.patient_code_prefix = "TEST000"
+        self.preferences.save(update_fields=["patient_code_prefix", "updated_at"])
 
     def create_patient(self, document="DOC12345"):
         patient_user = User.objects.create(username=f"user_{document.lower()}", first_name="Maria", last_name="Silva")
@@ -150,3 +153,22 @@ class PatientViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Infecção respiratória ligeira")
         self.assertContains(response, patient.full_name)
+
+    def test_patient_list_shows_prefixed_id(self):
+        patient = self.create_patient("LIST1234")
+
+        response = self.client.get(reverse("clinic:patient_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.preferences.format_patient_code(patient.pk))
+
+    def test_patient_pdf_download_uses_weasyprint(self):
+        patient = self.create_patient("PDF12345")
+
+        response = self.client.get(reverse("clinic:patient_pdf", args=[patient.pk]))
+        pdf_bytes = b"".join(response.streaming_content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn(self.preferences.format_patient_code(patient.pk).lower(), response["Content-Disposition"])
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))

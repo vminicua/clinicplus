@@ -113,6 +113,8 @@ class Branch(models.Model):
 
 
 class SystemPreference(models.Model):
+    DEFAULT_PATIENT_CODE_PREFIX = "PCCP000"
+
     singleton_key = models.CharField(
         max_length=30,
         unique=True,
@@ -131,6 +133,11 @@ class SystemPreference(models.Model):
         default=CURRENCY_METICAL,
         verbose_name=translate_pair("Moeda por defeito", "Default currency"),
     )
+    patient_code_prefix = models.CharField(
+        max_length=20,
+        default=DEFAULT_PATIENT_CODE_PREFIX,
+        verbose_name=translate_pair("Prefixo do ID do paciente", "Patient ID prefix"),
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -144,6 +151,9 @@ class SystemPreference(models.Model):
     def get_solo(cls):
         preferences, _ = cls.objects.get_or_create(singleton_key="system")
         return preferences
+
+    def format_patient_code(self, patient_id: int) -> str:
+        return f"{self.patient_code_prefix}{patient_id}"
 
 
 class UserProfile(models.Model):

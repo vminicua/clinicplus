@@ -13,6 +13,7 @@
                 <p class="text-sm text-secondary mb-1">{% ui "Histórico clínico" "Clinical history" %}</p>
                 <h3 class="mb-1">{{ object.full_name }}</h3>
                 <p class="text-secondary mb-0">
+                  {{ patient_code }} ·
                   {{ object.cpf }}
                   {% if object.date_of_birth %} · {{ object.age }} {% ui "anos" "years" %}{% endif %}
                   {% if object.clinic_name %} · {{ object.clinic_name }}{% endif %}

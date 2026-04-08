@@ -420,10 +420,11 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
 class SystemPreferenceForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = SystemPreference
-        fields = ["default_language", "default_currency"]
+        fields = ["default_language", "default_currency", "patient_code_prefix"]
         labels = {
             "default_language": tr("Idioma do sistema", "System language"),
             "default_currency": tr("Moeda base", "Base currency"),
+            "patient_code_prefix": tr("Prefixo do ID do paciente", "Patient ID prefix"),
         }
         help_texts = {
             "default_language": tr(
@@ -434,11 +435,34 @@ class SystemPreferenceForm(StyledFormMixin, forms.ModelForm):
                 "Moeda usada por defeito no sistema. O valor inicial é Metical.",
                 "Default currency used by the system. The initial value is Metical.",
             ),
+            "patient_code_prefix": tr(
+                "Ex.: PCCP000. O código visível ficará no formato prefixo + ID, como PCCP0001.",
+                "Example: PCCP000. The visible code will be prefix + ID, such as PCCP0001.",
+            ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_widget_classes()
+        self.fields["patient_code_prefix"].widget.attrs["autocomplete"] = "off"
+
+    def clean_patient_code_prefix(self):
+        prefix = (self.cleaned_data.get("patient_code_prefix") or "").strip().upper()
+        if not prefix:
+            raise forms.ValidationError(
+                tr(
+                    "Defina um prefixo para o ID do paciente.",
+                    "Define a patient ID prefix.",
+                )
+            )
+        if not re.fullmatch(r"[A-Z0-9]+", prefix):
+            raise forms.ValidationError(
+                tr(
+                    "Use apenas letras maiúsculas e números no prefixo.",
+                    "Use only uppercase letters and numbers in the prefix.",
+                )
+            )
+        return prefix
 
 
 class RoleForm(StyledFormMixin, forms.ModelForm):

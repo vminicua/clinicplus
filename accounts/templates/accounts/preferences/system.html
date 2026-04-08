@@ -15,8 +15,13 @@
                 <p class="text-secondary mb-0">{{ page_subtitle }}</p>
               </div>
 
-              <div class="clinic-inline-badge">
-                {% ui "Moeda base" "Base currency" %}: {{ object.get_default_currency_display }}
+              <div class="d-flex gap-2 flex-wrap">
+                <div class="clinic-inline-badge">
+                  {% ui "Moeda base" "Base currency" %}: {{ object.get_default_currency_display }}
+                </div>
+                <div class="clinic-inline-badge">
+                  {% ui "Prefixo de paciente" "Patient prefix" %}: {{ object.patient_code_prefix }}
+                </div>
               </div>
             </div>
           </div>

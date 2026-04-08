@@ -61,6 +61,16 @@ class SystemPreferenceView(AppPermissionMixin, ClinicPageMixin, UpdateView):
                 ),
                 "fields": [form["default_currency"]],
             },
+            {
+                "id": "pref-patients",
+                "title": ui_text(self.request, "Pacientes", "Patients"),
+                "description": ui_text(
+                    self.request,
+                    "Controle o prefixo do código visível usado na ficha e nas listagens dos pacientes.",
+                    "Control the visible code prefix used in patient records and listings.",
+                ),
+                "fields": [form["patient_code_prefix"]],
+            },
         ]
         context["submit_label"] = ui_text(self.request, "Guardar preferências", "Save preferences")
         return context

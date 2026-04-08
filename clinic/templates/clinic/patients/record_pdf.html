@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <title>Ficha do Paciente {{ patient_code }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 14mm;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      color: #22313f;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    .header {
+      border-bottom: 2px solid #0f766e;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .brand {
+      max-width: 70%;
+    }
+
+    .brand h1 {
+      font-size: 24px;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+
+    .brand p {
+      color: #475569;
+    }
+
+    .badge {
+      background: #ecfeff;
+      color: #155e75;
+      border: 1px solid #a5f3fc;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .section {
+      margin-bottom: 18px;
+    }
+
+    .section h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #0f766e;
+      margin-bottom: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px 16px;
+    }
+
+    .item {
+      border: 1px solid #dbe4ee;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+
+    .item.full {
+      grid-column: 1 / -1;
+    }
+
+    .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .value {
+      font-size: 12px;
+      color: #0f172a;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .history-card {
+      border: 1px solid #dbe4ee;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+      page-break-inside: avoid;
+    }
+
+    .history-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .muted {
+      color: #64748b;
+    }
+
+    .footer {
+      margin-top: 18px;
+      border-top: 1px solid #dbe4ee;
+      padding-top: 8px;
+      font-size: 10px;
+      color: #64748b;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <h1>Ficha do Paciente</h1>
+        <p>{{ patient.full_name }}</p>
+        <p class="muted">
+          {{ patient_code }}
+          {% if patient.clinic_name %} · {{ patient.clinic_name }}{% endif %}
+          {% if patient.country %} · {{ patient.country }}{% endif %}
+        </p>
+      </div>
+      <div class="badge">
+        {% if patient.is_active %}Activo{% else %}Inactivo{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Identificação</h2>
+    <div class="grid">
+      <div class="item">
+        <div class="label">ID</div>
+        <div class="value">{{ patient_code }}</div>
+      </div>
+      <div class="item">
+        <div class="label">BI / Passaporte</div>
+        <div class="value">{{ patient.cpf }}</div>
+      </div>
+      <div class="item">
+        <div class="label">Data de nascimento</div>
+        <div class="value">{{ patient.date_of_birth|date:"d/m/Y" }}</div>
+      </div>
+      <div class="item">
+        <div class="label">Género</div>
+        <div class="value">{{ patient.get_gender_display }}</div>
+      </div>
+      <div class="item">
+        <div class="label">Clínica</div>
+        <div class="value">{% if patient.clinic_name %}{{ patient.clinic_name }}{% else %}Sem clínica atribuída{% endif %}</div>
+      </div>
+      <div class="item">
+        <div class="label">Email</div>
+        <div class="value">{% if patient.user.email %}{{ patient.user.email }}{% else %}Sem email registado{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Contactos e Residência</h2>
+    <div class="grid">
+      <div class="item">
+        <div class="label">Telefone</div>
+        <div class="value">{{ patient.phone }}</div>
+      </div>
+      <div class="item">
+        <div class="label">Contacto de emergência</div>
+        <div class="value">{{ patient.emergency_contact }}</div>
+      </div>
+      <div class="item">
+        <div class="label">Telefone de emergência</div>
+        <div class="value">{% if patient.emergency_phone %}{{ patient.emergency_phone }}{% else %}Sem telefone de emergência{% endif %}</div>
+      </div>
+      <div class="item">
+        <div class="label">Cidade / Província</div>
+        <div class="value">
+          {% if patient.city %}{{ patient.city }}{% else %}Sem cidade{% endif %}
+          {% if patient.state %} · {{ patient.state }}{% endif %}
+        </div>
+      </div>
+      <div class="item">
+        <div class="label">País</div>
+        <div class="value">{{ patient.country }}</div>
+      </div>
+      <div class="item">
+        <div class="label">Código postal</div>
+        <div class="value">{% if patient.zip_code %}{{ patient.zip_code }}{% else %}Sem código postal{% endif %}</div>
+      </div>
+      <div class="item full">
+        <div class="label">Endereço</div>
+        <div class="value">{{ patient.address }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Resumo Clínico</h2>
+    <div class="grid">
+      <div class="item">
+        <div class="label">Agendamentos</div>
+        <div class="value">{{ patient.total_appointments }}</div>
+      </div>
+      <div class="item">
+        <div class="label">Consultas concluídas</div>
+        <div class="value">{{ patient.total_consultations }}</div>
+      </div>
+      <div class="item full">
+        <div class="label">Alergias</div>
+        <div class="value">{% if patient.allergies %}{{ patient.allergies }}{% else %}Sem alergias registadas{% endif %}</div>
+      </div>
+      <div class="item full">
+        <div class="label">Histórico clínico base</div>
+        <div class="value">{% if patient.medical_history %}{{ patient.medical_history }}{% else %}Sem histórico clínico base{% endif %}</div>
+      </div>
+      {% if latest_consultation %}
+        <div class="item full">
+          <div class="label">Última consulta concluída</div>
+          <div class="value">
+            {{ latest_consultation.data|date:"d/m/Y" }} às {{ latest_consultation.hora|time:"H:i" }}
+            {% if latest_consultation.medico %} · {{ latest_consultation.medico }}{% endif %}
+            {% if latest_consultation.consulta.diagnostico %}<br>Diagnóstico: {{ latest_consultation.consulta.diagnostico }}{% endif %}
+            {% if latest_consultation.consulta.prescricao %}<br>Prescrição: {{ latest_consultation.consulta.prescricao }}{% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Histórico Recente</h2>
+    {% for entry in history_entries %}
+      <div class="history-card">
+        <div class="history-top">
+          <div>
+            <strong>{{ entry.data|date:"d/m/Y" }} às {{ entry.hora|time:"H:i" }}</strong>
+            <div class="muted">
+              {{ entry.medico }}
+              {% if entry.medico.especialidade %} · {{ entry.medico.especialidade.name }}{% endif %}
+            </div>
+          </div>
+          <div><strong>{{ entry.get_status_display }}</strong></div>
+        </div>
+        <div><strong>Motivo:</strong> {{ entry.motivo }}</div>
+        {% if entry.notas %}
+          <div><strong>Notas:</strong> {{ entry.notas }}</div>
+        {% endif %}
+        {% if entry.consulta %}
+          <div><strong>Diagnóstico:</strong> {{ entry.consulta.diagnostico }}</div>
+          <div><strong>Prescrição:</strong> {{ entry.consulta.prescricao }}</div>
+          {% if entry.consulta.notas_medico %}
+            <div><strong>Notas médicas:</strong> {{ entry.consulta.notas_medico }}</div>
+          {% endif %}
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="item">
+        <div class="value">Sem histórico clínico registado.</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="footer">
+    Documento gerado em {{ generated_at|date:"d/m/Y H:i" }}
+  </div>
+</body>
+</html>

@@ -1,0 +1,230 @@
+{% load ui_extras %}
+<div class="row mb-4">
+  <div class="col-lg-8 mb-4 mb-lg-0">
+    <div class="card clinic-detail-card h-100">
+      <div class="card-header p-4 border-0">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <p class="text-sm text-secondary mb-1">{% ui "Horário de trabalho" "Work schedule" %}</p>
+            <h3 class="mb-1">{{ object.professional_name }}</h3>
+            <p class="text-secondary mb-0">
+              {{ object.get_role_display }} · {{ object.branch.name }} · {{ object.get_weekday_display }} · {{ object.time_range_label }}
+            </p>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            {% if perms.clinic.change_horariotrabalho %}
+              <a href="{% url 'clinic:work_schedule_update' object.pk %}" data-modal-url="{% url 'clinic:work_schedule_update' object.pk %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">{% ui "Editar" "Edit" %}</a>
+            {% endif %}
+            {% if perms.clinic.change_horariotrabalho %}
+              {% if object.is_active %}
+                <a href="#" data-confirm-action data-action-url="{% url 'clinic:work_schedule_toggle_status' object.pk %}" data-confirm-title="{% ui 'Desactivar horário' 'Deactivate schedule' %}" data-confirm-text="{% ui 'Este bloco deixará de contar para a operação actual, mas continuará guardado no histórico.' 'This block will stop counting for the current operation, but it will remain in history.' %}" data-confirm-button="{% ui 'Desactivar' 'Deactivate' %}" data-confirm-icon="warning" class="btn btn-outline-warning mb-0">{% ui "Desactivar" "Deactivate" %}</a>
+              {% else %}
+                <a href="#" data-confirm-action data-action-url="{% url 'clinic:work_schedule_toggle_status' object.pk %}" data-confirm-title="{% ui 'Activar horário' 'Activate schedule' %}" data-confirm-text="{% ui 'Este bloco voltará a estar activo para operação e sincronização futura.' 'This block will become active again for operations and future synchronization.' %}" data-confirm-button="{% ui 'Activar' 'Activate' %}" data-confirm-icon="question" class="btn btn-outline-success mb-0">{% ui "Activar" "Activate" %}</a>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body pt-0">
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-4">
+          <span class="clinic-inline-badge">{{ object.get_role_display }}</span>
+          <span class="clinic-inline-badge">{{ object.branch.name }}</span>
+          {% if object.accepts_appointments %}
+            <span class="clinic-inline-badge">{% ui "Preparado para agenda" "Booking-ready" %}</span>
+          {% else %}
+            <span class="clinic-inline-badge">{% ui "Independente da agenda" "Independent from bookings" %}</span>
+          {% endif %}
+          {% if object.is_active %}
+            <span class="clinic-inline-badge">{% ui "Activo" "Active" %}</span>
+          {% else %}
+            <span class="clinic-inline-badge">{% ui "Inactivo" "Inactive" %}</span>
+          {% endif %}
+        </div>
+
+        <div class="clinic-detail-grid">
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Utilizador" "User" %}</p>
+            <h6 class="mb-0">@{{ object.user.username }}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Email" "Email" %}</p>
+            <h6 class="mb-0">{% if object.user.email %}{{ object.user.email }}{% else %}{% ui "Sem email registado" "No email registered" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Dia da semana" "Weekday" %}</p>
+            <h6 class="mb-0">{{ object.get_weekday_display }}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Turno" "Shift" %}</p>
+            <h6 class="mb-0">{% if object.shift_name %}{{ object.shift_name }}{% else %}{% ui "Turno base" "Base shift" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Janela de trabalho" "Work window" %}</p>
+            <h6 class="mb-0">{{ object.time_range_label }}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Pausa" "Break" %}</p>
+            <h6 class="mb-0">{% if object.break_label %}{{ object.break_label }}{% else %}{% ui "Sem pausa registada" "No break recorded" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Duração do bloco" "Slot length" %}</p>
+            <h6 class="mb-0">{{ object.slot_minutes }} {% ui "minutos" "minutes" %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Vigência" "Validity" %}</p>
+            <h6 class="mb-0">
+              {{ object.valid_from|date:"d/m/Y" }}
+              {% if object.valid_until %} → {{ object.valid_until|date:"d/m/Y" }}{% else %} → {% ui "sem data final" "no end date" %}{% endif %}
+            </h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Próxima ocorrência" "Next occurrence" %}</p>
+            <h6 class="mb-0">{% if next_shift_date %}{{ next_shift_date|date:"d/m/Y" }}{% else %}{% ui "Sem próxima ocorrência" "No next occurrence" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Estado de hoje" "Today's status" %}</p>
+            <h6 class="mb-0">
+              {% if is_on_duty_today %}
+                {% ui "Escalado hoje" "Scheduled today" %}
+              {% else %}
+                {% ui "Fora do dia actual" "Outside today's roster" %}
+              {% endif %}
+            </h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Ligação médica" "Doctor linkage" %}</p>
+            <h6 class="mb-0">
+              {% if linked_medico %}
+                {{ linked_medico.crm }}
+                {% if linked_medico.especialidade %} · {{ linked_medico.especialidade.name }}{% endif %}
+              {% else %}
+                {% ui "Não ligado a um perfil médico" "Not linked to a doctor profile" %}
+              {% endif %}
+            </h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Hospital" "Hospital" %}</p>
+            <h6 class="mb-0">
+              {% if linked_medico and linked_medico.hospital %}
+                {{ linked_medico.hospital.name }}
+              {% else %}
+                {% ui "Sem hospital associado" "No associated hospital" %}
+              {% endif %}
+            </h6>
+          </div>
+
+          <div class="clinic-detail-item full-width">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Observações" "Notes" %}</p>
+            <h6 class="mb-0">{% if object.notes %}{{ object.notes|linebreaksbr }}{% else %}{% ui "Sem observações adicionais." "No additional notes." %}{% endif %}</h6>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card clinic-detail-card h-100">
+      <div class="card-header p-4 border-0">
+        <h5 class="mb-1">{% ui "Sincronização com agenda" "Booking sync" %}</h5>
+        <p class="text-secondary mb-0">{% ui "Indicadores do bloco para a agenda clínica actual e futura." "Indicators for current and future clinical scheduling." %}</p>
+      </div>
+      <div class="card-body pt-0">
+        <div class="clinic-detail-item mb-3">
+          <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Modo" "Mode" %}</p>
+          <h4 class="mb-0">
+            {% if object.accepts_appointments %}
+              {% ui "Sincronizado" "Synchronized" %}
+            {% else %}
+              {% ui "Independente" "Independent" %}
+            {% endif %}
+          </h4>
+        </div>
+
+        <div class="clinic-detail-item mb-3">
+          <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Marcações hoje" "Bookings today" %}</p>
+          <h4 class="mb-0">{{ object.appointments_today|default:0 }}</h4>
+        </div>
+
+        <div class="clinic-detail-item mb-3">
+          <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Próximas marcações" "Upcoming bookings" %}</p>
+          <h4 class="mb-0">{{ object.future_appointments|default:0 }}</h4>
+        </div>
+
+        <div class="clinic-detail-item">
+          <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Agenda de hoje" "Today's calendar" %}</p>
+          <div class="clinic-inline-list">
+            {% for appointment in today_appointments %}
+              <span class="clinic-inline-badge">
+                {{ appointment.hora|time:"H:i" }} · {{ appointment.paciente.full_name }}
+              </span>
+            {% empty %}
+              <span class="text-sm text-secondary">
+                {% if object.accepts_appointments and not linked_medico %}
+                  {% ui "Este bloco aceita marcações, mas ainda não existe perfil médico ligado para contagem automática." "This block accepts bookings, but there is no linked doctor profile yet for automatic counts." %}
+                {% else %}
+                  {% ui "Sem marcações para hoje." "No bookings for today." %}
+                {% endif %}
+              </span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card clinic-page-card">
+  <div class="card-header p-4 border-0">
+    <h5 class="mb-1">{% ui "Próximas marcações ligadas" "Linked upcoming bookings" %}</h5>
+    <p class="text-secondary mb-0">{% ui "Leitura rápida da agenda que já pode ser associada a este horário." "Quick view of the calendar entries that can already be associated with this schedule." %}</p>
+  </div>
+  <div class="card-body pt-0">
+    {% if upcoming_appointments %}
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th class="ps-0">{% ui "Data" "Date" %}</th>
+              <th>{% ui "Hora" "Time" %}</th>
+              <th>{% ui "Paciente" "Patient" %}</th>
+              <th>{% ui "Motivo" "Reason" %}</th>
+              <th>{% ui "Estado" "Status" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appointment in upcoming_appointments %}
+              <tr>
+                <td class="ps-0">{{ appointment.data|date:"d/m/Y" }}</td>
+                <td>{{ appointment.hora|time:"H:i" }}</td>
+                <td>{{ appointment.paciente.full_name }}</td>
+                <td>{{ appointment.motivo|truncatechars:48 }}</td>
+                <td>{{ appointment.get_status_display }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-secondary mb-0">
+        {% if object.accepts_appointments and not linked_medico %}
+          {% ui "O horário já está preparado para agenda, mas ainda falta associar este utilizador a um perfil médico para ligar as marcações existentes." "The schedule is already prepared for bookings, but this user still needs a doctor profile to link existing appointments." %}
+        {% else %}
+          {% ui "Ainda não existem marcações futuras ligadas a este bloco." "There are no future bookings linked to this block yet." %}
+        {% endif %}
+      </p>
+    {% endif %}
+  </div>
+</div>

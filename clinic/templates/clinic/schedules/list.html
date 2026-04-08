@@ -1,0 +1,257 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">schedule</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Blocos activos" "Active blocks" %}</p>
+              <h4 class="mb-0">{{ active_schedule_blocks }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">badge</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Profissionais escalados" "Scheduled professionals" %}</p>
+              <h4 class="mb-0">{{ scheduled_professionals }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">today</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Em serviço hoje" "On duty today" %}</p>
+              <h4 class="mb-0">{{ today_on_duty }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">calendar_month</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Prontos para agenda" "Ready for booking" %}</p>
+              <h4 class="mb-0">{{ appointment_ready }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-xl-8 mb-4">
+        <div class="card clinic-page-card h-100">
+          <div class="card-header p-4 border-0">
+            <div class="clinic-list-toolbar">
+              <div>
+                <h4 class="mb-1">{% ui "Mapa de horários" "Schedule board" %}</h4>
+                <p class="text-secondary mb-0">{% ui "Cada registo representa um bloco semanal de trabalho independente das marcações." "Each entry represents a weekly work block independent from bookings." %}</p>
+              </div>
+
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="clinic-pill-group">
+                  <a href="#" class="clinic-pill active" data-table-pill="schedules-table" data-column="6" data-value="">{% ui "Todos" "All" %}</a>
+                  <a href="#" class="clinic-pill" data-table-pill="schedules-table" data-column="6" data-value="{% ui 'Activo' 'Active' %}">{% ui "Activos" "Active" %}</a>
+                  <a href="#" class="clinic-pill" data-table-pill="schedules-table" data-column="6" data-value="{% ui 'Inactivo' 'Inactive' %}">{% ui "Inactivos" "Inactive" %}</a>
+                </div>
+                {% if perms.clinic.add_horariotrabalho %}
+                  <a href="{% url 'clinic:work_schedule_create' %}" data-modal-url="{% url 'clinic:work_schedule_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
+                    <i class="material-symbols-rounded text-sm me-1">add</i>
+                    {% ui "Novo horário" "New schedule" %}
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body px-0 pb-0">
+            <div class="clinic-datatable-shell">
+              <table id="schedules-table" data-page-length="10" data-export-title="{% ui 'Horários Clinic Plus' 'Clinic Plus Schedules' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+                <thead>
+                  <tr>
+                    <th class="ps-4">{% ui "Profissional" "Professional" %}</th>
+                    <th>{% ui "Função" "Role" %}</th>
+                    <th>{% ui "Dia / turno" "Day / shift" %}</th>
+                    <th>{% ui "Horário" "Hours" %}</th>
+                    <th>{% ui "Clínica" "Clinic" %}</th>
+                    <th>{% ui "Agenda" "Booking" %}</th>
+                    <th>{% ui "Estado" "Status" %}</th>
+                    <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for schedule in schedules %}
+                    <tr>
+                      <td class="ps-4">
+                        <div>
+                          <h6 class="mb-0 text-sm">{{ schedule.professional_name }}</h6>
+                          <p class="text-xs text-secondary mb-0">
+                            @{{ schedule.user.username }}
+                            {% if schedule.user.email %} · {{ schedule.user.email }}{% endif %}
+                          </p>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="text-sm d-block">{{ schedule.get_role_display }}</span>
+                        <span class="text-xs text-secondary">
+                          {% if schedule.linked_medico %}
+                            {% if schedule.linked_medico.especialidade %}{{ schedule.linked_medico.especialidade.name }} · {% endif %}{{ schedule.linked_medico.crm }}
+                          {% else %}
+                            {% ui "Sem perfil médico ligado" "No linked doctor profile" %}
+                          {% endif %}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="text-sm d-block">{{ schedule.get_weekday_display }}</span>
+                        <span class="text-xs text-secondary">
+                          {% if schedule.shift_name %}{{ schedule.shift_name }}{% else %}{% ui "Turno base" "Base shift" %}{% endif %}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="text-sm d-block">{{ schedule.time_range_label }}</span>
+                        <span class="text-xs text-secondary">
+                          {% if schedule.break_label %}
+                            {% ui "Pausa" "Break" %}: {{ schedule.break_label }}
+                          {% else %}
+                            {% ui "Sem pausa registada" "No break recorded" %}
+                          {% endif %}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="text-sm d-block">{{ schedule.branch.name }}</span>
+                        <span class="text-xs text-secondary">
+                          {% if schedule.next_occurrence_date %}
+                            {% ui "Próximo" "Next" %}: {{ schedule.next_occurrence_date|date:"d/m/Y" }}
+                          {% else %}
+                            {% ui "Sem próxima ocorrência" "No next occurrence" %}
+                          {% endif %}
+                        </span>
+                      </td>
+                      <td>
+                        {% if schedule.accepts_appointments %}
+                          <span class="text-sm d-block">
+                            {% if schedule.linked_medico %}
+                              {{ schedule.appointments_today }} {% ui "hoje" "today" %}
+                            {% else %}
+                              {% ui "Pronto para sincronizar" "Ready to sync" %}
+                            {% endif %}
+                          </span>
+                          <span class="text-xs text-secondary">
+                            {% if schedule.linked_medico %}
+                              {{ schedule.future_appointments }} {% ui "marcação(ões) futuras" "future booking(s)" %}
+                            {% else %}
+                              {% ui "A contagem automática aparece quando existir perfil médico." "Automatic counts appear once a doctor profile exists." %}
+                            {% endif %}
+                          </span>
+                        {% else %}
+                          <span class="text-sm d-block">{% ui "Independente da agenda" "Independent from bookings" %}</span>
+                          <span class="text-xs text-secondary">{{ schedule.slot_minutes }} {% ui "min por bloco" "min per slot" %}</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if schedule.is_active %}
+                          <span class="clinic-status clinic-status-success">{% ui "Activo" "Active" %}</span>
+                        {% else %}
+                          <span class="clinic-status clinic-status-muted">{% ui "Inactivo" "Inactive" %}</span>
+                        {% endif %}
+                      </td>
+                      <td class="text-end pe-4">
+                        <div class="clinic-action-stack">
+                          {% if perms.clinic.view_horariotrabalho %}
+                            <a href="{% url 'clinic:work_schedule_detail' schedule.pk %}" data-modal-url="{% url 'clinic:work_schedule_detail' schedule.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="{% ui 'Ver detalhes' 'View details' %}">
+                              <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
+                            </a>
+                          {% endif %}
+                          {% if perms.clinic.change_horariotrabalho %}
+                            <a href="{% url 'clinic:work_schedule_update' schedule.pk %}" data-modal-url="{% url 'clinic:work_schedule_update' schedule.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-info" title="{% ui 'Editar horário' 'Edit schedule' %}">
+                              <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                            </a>
+                          {% endif %}
+                          {% if perms.clinic.change_horariotrabalho %}
+                            {% if schedule.is_active %}
+                              <a href="#" data-confirm-action data-action-url="{% url 'clinic:work_schedule_toggle_status' schedule.pk %}" data-confirm-title="{% ui 'Desactivar horário' 'Deactivate schedule' %}" data-confirm-text="{% ui 'O horário ficará guardado no histórico, mas deixará de contar para a operação actual.' 'The schedule will stay in history but will stop counting for the current operation.' %}" data-confirm-button="{% ui 'Desactivar' 'Deactivate' %}" data-confirm-icon="warning" class="clinic-action-btn is-warning" title="{% ui 'Desactivar horário' 'Deactivate schedule' %}">
+                                <i class="material-symbols-rounded" style="font-size: 1rem;">event_busy</i>
+                              </a>
+                            {% else %}
+                              <a href="#" data-confirm-action data-action-url="{% url 'clinic:work_schedule_toggle_status' schedule.pk %}" data-confirm-title="{% ui 'Activar horário' 'Activate schedule' %}" data-confirm-text="{% ui 'O horário voltará a ficar disponível para a operação e para a futura sincronização da agenda.' 'The schedule will become available again for operations and future calendar sync.' %}" data-confirm-button="{% ui 'Activar' 'Activate' %}" data-confirm-icon="question" class="clinic-action-btn is-info" title="{% ui 'Activar horário' 'Activate schedule' %}">
+                                <i class="material-symbols-rounded" style="font-size: 1rem;">event_available</i>
+                              </a>
+                            {% endif %}
+                          {% endif %}
+                        </div>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="8" class="text-center py-5 text-secondary">
+                        {% ui "Ainda não existem horários registados. Crie o primeiro bloco para começar a organizar a equipa." "There are no schedules yet. Create the first block to start organizing the team." %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-4 mb-4">
+        <div class="card clinic-page-card h-100">
+          <div class="card-header p-4 border-0">
+            <h5 class="mb-1">{% ui "Escala de hoje" "Today's roster" %}</h5>
+            <p class="text-secondary mb-0">{% ui "Leitura rápida dos profissionais que devem estar activos hoje." "Quick view of the professionals expected to be active today." %}</p>
+          </div>
+          <div class="card-body pt-0">
+            {% for schedule in today_schedules %}
+              <div class="clinic-doctor-item">
+                <div>
+                  <h6 class="mb-0 text-sm">{{ schedule.professional_name }}</h6>
+                  <p class="text-xs text-secondary mb-0">
+                    {{ schedule.get_role_display }} · {{ schedule.branch.name }}
+                  </p>
+                </div>
+                <div class="text-end">
+                  <p class="text-sm font-weight-bold mb-0">{{ schedule.time_range_label }}</p>
+                  <span class="text-xs text-secondary">
+                    {% if schedule.accepts_appointments and schedule.linked_medico %}
+                      {{ schedule.appointments_today }} {% ui "marcação(ões)" "booking(s)" %}
+                    {% else %}
+                      {% ui "turno operacional" "operational shift" %}
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+            {% empty %}
+              <p class="text-secondary mb-0">{% ui "Nenhum bloco activo coincide com o dia de hoje." "No active block matches today's day." %}</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -1,10 +1,12 @@
 from django.contrib.auth.models import Permission, User
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import Branch, SystemPreference
 from clinic.forms import PatientForm
-from clinic.models import Agendamento, Consulta, Hospital, Medico, Paciente
+from clinic.forms import WorkScheduleForm
+from clinic.models import Agendamento, Consulta, HorarioTrabalho, Hospital, Medico, Paciente
 
 
 class PatientFormTests(TestCase):
@@ -69,6 +71,9 @@ class PatientViewsTests(TestCase):
             Permission.objects.get(codename="view_paciente"),
             Permission.objects.get(codename="view_consulta"),
             Permission.objects.get(codename="change_paciente"),
+            Permission.objects.get(codename="view_horariotrabalho"),
+            Permission.objects.get(codename="add_horariotrabalho"),
+            Permission.objects.get(codename="change_horariotrabalho"),
         )
         self.client.force_login(self.user)
         self.preferences = SystemPreference.get_solo()
@@ -172,3 +177,107 @@ class PatientViewsTests(TestCase):
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertIn(self.preferences.format_patient_code(patient.pk).lower(), response["Content-Disposition"])
         self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+
+    def test_work_schedule_list_view_renders_schedule_and_sync_info(self):
+        today = timezone.localdate()
+        doctor_user = User.objects.create(username="doctor_schedule", first_name="Cláudia", last_name="Mucavele")
+        doctor = Medico.objects.create(
+            user=doctor_user,
+            hospital=self.hospital,
+            especialidade=None,
+            crm="CRM100",
+            phone="840777777",
+        )
+        patient = self.create_patient("SCHD1234")
+        schedule = HorarioTrabalho.objects.create(
+            user=doctor_user,
+            branch=self.branch,
+            role=HorarioTrabalho.RoleChoices.MEDICO,
+            weekday=today.weekday(),
+            start_time="08:00",
+            end_time="12:00",
+            slot_minutes=30,
+            valid_from=today.replace(day=1),
+            accepts_appointments=True,
+        )
+        Agendamento.objects.create(
+            paciente=patient,
+            medico=doctor,
+            hospital=self.hospital,
+            data=today,
+            hora="08:30",
+            motivo="Consulta de revisão",
+        )
+
+        response = self.client.get(reverse("clinic:work_schedule_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, schedule.professional_name)
+        self.assertContains(response, "CRM100")
+        self.assertContains(response, self.branch.name)
+
+    def test_toggle_work_schedule_to_inactive(self):
+        staff_user = User.objects.create(username="staff_schedule", first_name="Rui", last_name="Mabunda")
+        schedule = HorarioTrabalho.objects.create(
+            user=staff_user,
+            branch=self.branch,
+            role=HorarioTrabalho.RoleChoices.ENFERMEIRO,
+            weekday=2,
+            start_time="07:00",
+            end_time="15:00",
+            slot_minutes=20,
+            valid_from="2026-04-01",
+            is_active=True,
+        )
+
+        response = self.client.post(reverse("clinic:work_schedule_toggle_status", args=[schedule.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        schedule.refresh_from_db()
+        self.assertFalse(schedule.is_active)
+
+
+class WorkScheduleFormTests(TestCase):
+    def setUp(self):
+        self.branch = Branch.objects.create(
+            name="Clinic Plus Horários",
+            code="CPH",
+            city="Maputo",
+        )
+        self.staff_user = User.objects.create(username="nurse1", first_name="Marta", last_name="Chongo")
+
+    def test_work_schedule_form_rejects_overlapping_active_shift(self):
+        HorarioTrabalho.objects.create(
+            user=self.staff_user,
+            branch=self.branch,
+            role=HorarioTrabalho.RoleChoices.ENFERMEIRO,
+            weekday=1,
+            start_time="08:00",
+            end_time="12:00",
+            slot_minutes=30,
+            valid_from="2026-04-01",
+            is_active=True,
+        )
+
+        form = WorkScheduleForm(
+            data={
+                "user": self.staff_user.pk,
+                "branch": self.branch.pk,
+                "role": HorarioTrabalho.RoleChoices.ENFERMEIRO,
+                "shift_name": "Turno da manhã",
+                "weekday": 1,
+                "start_time": "10:00",
+                "end_time": "14:00",
+                "break_start": "",
+                "break_end": "",
+                "slot_minutes": 30,
+                "valid_from": "2026-04-01",
+                "valid_until": "",
+                "accepts_appointments": "",
+                "is_active": "on",
+                "notes": "",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("start_time", form.errors)

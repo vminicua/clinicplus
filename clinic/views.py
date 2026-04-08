@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import DatabaseError, transaction
-from django.db.models import Count, Max, Prefetch
+from django.db.models import Count, Max, Prefetch, Q
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -23,8 +23,8 @@ from accounts.ui import (
     ui_text,
 )
 from accounts.views.base_view import AppPermissionMixin, ClinicPageMixin, ModalDetailMixin, ModalFormMixin
-from clinic.forms import PatientForm
-from clinic.models import Agendamento, Consulta, Paciente
+from clinic.forms import PatientForm, WorkScheduleForm
+from clinic.models import Agendamento, Consulta, HorarioTrabalho, Paciente
 
 
 logger = logging.getLogger(__name__)
@@ -69,6 +69,32 @@ def patient_history_queryset():
         to_attr="history_entries",
     )
     return patient_queryset().prefetch_related(history_entries)
+
+
+def work_schedule_queryset():
+    today = timezone.localdate()
+    return (
+        HorarioTrabalho.objects.select_related(
+            "user",
+            "branch",
+            "user__medico__especialidade",
+            "user__medico__hospital",
+        )
+        .annotate(
+            appointments_today=Count(
+                "user__medico__agendamentos",
+                filter=Q(user__medico__agendamentos__data=today),
+                distinct=True,
+            ),
+            future_appointments=Count(
+                "user__medico__agendamentos",
+                filter=Q(user__medico__agendamentos__data__gte=today),
+                distinct=True,
+            ),
+            last_appointment_date=Max("user__medico__agendamentos__data"),
+        )
+        .order_by("weekday", "start_time", "user__first_name", "user__last_name", "user__username")
+    )
 
 
 def custom_login(request):
@@ -593,4 +619,196 @@ class PatientHistoryDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
         context["completed_appointments"] = sum(1 for entry in history_entries if entry.status == "concluido")
         context["cancel_url"] = reverse("clinic:patient_history_list")
         return context
+
+
+class WorkScheduleListView(AppPermissionMixin, ClinicPageMixin, ListView):
+    template_name = "clinic/schedules/list.html"
+    context_object_name = "schedules"
+    permission_required = "clinic.view_horariotrabalho"
+    segment = "schedules"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Horários", "Schedules")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Grade semanal da equipa clínica, independente das marcações, já pronta para sincronizar com agenda.",
+            "Weekly team roster, independent from bookings, already prepared to sync with scheduling.",
+        )
+
+    def get_queryset(self):
+        return work_schedule_queryset()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.localdate()
+        schedule_list = list(context["schedules"])
+        today_schedules = [schedule for schedule in schedule_list if schedule.applies_to_date(today)]
+        context["total_schedule_blocks"] = len(schedule_list)
+        context["active_schedule_blocks"] = sum(1 for schedule in schedule_list if schedule.is_active)
+        context["scheduled_professionals"] = len({schedule.user_id for schedule in schedule_list})
+        context["today_on_duty"] = len(today_schedules)
+        context["appointment_ready"] = len(
+            {schedule.user_id for schedule in schedule_list if schedule.accepts_appointments}
+        )
+        context["today_schedules"] = sorted(
+            today_schedules,
+            key=lambda schedule: (schedule.start_time, schedule.professional_name.lower()),
+        )[:6]
+        return context
+
+
+class WorkScheduleDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, DetailView):
+    template_name = "clinic/schedules/detail.html"
+    permission_required = "clinic.view_horariotrabalho"
+    segment = "schedules"
+    modal_size = "modal-xl"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Detalhes do horário", "Schedule details")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Resumo operacional do turno, validade, sincronização e ocupação da agenda.",
+            "Operational summary of the shift, validity, synchronization, and calendar occupancy.",
+        )
+
+    def get_queryset(self):
+        return work_schedule_queryset()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.localdate()
+        today_appointments = list(self.object.appointment_queryset(on_date=today)[:5])
+        upcoming_appointments = list(self.object.appointment_queryset().filter(data__gte=today)[:6])
+        context["detail_partial"] = "clinic/schedules/includes/detail_content.html"
+        context["modal_heading"] = self.object.professional_name
+        context["modal_description"] = ui_text(
+            self.request,
+            "Turno semanal, dados da sucursal e integração com a agenda clínica.",
+            "Weekly shift, branch details, and clinical calendar integration.",
+        )
+        context["linked_medico"] = self.object.linked_medico
+        context["next_shift_date"] = self.object.next_occurrence_date(today)
+        context["is_on_duty_today"] = self.object.applies_to_date(today)
+        context["today_appointments"] = today_appointments
+        context["upcoming_appointments"] = upcoming_appointments
+        return context
+
+
+class WorkScheduleCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
+    model = HorarioTrabalho
+    form_class = WorkScheduleForm
+    template_name = "clinic/schedules/form.html"
+    modal_template_name = "clinic/schedules/modal_form.html"
+    success_url = reverse_lazy("clinic:work_schedule_list")
+    permission_required = "clinic.add_horariotrabalho"
+    segment = "schedules"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo horário", "New schedule")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Registe o horário base de médicos, enfermeiros e outros colaboradores por sucursal.",
+            "Register the base schedule of doctors, nurses, and other collaborators by branch.",
+        )
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar horário", "Create schedule")
+        context["form_description"] = ui_text(
+            self.request,
+            "Defina um bloco semanal de trabalho que poderá ser usado depois pela agenda e marcações.",
+            "Define a weekly work block that can later be used by the calendar and bookings.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar horário", "Save schedule")
+        context["cancel_url"] = reverse("clinic:work_schedule_list")
+        context["wide_fields"] = "notes"
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Horário criado com sucesso.", "Schedule created successfully.")
+
+
+class WorkScheduleUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
+    form_class = WorkScheduleForm
+    template_name = "clinic/schedules/form.html"
+    modal_template_name = "clinic/schedules/modal_form.html"
+    success_url = reverse_lazy("clinic:work_schedule_list")
+    permission_required = "clinic.change_horariotrabalho"
+    segment = "schedules"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar horário", "Edit schedule")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Ajuste dias, intervalos e regras do turno sem perder o histórico da equipa.",
+            "Adjust days, intervals, and shift rules without losing team history.",
+        )
+
+    def get_queryset(self):
+        return work_schedule_queryset()
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar horário", "Edit schedule")
+        context["form_description"] = ui_text(
+            self.request,
+            "Actualize a escala do profissional seleccionado e mantenha a sincronização preparada para agendamentos.",
+            "Update the selected professional's roster and keep synchronization ready for appointments.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar horário", "Update schedule")
+        context["cancel_url"] = reverse("clinic:work_schedule_detail", args=[self.object.pk])
+        context["wide_fields"] = "notes"
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Horário actualizado com sucesso.", "Schedule updated successfully.")
+
+
+class WorkScheduleToggleStatusView(AppPermissionMixin, View):
+    permission_required = "clinic.change_horariotrabalho"
+    login_url = "clinic:login"
+
+    @transaction.atomic
+    def post(self, request, pk):
+        schedule = get_object_or_404(work_schedule_queryset(), pk=pk)
+        schedule.is_active = not schedule.is_active
+        schedule.save(update_fields=["is_active", "updated_at"])
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": ui_text(
+                    request,
+                    "Horário de %(professional)s %(status)s com sucesso.",
+                    "Schedule for %(professional)s %(status)s successfully.",
+                )
+                % {
+                    "professional": schedule.professional_name,
+                    "status": ui_text(
+                        request,
+                        "activado" if schedule.is_active else "desactivado",
+                        "activated" if schedule.is_active else "deactivated",
+                    ),
+                },
+                "redirect_url": reverse("clinic:work_schedule_list"),
+            }
+        )
 

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Hospital, Especialidade, Medico, Paciente, 
-    Agendamento, Consulta, Medicamento, Departamento
+    Agendamento, Consulta, Medicamento, Departamento, HorarioTrabalho
 )
 
 @admin.register(Hospital)
@@ -83,4 +83,15 @@ class DepartamentoAdmin(admin.ModelAdmin):
             return obj.responsavel.user.get_full_name()
         return "Sem responsável"
     get_responsavel.short_description = 'Responsável'
+
+
+@admin.register(HorarioTrabalho)
+class HorarioTrabalhoAdmin(admin.ModelAdmin):
+    list_display = ('get_profissional', 'branch', 'role', 'weekday', 'start_time', 'end_time', 'is_active')
+    search_fields = ('user__first_name', 'user__last_name', 'user__username', 'branch__name', 'shift_name')
+    list_filter = ('branch', 'role', 'weekday', 'accepts_appointments', 'is_active')
+
+    def get_profissional(self, obj):
+        return obj.professional_name
+    get_profissional.short_description = 'Profissional'
 

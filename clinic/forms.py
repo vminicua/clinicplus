@@ -8,8 +8,9 @@ from django.utils import timezone
 from accounts.models import Branch
 from accounts.forms import StyledFormMixin
 from accounts.i18n import translate_pair
+from accounts.utils import visible_users_queryset
 
-from .models import Paciente
+from .models import HorarioTrabalho, Paciente
 
 
 User = get_user_model()
@@ -222,3 +223,129 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
             self.save_m2m()
 
         return patient
+
+
+class StaffUserChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        full_name = obj.get_full_name() or obj.username
+        return f"{full_name} ({obj.username})"
+
+
+class WorkScheduleForm(StyledFormMixin, forms.ModelForm):
+    user = StaffUserChoiceField(
+        queryset=User.objects.none(),
+        label=tr("Profissional", "Professional"),
+    )
+
+    class Meta:
+        model = HorarioTrabalho
+        fields = [
+            "user",
+            "branch",
+            "role",
+            "shift_name",
+            "weekday",
+            "start_time",
+            "end_time",
+            "break_start",
+            "break_end",
+            "slot_minutes",
+            "valid_from",
+            "valid_until",
+            "accepts_appointments",
+            "is_active",
+            "notes",
+        ]
+        labels = {
+            "branch": tr("Clínica / sucursal", "Clinic / branch"),
+            "role": tr("Função", "Role"),
+            "shift_name": tr("Nome do turno", "Shift name"),
+            "weekday": tr("Dia da semana", "Weekday"),
+            "start_time": tr("Início", "Start time"),
+            "end_time": tr("Fim", "End time"),
+            "break_start": tr("Pausa inicia", "Break starts"),
+            "break_end": tr("Pausa termina", "Break ends"),
+            "slot_minutes": tr("Duração do bloco", "Slot length"),
+            "valid_from": tr("Válido desde", "Valid from"),
+            "valid_until": tr("Válido até", "Valid until"),
+            "accepts_appointments": tr("Aceita marcações", "Accepts appointments"),
+            "is_active": tr("Activo", "Active"),
+            "notes": tr("Observações internas", "Internal notes"),
+        }
+        help_texts = {
+            "branch": tr(
+                "Associe o turno à sucursal onde este profissional vai operar.",
+                "Link the shift to the branch where this professional will operate.",
+            ),
+            "role": tr(
+                "Use a função operacional principal deste horário.",
+                "Use the main operational role for this schedule.",
+            ),
+            "shift_name": tr(
+                "Opcional. Ex.: Manhã, Tarde, Urgência, Triagem.",
+                "Optional. Example: Morning, Afternoon, Emergency, Triage.",
+            ),
+            "slot_minutes": tr(
+                "Usado como referência para capacidade e sincronização futura com marcações.",
+                "Used as a reference for capacity and future appointment sync.",
+            ),
+            "valid_from": tr(
+                "Data em que este padrão semanal começa a valer.",
+                "Date when this weekly pattern starts applying.",
+            ),
+            "valid_until": tr(
+                "Opcional. Deixe vazio para manter o horário sem data final definida.",
+                "Optional. Leave blank to keep the schedule open-ended.",
+            ),
+            "accepts_appointments": tr(
+                "Liga este horário à agenda clínica. Hoje, a ocupação automática aparece quando o utilizador também está registado como médico.",
+                "Links this schedule to the clinical calendar. Automatic occupancy is currently shown when the user is also registered as a doctor.",
+            ),
+            "is_active": tr(
+                "Desactive para manter histórico sem usar o turno na operação corrente.",
+                "Disable to keep history without using the shift in current operations.",
+            ),
+            "notes": tr(
+                "Espaço para regras do turno, cobertura, salas ou observações da equipa.",
+                "Space for shift rules, coverage, rooms, or team notes.",
+            ),
+        }
+        widgets = {
+            "start_time": forms.TimeInput(attrs={"type": "time"}),
+            "end_time": forms.TimeInput(attrs={"type": "time"}),
+            "break_start": forms.TimeInput(attrs={"type": "time"}),
+            "break_end": forms.TimeInput(attrs={"type": "time"}),
+            "valid_from": forms.DateInput(attrs={"type": "date"}),
+            "valid_until": forms.DateInput(attrs={"type": "date"}),
+            "notes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        self.fields["user"].queryset = visible_users_queryset().order_by("first_name", "last_name", "username")
+        self.fields["branch"].queryset = Branch.objects.order_by("name")
+        self.fields["valid_until"].required = False
+        self.fields["shift_name"].required = False
+        self.fields["break_start"].required = False
+        self.fields["break_end"].required = False
+        self.fields["notes"].required = False
+
+        current_branch = getattr(self.request, "clinic_current_branch", None) if self.request else None
+        if current_branch and not self.instance.pk and not self.initial.get("branch"):
+            self.fields["branch"].initial = current_branch
+
+        autocomplete_map = {
+            "user": "off",
+            "shift_name": "organization-title",
+            "slot_minutes": "off",
+            "notes": "off",
+        }
+
+        for field_name, autocomplete_value in autocomplete_map.items():
+            if field_name not in self.fields:
+                continue
+            self.fields[field_name].widget.attrs["autocomplete"] = autocomplete_value
+            self.fields[field_name].widget.attrs["data-lpignore"] = "true"
+            self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"

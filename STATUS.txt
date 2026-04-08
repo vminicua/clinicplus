@@ -5,7 +5,7 @@ Situacao atual
 --------------
 
 - O projeto usa config/settings.py
-- O backend padrao agora e SQLite local
+- O banco e carregado exclusivamente por variaveis do arquivo .env
 - Configuracao sensivel foi movida para variaveis de ambiente
 - O arquivo .env continua ignorado pelo Git
 - O README foi removido para evitar nova exposicao

@@ -17,6 +17,15 @@ call venv\Scripts\activate
 echo Instalando dependencias...
 pip install -r requirements.txt
 
+if not exist .env (
+    echo Arquivo .env nao encontrado.
+    echo Copie .env.example para .env e preencha os dados do banco remoto antes de continuar.
+    echo Exemplo:
+    echo    copy .env.example .env
+    pause
+    exit /b 1
+)
+
 echo Executando migracoes...
 python manage.py makemigrations
 python manage.py migrate

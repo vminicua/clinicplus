@@ -10,8 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,12 +41,21 @@ def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
 
 
+def env_required(name: str) -> str:
+    value = os.getenv(name, "").strip()
+    if not value:
+        raise ImproperlyConfigured(
+            f"Define a variavel {name} no arquivo .env ou no ambiente do sistema."
+        )
+    return value
+
+
 load_env_file(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-local-dev-only-key")
+SECRET_KEY = env_required("SECRET_KEY")
 DEBUG = env_bool("DEBUG", True)
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
 
@@ -93,38 +104,39 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Database
-# Default to SQLite for local development. Override via .env or environment
-# variables when you need MySQL or PostgreSQL, including via an SSH tunnel.
-DB_ENGINE = os.getenv("DB_ENGINE", "django.db.backends.sqlite3")
+# O projeto usa apenas banco remoto/configurado por ambiente.
+DB_ENGINE = os.getenv("DB_ENGINE", "django.db.backends.mysql")
 MYSQL_CONNECT_TIMEOUT = int(os.getenv("MYSQL_CONNECT_TIMEOUT", "5"))
 MYSQL_READ_TIMEOUT = int(os.getenv("MYSQL_READ_TIMEOUT", "10"))
 MYSQL_WRITE_TIMEOUT = int(os.getenv("MYSQL_WRITE_TIMEOUT", "10"))
 
-if DB_ENGINE == "django.db.backends.sqlite3":
-    DATABASES = {
-        "default": {
-            "ENGINE": DB_ENGINE,
-            "NAME": os.getenv("SQLITE_NAME", str(BASE_DIR / "db.sqlite3")),
-        }
-    }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": DB_ENGINE,
-            "NAME": os.getenv("DB_NAME", "clinicplus"),
-            "USER": os.getenv("DB_USER", ""),
-            "PASSWORD": os.getenv("DB_PASSWORD", ""),
-            "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-            "PORT": os.getenv("DB_PORT", "5522"),
-        }
-    }
+SUPPORTED_DB_ENGINES = {
+    "django.db.backends.mysql",
+    "django.db.backends.postgresql",
+}
 
-    if DB_ENGINE == "django.db.backends.mysql":
-        DATABASES["default"]["OPTIONS"] = {
-            "connect_timeout": MYSQL_CONNECT_TIMEOUT,
-            "read_timeout": MYSQL_READ_TIMEOUT,
-            "write_timeout": MYSQL_WRITE_TIMEOUT,
-        }
+if DB_ENGINE not in SUPPORTED_DB_ENGINES:
+    raise ImproperlyConfigured(
+        "Backend de banco nao suportado neste projeto. Configure um banco remoto no arquivo .env."
+    )
+
+DATABASES = {
+    "default": {
+        "ENGINE": DB_ENGINE,
+        "NAME": env_required("DB_NAME"),
+        "USER": env_required("DB_USER"),
+        "PASSWORD": env_required("DB_PASSWORD"),
+        "HOST": env_required("DB_HOST"),
+        "PORT": env_required("DB_PORT"),
+    }
+}
+
+if DB_ENGINE == "django.db.backends.mysql":
+    DATABASES["default"]["OPTIONS"] = {
+        "connect_timeout": MYSQL_CONNECT_TIMEOUT,
+        "read_timeout": MYSQL_READ_TIMEOUT,
+        "write_timeout": MYSQL_WRITE_TIMEOUT,
+    }
 
 
 AUTH_PASSWORD_VALIDATORS = [

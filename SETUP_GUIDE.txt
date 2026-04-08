@@ -35,12 +35,17 @@ O projeto carrega .env automaticamente dentro de config/settings.py.
 4. Banco de dados
 -----------------
 
-Por padrao o projeto usa SQLite local.
+Este projeto nao usa banco local em ficheiro.
 
-Para usar banco remoto:
-- defina DB_ENGINE com o backend desejado
-- configure DB_NAME, DB_USER, DB_PASSWORD, DB_HOST e DB_PORT no .env
-- se existir tunel SSH, abra o tunel com os seus dados reais
+Configure no .env:
+- DB_ENGINE
+- DB_NAME
+- DB_USER
+- DB_PASSWORD
+- DB_HOST
+- DB_PORT
+
+Se existir tunel SSH, abra o tunel com os seus dados reais.
 
 Exemplo generico de tunel:
   ssh -L 5522:SEU_DB_HOST:3306 SEU_USUARIO@SEU_HOST -p SUA_PORTA

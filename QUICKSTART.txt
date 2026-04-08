@@ -44,7 +44,7 @@ Linux/Mac:
 Banco remoto via SSH tunnel
 ---------------------------
 
-Se for usar MySQL ou PostgreSQL por tunel SSH, configure o .env com os
+Configure o .env com os
 valores reais do seu servidor e abra o tunel com os seus proprios dados.
 
 Exemplo generico:
@@ -54,4 +54,4 @@ Notas
 -----
 
 - Nao guarde senhas, hosts reais ou tokens em arquivos versionados.
-- O projeto agora le .env automaticamente quando o arquivo existe.
+- O projeto agora depende do .env para a conexao com o banco.

@@ -175,6 +175,16 @@
         const customizeInput = builder.querySelector('input[name="customize_day_hours"]');
         const dayCards = Array.from(builder.querySelectorAll('[data-day-config-card]'));
 
+        function syncWeekdayChoices() {
+          weekdayInputs.forEach((input) => {
+            const choice = input.closest('.clinic-choice-item');
+            if (!choice) {
+              return;
+            }
+            choice.classList.toggle('is-selected', input.checked);
+          });
+        }
+
         function selectedWeekdays() {
           return new Set(weekdayInputs.filter((input) => input.checked).map((input) => input.value));
         }
@@ -214,18 +224,23 @@
                 input.checked = false;
               }
             });
+            syncWeekdayChoices();
             syncDayCards();
           });
         });
 
         weekdayInputs.forEach((input) => {
-          input.addEventListener('change', syncDayCards);
+          input.addEventListener('change', () => {
+            syncWeekdayChoices();
+            syncDayCards();
+          });
         });
 
         if (customizeInput) {
           customizeInput.addEventListener('change', syncDayCards);
         }
 
+        syncWeekdayChoices();
         syncDayCards();
       });
     }

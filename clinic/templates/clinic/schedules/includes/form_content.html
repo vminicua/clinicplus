@@ -84,8 +84,11 @@
     </div>
 
     <div data-step-panel="2" class="d-none">
-      <div class="mb-3">
-        {% include "accounts/shared/includes/form_field.html" with field=form.customize_day_hours wide_fields="" %}
+      <div class="card clinic-detail-card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="mb-1">{% ui "Ajustes inteligentes por dia" "Smart day adjustments" %}</h5>
+          <p class="text-secondary mb-0">{% ui "Os dias seleccionados no passo anterior já podem ser editados abaixo. Se um dia usar o horário base, basta deixar os campos dele vazios." "The days selected in the previous step can already be edited below. If a day should use the base schedule, just leave that day's fields blank." %}</p>
+        </div>
       </div>
 
       <div class="row g-3">
@@ -102,7 +105,7 @@
                 </div>
 
                 <div class="mt-3" data-day-config-idle>
-                  <p class="text-sm text-secondary mb-0">{% ui "Seleccione este dia no passo anterior e active os ajustes por dia para personalizar horários, pausas ou dias intercalados." "Select this day in the previous step and enable day adjustments to customize hours, breaks, or alternating days." %}</p>
+                  <p class="text-sm text-secondary mb-0">{% ui "Seleccione este dia no passo anterior para abrir os campos de hora. Se não o seleccionar, ele não será criado." "Select this day in the previous step to open its time fields. If you do not select it, it will not be created." %}</p>
                 </div>
 
                 <div class="clinic-form-grid mt-3 d-none" data-day-config-fields>

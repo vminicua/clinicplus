@@ -71,9 +71,10 @@ def custom_login(request):
                 request,
                 ui_text(
                     request,
-                    f'Bem-vindo, {user.get_full_name() or user.username}!',
-                    f'Welcome, {user.get_full_name() or user.username}!',
-                ),
+                    'Bem-vindo, %(user)s!',
+                    'Welcome, %(user)s!',
+                )
+                % {"user": user.get_full_name() or user.username},
             )
             return redirect(next_url or 'clinic:index')
         else:
@@ -108,7 +109,14 @@ def dashboard(request):
             'A cleaner overview of scheduling, patient flow, and clinic financial health.',
         ),
         'branch_scope_label': (
-            ui_text(request, 'Sucursal activa', 'Active branch') + f": {current_branch.name}"
+            (
+                ui_text(
+                    request,
+                    'Sucursal activa: %(branch)s',
+                    'Active branch: %(branch)s',
+                )
+                % {"branch": current_branch.name}
+            )
             if current_branch else ""
         ),
         'current_date': timezone.localdate(),

@@ -2,11 +2,13 @@ from django.conf import settings
 from django.db.utils import OperationalError, ProgrammingError
 
 from .models import Branch, SystemPreference
-from .i18n import normalize_language, translate_pair
+from .i18n import normalize_language, translate_catalog
 
 
 LANGUAGE_SESSION_KEY = "clinic_language"
 BRANCH_SESSION_KEY = "clinic_branch_id"
+
+
 def get_system_preferences():
     try:
         return SystemPreference.get_solo()
@@ -38,10 +40,9 @@ def resolve_language_for_request(request) -> str:
 
 
 def ui_text(request, portuguese: str, english: str) -> str:
-    language_code = normalize_language(getattr(request, "LANGUAGE_CODE", None))
-    if language_code == "en":
-        return english
-    return portuguese
+    return translate_catalog(portuguese, english)
+
+
 def available_branches_for_user(user):
     if not getattr(user, "is_authenticated", False):
         return Branch.objects.none()

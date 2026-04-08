@@ -10,7 +10,7 @@
         <div class="form-text mt-2">{{ field.help_text }}</div>
       {% endif %}
       {% for error in field.errors %}
-        <div class="invalid-feedback">{{ error }}</div>
+        <div class="invalid-feedback d-block">{{ error }}</div>
       {% endfor %}
     </div>
   {% elif field.widget_type == "checkboxselectmultiple" %}
@@ -46,7 +46,7 @@
       <div class="form-text">{{ field.help_text }}</div>
     {% endif %}
     {% for error in field.errors %}
-      <div class="invalid-feedback">{{ error }}</div>
+      <div class="invalid-feedback d-block">{{ error }}</div>
     {% endfor %}
   {% endif %}
 </div>

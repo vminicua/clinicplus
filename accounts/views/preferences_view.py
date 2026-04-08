@@ -132,9 +132,10 @@ class BranchSwitchView(View):
             request,
             ui_text(
                 request,
-                f"Sucursal activa alterada para {branch.name}.",
-                f"Active branch changed to {branch.name}.",
-            ),
+                "Sucursal activa alterada para %(branch)s.",
+                "Active branch changed to %(branch)s.",
+            )
+            % {"branch": branch.name},
         )
         next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or reverse_lazy("clinic:index")
         return redirect(next_url)

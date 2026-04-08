@@ -1,5 +1,5 @@
 {% load ui_extras %}
-<form method="post" action="{{ request.path }}" class="{% if is_modal_request %}js-modal-form{% endif %}" data-swal-submit data-processing-title="{% ui 'Processando...' 'Processing...' %}" data-processing-text="{% ui 'Estamos a guardar os dados.' 'We are saving the data.' %}">
+<form method="post" action="{{ request.path }}" class="{% if is_modal_request %}js-modal-form{% endif %}" autocomplete="off"{% if form.is_multipart %} enctype="multipart/form-data"{% endif %} data-swal-submit data-processing-title="{% ui 'Processando...' 'Processing...' %}" data-processing-text="{% ui 'Estamos a guardar os dados.' 'We are saving the data.' %}">
   {% csrf_token %}
   {% if is_modal_request %}
     <input type="hidden" name="modal" value="1">

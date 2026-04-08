@@ -32,7 +32,47 @@ class Branch(models.Model):
         unique=True,
         verbose_name=translate_pair("Código interno", "Internal code"),
     )
+    legal_name = models.CharField(
+        max_length=180,
+        blank=True,
+        verbose_name=translate_pair("Nome legal", "Legal name"),
+    )
+    nuit = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        unique=True,
+        verbose_name=translate_pair("NUIT", "Tax ID"),
+    )
+    logo = models.ImageField(
+        upload_to="branches/logos/",
+        blank=True,
+        null=True,
+        verbose_name=translate_pair("Logotipo", "Logo"),
+    )
+    favicon = models.ImageField(
+        upload_to="branches/favicons/",
+        blank=True,
+        null=True,
+        verbose_name=translate_pair("Favicon", "Favicon"),
+    )
     city = models.CharField(max_length=120, blank=True, verbose_name=translate_pair("Cidade", "City"))
+    province = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name=translate_pair("Província / estado", "Province / state"),
+    )
+    country = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Moçambique",
+        verbose_name=translate_pair("País", "Country"),
+    )
+    postal_code = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name=translate_pair("Código postal", "Postal code"),
+    )
     address = models.CharField(
         max_length=255,
         blank=True,
@@ -40,6 +80,25 @@ class Branch(models.Model):
     )
     phone = models.CharField(max_length=30, blank=True, verbose_name=translate_pair("Telefone", "Phone"))
     email = models.EmailField(blank=True, verbose_name="Email")
+    website = models.URLField(blank=True, verbose_name=translate_pair("Website", "Website"))
+    manager_name = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=translate_pair("Responsável", "Manager"),
+    )
+    manager_phone = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name=translate_pair("Telefone do responsável", "Manager phone"),
+    )
+    manager_email = models.EmailField(
+        blank=True,
+        verbose_name=translate_pair("Email do responsável", "Manager email"),
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name=translate_pair("Descrição", "Description"),
+    )
     is_active = models.BooleanField(default=True, verbose_name=translate_pair("Activa", "Active"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -126,5 +185,7 @@ class UserProfile(models.Model):
         verbose_name_plural = translate_pair("Perfis dos utilizadores", "User profiles")
 
     def __str__(self) -> str:
-        username = self.user.get_username()
-        return str(translate_pair(f"Perfil de {username}", f"Profile for {username}"))
+        return str(
+            translate_pair("Perfil de %(username)s", "Profile for %(username)s")
+            % {"username": self.user.get_username()}
+        )

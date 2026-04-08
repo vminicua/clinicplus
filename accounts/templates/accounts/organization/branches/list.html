@@ -100,15 +100,33 @@
               {% for branch in branches %}
                 <tr>
                   <td class="ps-4">
-                    <div>
-                      <h6 class="mb-0 text-sm">{{ branch.name }}</h6>
-                      <p class="text-xs text-secondary mb-0">{{ branch.code }}{% if branch.email %} · {{ branch.email }}{% endif %}</p>
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="clinic-avatar-square d-flex align-items-center justify-content-center bg-gray-100 border-radius-lg overflow-hidden" style="width: 3rem; height: 3rem;">
+                        {% if branch.logo %}
+                          <img src="{{ branch.logo.url }}" alt="{{ branch.name }}" class="w-100 h-100" style="object-fit: cover;">
+                        {% else %}
+                          <i class="material-symbols-rounded text-secondary">apartment</i>
+                        {% endif %}
+                      </div>
+                      <div>
+                        <h6 class="mb-0 text-sm">{{ branch.name }}</h6>
+                        {% if branch.legal_name %}
+                          <p class="text-xs text-secondary mb-0">{{ branch.legal_name }}</p>
+                        {% endif %}
+                        <p class="text-xs text-secondary mb-0">
+                          {{ branch.code }}
+                          {% if branch.nuit %} · NUIT {{ branch.nuit }}{% endif %}
+                          {% if branch.email %} · {{ branch.email }}{% endif %}
+                        </p>
+                      </div>
                     </div>
                   </td>
                   <td>
                     <span class="text-sm">
                       {% if branch.city %}{{ branch.city }}{% else %}{% ui "Sem cidade" "No city" %}{% endif %}
-                      {% if branch.address %}<span class="text-secondary"> · {{ branch.address }}</span>{% endif %}
+                      {% if branch.province %}<span class="text-secondary"> · {{ branch.province }}</span>{% endif %}
+                      {% if branch.country %}<span class="text-secondary"> · {{ branch.country }}</span>{% endif %}
+                      {% if branch.address %}<span class="text-secondary d-block">{{ branch.address }}</span>{% endif %}
                     </span>
                   </td>
                   <td>

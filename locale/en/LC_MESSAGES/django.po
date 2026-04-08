@@ -1,0 +1,2115 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: clinicplus\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: Codex\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 22
+msgid "(filtrado de _MAX_ registos)"
+msgstr "(filtered from _MAX_ records)"
+
+#: C:/clinicplus/clinic/views.py:line 151
+msgid "3 retornos precisam de confirmacao"
+msgstr "3 follow-ups need confirmation"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 3
+msgid "A carregar..."
+msgstr "Loading..."
+
+#: C:/clinicplus/accounts/forms.py:line 182
+msgid "A confirmação da palavra-passe não coincide."
+msgstr "The password confirmation does not match."
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 22
+msgid "A entrar..."
+msgstr "Signing in..."
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 20
+msgid "A mostrar _START_ até _END_ de _TOTAL_ registos"
+msgstr "Showing _START_ to _END_ of _TOTAL_ records"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 36
+msgid "A operação falhou."
+msgstr "The operation failed."
+
+#: C:/clinicplus/accounts/views/users_view.py:line 151
+msgid ""
+"A palavra-passe só será alterada se preencher os dois campos de confirmação."
+msgstr "The password will only change if you fill both confirmation fields."
+
+#: C:/clinicplus/accounts/forms.py:line 172
+msgid "A palavra-passe é obrigatória ao criar um utilizador."
+msgstr "Password is required when creating a user."
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 29
+msgid "A sucursal voltará a estar disponível para alocações."
+msgstr "The branch will be available for assignments again."
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 8
+msgid "A unidade voltará a estar disponível para operação."
+msgstr "The branch will be available for operations again."
+
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 18
+msgid "Abrir utilizador"
+msgstr "Open user"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 6
+msgid "Acesso e perfis"
+msgstr "Access and roles"
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 17
+msgid "Acesso seguro"
+msgstr "Secure access"
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 23
+msgid "Acesso total"
+msgstr "Full access"
+
+#: C:/clinicplus/accounts/forms.py:line 128
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 22
+msgid "Acesso técnico"
+msgstr "Technical access"
+
+#: C:/clinicplus/accounts/utils.py:line 24
+msgid "Acessos e segurança"
+msgstr "Access and security"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 10
+msgid "Acompanhamentos"
+msgstr "Follow-ups"
+
+#: C:/clinicplus/accounts/forms.py:line 277
+#: C:/clinicplus/accounts/models.py:line 102
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 8
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 20
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 14
+msgid "Activa"
+msgstr "Active"
+
+#: C:/clinicplus/accounts/views/users_view.py:line 188
+msgid "activado"
+msgstr "activated"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 36
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 30
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 9
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 10
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 10
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 11
+msgid "Activar"
+msgstr "Activate"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 28
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 31
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 7
+msgid "Activar sucursal"
+msgstr "Activate branch"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 34
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 37
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 8
+msgid "Activar utilizador"
+msgstr "Activate user"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 2
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 9
+msgid "Activas"
+msgstr "Active"
+
+#: C:/clinicplus/accounts/forms.py:line 127
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 8
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 25
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 16
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 13
+msgid "Activo"
+msgstr "Active"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 2
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 9
+msgid "Activos"
+msgstr "Active"
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 164
+msgid "Actualizar perfil"
+msgstr "Update role"
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 175
+msgid "Actualizar permissão"
+msgstr "Update permission"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 150
+msgid "Actualizar sucursal"
+msgstr "Update branch"
+
+#: C:/clinicplus/accounts/views/users_view.py:line 156
+msgid "Actualizar utilizador"
+msgstr "Update user"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 136
+msgid "Actualize dados da unidade e a equipa autorizada para esta sucursal."
+msgstr "Update the branch details and the team authorized for this location."
+
+#: C:/clinicplus/accounts/views/users_view.py:line 135
+msgid "Actualize dados, perfis e sucursais da conta seleccionada."
+msgstr "Update data, roles, and branches for the selected account."
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 150
+msgid "Actualize o nome e as permissões deste perfil."
+msgstr "Update the name and permissions of this role."
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 161
+msgid "Actualize o nome visível, o código interno ou o escopo da permissão."
+msgstr "Update the visible name, internal code, or permission scope."
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 15
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 12
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 20
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 18
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 14
+msgid "Acções"
+msgstr "Actions"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 22
+msgid "Agenda recente"
+msgstr "Recent schedule"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 14
+msgid "Agendamentos"
+msgstr "Appointments"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/permission_matrix.html:match
+#: 3
+msgid "Agrupado por módulo"
+msgstr "Grouped by module"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 2
+msgid "Agrupamento de permissões para utilizadores da clínica."
+msgstr "Permission grouping for clinic users."
+
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 6
+msgid "Agrupe permissões por cargo e função operacional."
+msgstr "Group permissions by role and operational function."
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 23
+msgid "Agrupe permissões por função operacional da clínica."
+msgstr "Group permissions by the clinic's operational role."
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 2
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 8
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 16
+msgid "Aguarde um momento."
+msgstr "Please wait a moment."
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 170
+msgid ""
+"Ajuste apenas permissões personalizadas. As permissões base do sistema "
+"continuam protegidas."
+msgstr ""
+"Adjust only custom permissions. Base system permissions remain protected."
+
+#: C:/clinicplus/clinic/templates/clinic/partials/navigation.html:match 1
+msgid "Alternar interface"
+msgstr "Switch interface"
+
+#: C:/clinicplus/accounts/forms.py:line 125
+msgid "Apelido"
+msgstr "Last name"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 145
+msgid ""
+"As alterações passam a reflectir imediatamente na alocação dos utilizadores."
+msgstr "Changes are immediately reflected in user branch assignments."
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 159
+msgid ""
+"As alterações reflectem-se em todos os utilizadores ligados a este perfil."
+msgstr "Changes are reflected for every user linked to this role."
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 5
+msgid ""
+"As permissões base são protegidas. As personalizadas podem ser geridas aqui."
+msgstr ""
+"Base permissions are protected. Custom permissions can be managed here."
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 30
+msgid "As permissões são herdadas apenas a partir dos perfis atribuídos."
+msgstr "Permissions are inherited only from assigned roles."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 18
+msgid "Atualizado hoje"
+msgstr "Updated today"
+
+#: C:/clinicplus/accounts/utils.py:line 48
+msgid "Auditoria técnica"
+msgstr "Technical audit"
+
+#: C:/clinicplus/clinic/views.py:line 72
+msgid "Bem-vindo, %(user)s!"
+msgstr "Welcome, %(user)s!"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 36
+msgid "Bom aproveitamento"
+msgstr "Good utilization"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 9
+msgid "Bom ritmo de faturacao"
+msgstr "Healthy billing pace"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 49
+msgid "Branding"
+msgstr "Branding"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 10
+msgid "Cada utilizador herda automaticamente as permissões acima."
+msgstr "Each user automatically inherits the permissions above."
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 12
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 13
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 14
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 15 C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 32
+msgid "Cancelar"
+msgstr "Cancel"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 32
+msgid "Capacidade"
+msgstr "Capacity"
+
+#: C:/clinicplus/clinic/views.py:line 140
+msgid "Capacidade ocupada hoje"
+msgstr "Capacity occupied today"
+
+#: C:/clinicplus/clinic/views.py:line 173 C:/clinicplus/clinic/views.py:line
+#: 208
+msgid "Cardiologia"
+msgstr "Cardiology"
+
+#: C:/clinicplus/clinic/templates/clinic/partials/sidebar.html:match 1
+msgid "Central de Operações"
+msgstr "Operations Hub"
+
+#: C:/clinicplus/accounts/views/preferences_view.py:line 34
+msgid ""
+"Centralize definições globais do sistema em grupos recolhidos por defeito."
+msgstr "Centralize global system settings in groups collapsed by default."
+
+#: C:/clinicplus/clinic/views.py:line 145
+msgid "Checklist da recepcao concluido"
+msgstr "Reception checklist completed"
+
+#: C:/clinicplus/accounts/forms.py:line 265
+#: C:/clinicplus/accounts/models.py:line 59
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 19
+msgid "Cidade"
+msgstr "City"
+
+#: C:/clinicplus/accounts/forms.py:line 300
+msgid "Cidade principal desta unidade."
+msgstr "Main city for this branch."
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 1
+msgid "Clinic Plus | Entrar"
+msgstr "Clinic Plus | Sign in"
+
+#: C:/clinicplus/clinic/views.py:line 104
+msgid "Clinic Plus | Painel de Operacoes"
+msgstr "Clinic Plus | Operations dashboard"
+
+#: C:/clinicplus/templates/includes/head.html:match 1
+msgid "Clinic Plus, painel operacional em estilo Material Dashboard."
+msgstr "Clinic Plus, operational dashboard in a Material Dashboard style."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 1
+msgid "Clinica em operacao"
+msgstr "Clinic in operation"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 3
+msgid "Com acesso técnico"
+msgstr "With technical access"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 4
+msgid "Com perfis"
+msgstr "With roles"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 3
+msgid "Com permissões"
+msgstr "With permissions"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 4
+msgid "Com sucursal principal"
+msgstr "With primary branch"
+
+#: C:/clinicplus/clinic/views.py:line 210 C:/clinicplus/clinic/views.py:line
+#: 218 C:/clinicplus/clinic/views.py:line 234
+#: C:/clinicplus/clinic/views.py:line 242
+msgid "Confirmado"
+msgstr "Confirmed"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 29
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 31
+msgid "Confirmar"
+msgstr "Confirm"
+
+#: C:/clinicplus/accounts/forms.py:line 73
+msgid "Confirmar palavra-passe"
+msgstr "Confirm password"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 7
+msgid "Conjunto de acessos herdados por quem usar este perfil."
+msgstr "Set of accesses inherited by anyone using this role."
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 90
+msgid "Conjunto de permissões e utilizadores ligados a este perfil."
+msgstr "Permission set and users linked to this role."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 42
+msgid "Consultas"
+msgstr "Consultations"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 35
+msgid "Consultas concluidas"
+msgstr "Completed consultations"
+
+#: C:/clinicplus/clinic/views.py:line 139
+msgid "Consultas confirmadas"
+msgstr "Confirmed consultations"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 4
+msgid "Consultas hoje"
+msgstr "Appointments today"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 17
+msgid "Consultas realizadas e faturacao projetada."
+msgstr "Completed appointments and projected billing."
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 33
+msgid ""
+"Consulte permissões do sistema e crie permissões personalizadas quando "
+"necessário."
+msgstr "Review system permissions and create custom permissions when needed."
+
+#: C:/clinicplus/accounts/forms.py:line 325
+msgid "Contacto directo do responsável local."
+msgstr "Direct contact number for the local manager."
+
+#: C:/clinicplus/accounts/forms.py:line 132
+msgid "Contacto principal do utilizador."
+msgstr "Main contact for this user."
+
+#: C:/clinicplus/accounts/utils.py:line 25
+msgid "Controlo de utilizadores, perfis e permissões do sistema."
+msgstr "Control of users, roles, and system permissions."
+
+#: C:/clinicplus/accounts/utils.py:line 62
+msgid "Controlo técnico de sessões de autenticação."
+msgstr "Technical control of authentication sessions."
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 24
+msgid "Copiar"
+msgstr "Copy"
+
+#: C:/clinicplus/clinic/views.py:line 83
+msgid "Credenciais inválidas. Tente novamente."
+msgstr "Invalid credentials. Please try again."
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 18
+msgid "Criado em"
+msgstr "Created at"
+
+#: C:/clinicplus/accounts/utils.py:line 16
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/permission_matrix.html:match
+#: 7
+msgid "Criar"
+msgstr "Create"
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 120
+msgid "Criar perfil"
+msgstr "Create role"
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 123
+msgid "Criar permissão"
+msgstr "Create permission"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 105
+msgid "Criar sucursal"
+msgstr "Create branch"
+
+#: C:/clinicplus/accounts/views/users_view.py:line 108
+msgid "Criar utilizador"
+msgstr "Create user"
+
+#: C:/clinicplus/accounts/views/users_view.py:line 100
+msgid "Crie a conta, defina o idioma, os perfis e as sucursais do utilizador."
+msgstr ""
+"Create the account and define the user's language, roles, and branches."
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 115
+msgid "Crie permissões personalizadas para fluxos específicos do sistema."
+msgstr "Create custom permissions for system-specific workflows."
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 112
+msgid "Crie um perfil que represente uma função do sistema."
+msgstr "Create a role that represents a system function."
+
+#: C:/clinicplus/accounts/forms.py:line 260
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 12
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 11
+msgid "Código"
+msgstr "Code"
+
+#: C:/clinicplus/accounts/forms.py:line 473
+#: C:/clinicplus/accounts/models.py:line 33
+msgid "Código interno"
+msgstr "Internal code"
+
+#: C:/clinicplus/accounts/forms.py:line 268
+#: C:/clinicplus/accounts/models.py:line 74
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 25
+msgid "Código postal"
+msgstr "Postal code"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 4
+msgid "Dados da conta"
+msgstr "Account details"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 74
+msgid "Dados da sucursal e utilizadores atualmente alocados."
+msgstr "Branch information and users currently assigned to it."
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 11
+msgid "Dados por corrigir"
+msgstr "Data needs attention"
+
+#: C:/clinicplus/clinic/templates/clinic/partials/sidebar.html:match 2
+msgid "Dashboard"
+msgstr "Dashboard"
+
+#: C:/clinicplus/accounts/forms.py:line 95
+msgid "Defina em que sucursais este utilizador pode operar."
+msgstr "Choose which branches this user can operate in."
+
+#: C:/clinicplus/accounts/views/preferences_view.py:line 47
+msgid "Define o idioma base do sistema para novos acessos."
+msgstr "Defines the system default language for new sessions."
+
+#: C:/clinicplus/clinic/views.py:line 191 C:/clinicplus/clinic/views.py:line
+#: 232
+msgid "Dermatologia"
+msgstr "Dermatology"
+
+#: C:/clinicplus/accounts/views/users_view.py:line 188
+msgid "desactivado"
+msgstr "deactivated"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 32
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 26
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 5
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 6
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 6
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 7
+msgid "Desactivar"
+msgstr "Deactivate"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 24
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 27
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 3
+msgid "Desactivar sucursal"
+msgstr "Deactivate branch"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 30
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 33
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 4
+msgid "Desactivar utilizador"
+msgstr "Deactivate user"
+
+#: C:/clinicplus/accounts/forms.py:line 133
+msgid "Desactive para bloquear o acesso sem apagar o registo."
+msgstr "Disable to block access without deleting the record."
+
+#: C:/clinicplus/accounts/forms.py:line 276
+#: C:/clinicplus/accounts/models.py:line 100
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 35
+msgid "Descrição"
+msgstr "Description"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 30
+msgid "Deseja continuar?"
+msgstr "Do you want to continue?"
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 79
+msgid "Detalhes da permissão"
+msgstr "Permission details"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 56
+msgid "Detalhes da sucursal"
+msgstr "Branch details"
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 60
+msgid "Detalhes do perfil"
+msgstr "Role details"
+
+#: C:/clinicplus/accounts/views/users_view.py:line 59
+msgid "Detalhes do utilizador"
+msgstr "User details"
+
+#: C:/clinicplus/accounts/utils.py:line 17
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 2
+#: C:/clinicplus/accounts/templates/accounts/permissions/includes/detail_content.html:match
+#: 2
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 3
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/permission_matrix.html:match
+#: 8
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 3
+msgid "Editar"
+msgstr "Edit"
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 147
+#: C:/clinicplus/accounts/views/roles_view.py:line 158
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 14
+msgid "Editar perfil"
+msgstr "Edit role"
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 158
+#: C:/clinicplus/accounts/views/permissions_view.py:line 169
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 19
+msgid "Editar permissão"
+msgstr "Edit permission"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 133
+#: C:/clinicplus/accounts/views/organization_view.py:line 144
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 23
+msgid "Editar sucursal"
+msgstr "Edit branch"
+
+#: C:/clinicplus/accounts/views/users_view.py:line 132
+#: C:/clinicplus/accounts/views/users_view.py:line 150
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 29
+msgid "Editar utilizador"
+msgstr "Edit user"
+
+#: C:/clinicplus/accounts/utils.py:line 18
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/permission_matrix.html:match
+#: 9
+msgid "Eliminar"
+msgstr "Delete"
+
+#: C:/clinicplus/clinic/views.py:line 226
+msgid "Em andamento"
+msgstr "In progress"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 29
+msgid "Email"
+msgstr "Email"
+
+#: C:/clinicplus/accounts/forms.py:line 275
+#: C:/clinicplus/accounts/models.py:line 96
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 41
+msgid "Email do responsável"
+msgstr "Manager email"
+
+#: C:/clinicplus/accounts/forms.py:line 329
+msgid "Email institucional do responsável local."
+msgstr "Institutional email for the local manager."
+
+#: C:/clinicplus/accounts/forms.py:line 269
+#: C:/clinicplus/accounts/models.py:line 79
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 33
+msgid "Endereço"
+msgstr "Address"
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 16
+msgid "Entrar"
+msgstr "Sign in"
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 10
+msgid "Entrar no sistema"
+msgstr "Sign in"
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 3
+msgid ""
+"Entre com as suas credenciais para continuar no sistema e acompanhar a "
+"operação da clínica de forma simples."
+msgstr ""
+"Sign in with your credentials to continue and follow the clinic operation "
+"more simply."
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 6
+msgid "Equipa"
+msgstr "Team"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 5
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 13
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 35
+msgid "Erro"
+msgstr "Error"
+
+#: C:/clinicplus/accounts/views/preferences_view.py:line 57
+msgid "Escolha a moeda principal usada pelo sistema."
+msgstr "Choose the primary currency used across the system."
+
+#: C:/clinicplus/accounts/forms.py:line 228
+msgid "Escolha quem pode operar nesta sucursal."
+msgstr "Choose who can operate in this branch."
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/includes/detail_content.html:match
+#: 3
+msgid "Escopo"
+msgstr "Scope"
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 94
+msgid "Escopo, tipo e perfis que herdam esta permissão."
+msgstr "Scope, type, and roles that inherit this permission."
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/includes/detail_content.html:match
+#: 7
+msgid ""
+"Esta permissão faz parte do conjunto base do Django e está protegida contra "
+"edição ou remoção."
+msgstr ""
+"This permission is part of Django's base set and is protected against "
+"editing or removal."
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 25
+msgid "Esta sucursal deixará de aparecer como activa para novas alocações."
+msgstr "This branch will stop appearing as active for new assignments."
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 4
+msgid "Esta unidade deixará de aparecer como activa."
+msgstr "This branch will stop appearing as active."
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 18
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 17
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 13
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 13
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 12
+msgid "Estado"
+msgstr "Status"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 34
+msgid "Estamos a actualizar o estado."
+msgstr "We are updating the status."
+
+#: C:/clinicplus/accounts/templates/accounts/preferences/system.html:match 4
+msgid "Estamos a guardar as preferências."
+msgstr "We are saving your preferences."
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 2
+msgid "Estamos a guardar os dados."
+msgstr "We are saving the data."
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 4
+msgid "Estamos a preparar o formulário."
+msgstr "We are preparing the form."
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 21
+msgid "Estamos a validar as credenciais."
+msgstr "We are validating the credentials."
+
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 8
+msgid "Este perfil ainda não tem permissões atribuídas."
+msgstr "This role does not have assigned permissions yet."
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 31
+msgid ""
+"Este utilizador não recebe permissões directas. Toda a gestão de acesso é "
+"feita via perfis."
+msgstr ""
+"This user does not receive direct permissions. All access management happens"
+" through roles."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 38
+msgid "Estrutura pronta para expandir"
+msgstr "Structure ready to expand"
+
+#: C:/clinicplus/accounts/forms.py:line 441
+msgid "Ex.: Administrador do Sistema, Recepcionista, Médico."
+msgstr "Example: System Administrator, Receptionist, Doctor."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 7
+msgid "Experiencia positiva"
+msgstr "Positive experience"
+
+#: C:/clinicplus/accounts/forms.py:line 264
+#: C:/clinicplus/accounts/models.py:line 57
+msgid "Favicon"
+msgstr "Favicon"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 12
+msgid "Favicon carregado"
+msgstr "Favicon uploaded"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/modal_detail.html:match 1
+#: C:/clinicplus/accounts/templates/accounts/shared/modal_form.html:match 1
+msgid "Fechar"
+msgstr "Close"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 1
+msgid "Ficha da sucursal"
+msgstr "Branch record"
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 1
+msgid "Ficha do utilizador"
+msgstr "User record"
+
+#: C:/clinicplus/clinic/views.py:line 163
+msgid "Financeiro fechou conciliacao parcial"
+msgstr "Finance closed a partial reconciliation"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 34
+msgid "Fluxo de caixa saudavel"
+msgstr "Healthy cash flow"
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 5
+msgid "Fluxo de chegada e triagem mais organizado."
+msgstr "A more organized arrival and triage flow."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 5
+msgid "Fluxo sem atraso critico"
+msgstr "Flow with no critical delay"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 20
+msgid "Foco do turno:"
+msgstr "Shift focus:"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 6
+msgid "Gerencie unidades e veja rapidamente quem está alocado em cada uma."
+msgstr "Manage branches and quickly see who is assigned to each one."
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 26
+msgid ""
+"Gerencie unidades, estado operacional e utilizadores alocados a cada "
+"sucursal."
+msgstr ""
+"Manage branches, operational status, and the users assigned to each branch."
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 2
+msgid "Gestão clínica com foco em atendimento, organização e controlo."
+msgstr "Clinical management focused on care, organization, and control."
+
+#: C:/clinicplus/accounts/views/users_view.py:line 27
+msgid "Gestão completa de contas, perfis de acesso e idioma preferido."
+msgstr ""
+"Complete management of accounts, access roles, and preferred language."
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 6
+msgid "Gestão de contas com perfis, estado e idioma preferido."
+msgstr "Account management with roles, status, and preferred language."
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 126
+msgid "Guardar perfil"
+msgstr "Save role"
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 129
+msgid "Guardar permissão"
+msgstr "Save permission"
+
+#: C:/clinicplus/accounts/views/preferences_view.py:line 65
+msgid "Guardar preferências"
+msgstr "Save preferences"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 111
+msgid "Guardar sucursal"
+msgstr "Save branch"
+
+#: C:/clinicplus/accounts/views/users_view.py:line 114
+msgid "Guardar utilizador"
+msgstr "Save user"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 27
+msgid "Horario"
+msgstr "Time"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 37
+msgid "Hospitais"
+msgstr "Hospitals"
+
+#: C:/clinicplus/accounts/forms.py:line 288
+msgid "Identificador fiscal da unidade. Guardamos apenas números."
+msgstr "Fiscal identifier for this branch. We store digits only."
+
+#: C:/clinicplus/accounts/forms.py:line 131
+msgid "Identificador usado para entrar no sistema."
+msgstr "Identifier used to sign in."
+
+#: C:/clinicplus/accounts/views/preferences_view.py:line 46
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 17
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 15
+msgid "Idioma"
+msgstr "Language"
+
+#: C:/clinicplus/accounts/forms.py:line 399
+msgid "Idioma do sistema"
+msgstr "System language"
+
+#: C:/clinicplus/accounts/models.py:line 126
+msgid "Idioma por defeito"
+msgstr "Default language"
+
+#: C:/clinicplus/accounts/forms.py:line 89
+#: C:/clinicplus/accounts/models.py:line 164
+msgid "Idioma preferido"
+msgstr "Preferred language"
+
+#: C:/clinicplus/accounts/forms.py:line 292
+msgid "Imagem principal usada na identidade visual desta sucursal."
+msgstr "Primary image used in this branch's brand identity."
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 25
+msgid "Imprimir"
+msgstr "Print"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 10
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 21
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 15
+msgid "Inactiva"
+msgstr "Inactive"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 11
+msgid "Inactivas"
+msgstr "Inactive"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 10
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 26
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 17
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 14
+msgid "Inactivo"
+msgstr "Inactive"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 11
+msgid "Inactivos"
+msgstr "Inactive"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 19
+msgid "Indicadores de desempenho"
+msgstr "Performance indicators"
+
+#: C:/clinicplus/accounts/utils.py:line 56
+msgid "Infra-estrutura Django"
+msgstr "Django infrastructure"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 41
+msgid "Integração em preparação"
+msgstr "Integration in progress"
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 15
+msgid "Introduza a sua palavra-passe"
+msgstr "Enter your password"
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 13
+msgid "Introduza o seu nome de utilizador"
+msgstr "Enter your username"
+
+#: C:/clinicplus/clinic/views.py:line 157
+msgid "Laboratorio enviou resultados pendentes"
+msgstr "Laboratory sent pending results"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 31
+msgid "Leitura rapida para decisao do turno."
+msgstr "Quick read for shift decisions."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 23
+msgid "Leitura rapida para recepcao e equipa medica."
+msgstr "Quick reading for reception and the medical team."
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 9
+msgid "Leitura rápida da operação diária da clínica."
+msgstr "A quick read of the clinic's daily operation."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 40
+msgid "ligar estes cards aos dados reais do MySQL para o painel ficar vivo."
+msgstr "connect these cards to real MySQL data so the dashboard becomes live."
+
+#: C:/clinicplus/accounts/forms.py:line 317
+msgid "Link público desta unidade, se existir."
+msgstr "Public website for this branch, if one exists."
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 5
+msgid "Lista de sucursais"
+msgstr "Branch list"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 5
+msgid "Lista de utilizadores"
+msgstr "User list"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 15
+msgid "Localização"
+msgstr "Location"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 50
+msgid "Logo"
+msgstr "Logo"
+
+#: C:/clinicplus/accounts/forms.py:line 263
+#: C:/clinicplus/accounts/models.py:line 51
+msgid "Logotipo"
+msgstr "Logo"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 21
+msgid "manter retornos e encaixes da tarde sob controlo."
+msgstr "keep afternoon follow-ups and extra appointments under control."
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/permission_matrix.html:match
+#: 2
+msgid "Marque os acessos que este perfil poderá usar no sistema."
+msgstr "Select the accesses this role may use in the system."
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/permission_matrix.html:match
+#: 1
+msgid "Matriz de permissões"
+msgstr "Permission matrix"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 26
+msgid "Medico"
+msgstr "Doctor"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 13
+msgid "Medicos ativos"
+msgstr "Active doctors"
+
+#: C:/clinicplus/clinic/views.py:line 141
+msgid "Meta de receita do mes"
+msgstr "Monthly revenue target"
+
+#: C:/clinicplus/accounts/models.py:line 18
+msgid "Metical (MZN)"
+msgstr "Metical (MZN)"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/permission_matrix.html:match
+#: 4
+msgid "Modelo / área"
+msgstr "Model / area"
+
+#: C:/clinicplus/accounts/views/preferences_view.py:line 56
+msgid "Moeda"
+msgstr "Currency"
+
+#: C:/clinicplus/accounts/forms.py:line 400
+#: C:/clinicplus/accounts/templates/accounts/preferences/system.html:match 2
+msgid "Moeda base"
+msgstr "Base currency"
+
+#: C:/clinicplus/accounts/models.py:line 132
+msgid "Moeda por defeito"
+msgstr "Default currency"
+
+#: C:/clinicplus/accounts/forms.py:line 407
+msgid "Moeda usada por defeito no sistema. O valor inicial é Metical."
+msgstr "Default currency used by the system. The initial value is Metical."
+
+#: C:/clinicplus/accounts/forms.py:line 313
+msgid "Morada física ou referência da unidade."
+msgstr "Physical address or a location reference for this branch."
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 19
+msgid "Mostrar _MENU_ registos"
+msgstr "Show _MENU_ records"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 13
+msgid "Módulo"
+msgstr "Module"
+
+#: C:/clinicplus/accounts/forms.py:line 465
+msgid "Módulo / entidade"
+msgstr "Module / entity"
+
+#: C:/clinicplus/clinic/views.py:line 47
+msgid ""
+"Nao foi possivel conectar ao banco de dados. Verifique o tunel SSH/MySQL e "
+"tente novamente."
+msgstr ""
+"The database connection is unavailable. Check the SSH/MySQL tunnel and try "
+"again."
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 9
+msgid "Nenhum perfil disponível."
+msgstr "No roles available."
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/includes/detail_content.html:match
+#: 10
+msgid "Nenhum perfil usa esta permissão neste momento."
+msgstr "No role is using this permission right now."
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 23
+msgid "Nenhum registo encontrado"
+msgstr "No records found"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 45
+msgid "Nenhum utilizador alocado a esta sucursal."
+msgstr "No users are assigned to this branch."
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 54
+msgid "Nenhum utilizador definiu esta sucursal como principal."
+msgstr "No user has set this as the primary branch."
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_field.html:match
+#: 1
+msgid "Nenhuma opção disponível."
+msgstr "No options available."
+
+#: C:/clinicplus/clinic/views.py:line 197 C:/clinicplus/clinic/views.py:line
+#: 240
+msgid "Neurologia"
+msgstr "Neurology"
+
+#: C:/clinicplus/accounts/forms.py:line 124
+msgid "Nome"
+msgstr "First name"
+
+#: C:/clinicplus/accounts/forms.py:line 259
+#: C:/clinicplus/accounts/models.py:line 28
+msgid "Nome da sucursal"
+msgstr "Branch name"
+
+#: C:/clinicplus/accounts/forms.py:line 123
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 12
+msgid "Nome de utilizador"
+msgstr "Username"
+
+#: C:/clinicplus/accounts/forms.py:line 438
+msgid "Nome do perfil"
+msgstr "Role name"
+
+#: C:/clinicplus/accounts/forms.py:line 261
+#: C:/clinicplus/accounts/models.py:line 38
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 16
+msgid "Nome legal"
+msgstr "Legal name"
+
+#: C:/clinicplus/accounts/forms.py:line 476
+msgid "Nome que será mostrado nas listas de permissões."
+msgstr "Name that will be shown in permission lists."
+
+#: C:/clinicplus/accounts/forms.py:line 472
+msgid "Nome visível"
+msgstr "Visible name"
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 112
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 9
+msgid "Nova permissão"
+msgstr "New permission"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 94
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 12
+msgid "Nova sucursal"
+msgstr "New branch"
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 109
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 7
+msgid "Novo perfil"
+msgstr "New role"
+
+#: C:/clinicplus/accounts/views/users_view.py:line 97
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 12
+msgid "Novo utilizador"
+msgstr "New user"
+
+#: C:/clinicplus/accounts/forms.py:line 262
+#: C:/clinicplus/accounts/models.py:line 45
+msgid "NUIT"
+msgstr "Tax ID"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 27
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 17
+msgid "Nunca entrou"
+msgstr "Never signed in"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 51
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 52
+msgid "Não definido"
+msgstr "Not set"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 6
+msgid "Não foi possível carregar este formulário."
+msgstr "We could not load this form."
+
+#: C:/clinicplus/accounts/views/preferences_view.py:line 117
+msgid "Não foi possível seleccionar esta sucursal."
+msgstr "We could not select this branch."
+
+#: C:/clinicplus/accounts/views/users_view.py:line 176
+msgid ""
+"Não pode desactivar a sua própria conta enquanto a sessão estiver activa."
+msgstr "You cannot deactivate your own account while the session is active."
+
+#: C:/clinicplus/accounts/views/base_view.py:line 26
+msgid "Não tem permissões suficientes para aceder a esta área de gestão."
+msgstr "You do not have enough permissions to access this management area."
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 31
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 5
+msgid "O acesso deste utilizador será bloqueado até nova activação."
+msgstr "This user will be blocked until reactivated."
+
+#: C:/clinicplus/accounts/forms.py:line 362
+msgid "O NUIT deve ter 9 dígitos."
+msgstr "The tax ID must have 9 digits."
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 26
+msgid "O processamento falhou."
+msgstr "Processing failed."
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 14
+msgid "O processamento falhou. Tente novamente."
+msgstr "Processing failed. Please try again."
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 35
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 9
+msgid "O utilizador voltará a poder entrar no sistema."
+msgstr "The user will be able to sign in again."
+
+#: C:/clinicplus/accounts/forms.py:line 67
+msgid "Obrigatória ao criar. Na edição, preencha apenas se quiser alterar."
+msgstr ""
+"Required when creating. On edit, fill it only if you want to change it."
+
+#: C:/clinicplus/accounts/forms.py:line 105
+msgid "Opcional. Deve fazer parte das sucursais atribuídas."
+msgstr "Optional. It must be one of the assigned branches."
+
+#: C:/clinicplus/accounts/forms.py:line 284
+msgid ""
+"Opcional. Preencha se a razão social for diferente do nome público da "
+"sucursal."
+msgstr ""
+"Optional. Fill this when the legal entity name differs from the branch "
+"display name."
+
+#: C:/clinicplus/accounts/forms.py:line 309
+msgid "Opcional. Útil para documentação, facturação e logística."
+msgstr "Optional. Useful for documentation, billing, and logistics."
+
+#: C:/clinicplus/accounts/utils.py:line 40
+msgid "Operação clínica"
+msgstr "Clinical operations"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 10
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 28
+msgid "Operação concluída com sucesso."
+msgstr "Operation completed successfully."
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 19
+msgid "Operação fiável"
+msgstr "Reliable operations"
+
+#: C:/clinicplus/clinic/templates/clinic/partials/sidebar.html:match 3
+msgid "Organização"
+msgstr "Organization"
+
+#: C:/clinicplus/accounts/utils.py:line 32
+msgid "Organização e preferências"
+msgstr "Organization and preferences"
+
+#: C:/clinicplus/clinic/views.py:line 185 C:/clinicplus/clinic/views.py:line
+#: 224
+msgid "Ortopedia"
+msgstr "Orthopedics"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 25
+msgid "Paciente"
+msgstr "Patient"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 12
+msgid "Pacientes"
+msgstr "Patients"
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 8
+msgid "Painel"
+msgstr "Dashboard"
+
+#: C:/clinicplus/clinic/views.py:line 105
+msgid "Painel de Operacoes"
+msgstr "Operations dashboard"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 29
+msgid "Painel operacional"
+msgstr "Operations panel"
+
+#: C:/clinicplus/accounts/forms.py:line 64
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 14
+msgid "Palavra-passe"
+msgstr "Password"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 3
+msgid "Passo 1"
+msgstr "Step 1"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 5
+msgid "Passo 2"
+msgstr "Step 2"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 7
+msgid "Passo 3"
+msgstr "Step 3"
+
+#: C:/clinicplus/accounts/forms.py:line 267
+#: C:/clinicplus/accounts/models.py:line 69
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 23
+msgid "País"
+msgstr "Country"
+
+#: C:/clinicplus/accounts/forms.py:line 305
+msgid "País onde esta sucursal opera. O padrão sugerido é Moçambique."
+msgstr ""
+"Country where this branch operates. Mozambique is the suggested default."
+
+#: C:/clinicplus/clinic/views.py:line 179 C:/clinicplus/clinic/views.py:line
+#: 216
+msgid "Pediatria"
+msgstr "Pediatrics"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 9
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 1
+msgid "Perfil"
+msgstr "Role"
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 171
+msgid "Perfil actualizado com sucesso."
+msgstr "Role updated successfully."
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 133
+msgid "Perfil criado com sucesso."
+msgstr "Role created successfully."
+
+#: C:/clinicplus/accounts/models.py:line 189
+msgid "Perfil de %(username)s"
+msgstr "Profile for %(username)s"
+
+#: C:/clinicplus/accounts/models.py:line 184
+msgid "Perfil do utilizador"
+msgstr "User profile"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 15
+#: C:/clinicplus/clinic/templates/clinic/partials/sidebar.html:match 9
+msgid "Perfis"
+msgstr "Roles"
+
+#: C:/clinicplus/clinic/templates/clinic/partials/sidebar.html:match 7
+msgid "Perfis & Permissões"
+msgstr "Roles & Permissions"
+
+#: C:/clinicplus/accounts/forms.py:line 80
+msgid "Perfis (roles)"
+msgstr "Roles"
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 25
+msgid "Perfis atribuídos"
+msgstr "Assigned roles"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 8
+msgid "Perfis Clinic Plus"
+msgstr "Clinic Plus Roles"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 5
+msgid "Perfis do sistema"
+msgstr "System roles"
+
+#: C:/clinicplus/accounts/models.py:line 185
+msgid "Perfis dos utilizadores"
+msgstr "User profiles"
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 20
+msgid "Perfis e roles"
+msgstr "Roles"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 2
+msgid "Perfis em uso"
+msgstr "Roles in use"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/includes/detail_content.html:match
+#: 8
+msgid "Perfis ligados"
+msgstr "Linked roles"
+
+#: C:/clinicplus/accounts/forms.py:line 81
+msgid "Perfis que definem o acesso principal deste utilizador."
+msgstr "Roles that define this user's main access."
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/includes/detail_content.html:match
+#: 9
+msgid "Perfis que herdam este acesso automaticamente."
+msgstr "Roles that automatically inherit this access."
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 7
+msgid "Perfis, permissões e acessos sob controlo."
+msgstr "Roles, permissions, and access under control."
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 11
+#: C:/clinicplus/accounts/templates/accounts/permissions/includes/detail_content.html:match
+#: 1
+msgid "Permissão"
+msgstr "Permission"
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 181
+msgid "Permissão actualizada com sucesso."
+msgstr "Permission updated successfully."
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 135
+msgid "Permissão criada com sucesso."
+msgstr "Permission created successfully."
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 30
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 10
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 4 C:/clinicplus/clinic/templates/clinic/partials/sidebar.html:match 10
+msgid "Permissões"
+msgstr "Permissions"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/permission_matrix.html:match
+#: 10
+msgid "Permissões adicionais"
+msgstr "Additional permissions"
+
+#: C:/clinicplus/accounts/utils.py:line 264
+msgid "Permissões agrupadas automaticamente por módulo."
+msgstr "Permissions grouped automatically by module."
+
+#: C:/clinicplus/accounts/forms.py:line 426
+msgid "Permissões atribuídas"
+msgstr "Assigned permissions"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 2
+msgid "Permissões base"
+msgstr "Base permissions"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 10
+msgid "Permissões Clinic Plus"
+msgstr "Clinic Plus Permissions"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 4
+msgid "Permissões disponíveis"
+msgstr "Available permissions"
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 21
+msgid "Permissões elevadas"
+msgstr "Elevated permissions"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 6
+msgid "Permissões incluídas"
+msgstr "Included permissions"
+
+#: C:/clinicplus/accounts/utils.py:line 57
+msgid "Permissões internas do framework."
+msgstr "Internal framework permissions."
+
+#: C:/clinicplus/accounts/utils.py:line 41
+msgid "Permissões ligadas aos módulos operacionais da clínica."
+msgstr "Permissions tied to the clinic operational modules."
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 124
+msgid ""
+"Permissões personalizadas ajudam a cobrir fluxos que ainda não existem no "
+"modelo base."
+msgstr ""
+"Custom permissions help cover workflows that do not yet exist in the base "
+"model."
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 17
+#: C:/clinicplus/accounts/templates/accounts/permissions/includes/detail_content.html:match
+#: 6
+msgid "Personalizada"
+msgstr "Custom"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 3
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 8
+msgid "Personalizadas"
+msgstr "Custom"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 18
+msgid "Pesquisar:"
+msgstr "Search:"
+
+#: C:/clinicplus/accounts/forms.py:line 321
+msgid "Pessoa de contacto principal para esta sucursal."
+msgstr "Main point of contact for this branch."
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 29
+msgid "Política de acesso"
+msgstr "Access policy"
+
+#: C:/clinicplus/accounts/models.py:line 10
+msgid "Português (Moçambique)"
+msgstr "Portuguese (Mozambique)"
+
+#: C:/clinicplus/accounts/models.py:line 137
+msgid "Preferência do sistema"
+msgstr "System preference"
+
+#: C:/clinicplus/accounts/views/preferences_view.py:line 31
+#: C:/clinicplus/clinic/templates/clinic/partials/sidebar.html:match 5
+msgid "Preferências"
+msgstr "Preferences"
+
+#: C:/clinicplus/accounts/models.py:line 138
+#: C:/clinicplus/accounts/models.py:line 141
+#: C:/clinicplus/accounts/templates/accounts/preferences/system.html:match 1
+msgid "Preferências do sistema"
+msgstr "System preferences"
+
+#: C:/clinicplus/accounts/views/preferences_view.py:line 72
+msgid "Preferências do sistema guardadas com sucesso."
+msgstr "System preferences saved successfully."
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 23
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 44
+msgid "Principal"
+msgstr "Primary"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 24
+msgid "Prioridade do turno"
+msgstr "Shift priority"
+
+#: C:/clinicplus/accounts/templates/accounts/preferences/system.html:match 3
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 1 C:/clinicplus/clinic/templates/clinic/login.html:match 20
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 1
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 7
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 15
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 33
+msgid "Processando..."
+msgstr "Processing..."
+
+#: C:/clinicplus/accounts/forms.py:line 266
+#: C:/clinicplus/accounts/models.py:line 63
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 21
+msgid "Província / estado"
+msgstr "Province / state"
+
+#: C:/clinicplus/accounts/forms.py:line 301
+msgid "Província, estado ou região administrativa da unidade."
+msgstr "Province, state, or administrative region for this branch."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 39
+msgid "Próxima melhoria:"
+msgstr "Next improvement:"
+
+#: C:/clinicplus/accounts/models.py:line 20
+msgid "Rand Sul-Africano (ZAR)"
+msgstr "South African Rand (ZAR)"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 33
+msgid "Receita de hoje"
+msgstr "Revenue today"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 8
+msgid "Receita do dia"
+msgstr "Revenue today"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 15
+msgid "Receita do mes"
+msgstr "Revenue this month"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 43
+msgid "Receita projetada"
+msgstr "Projected revenue"
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 4
+msgid "Recepção"
+msgstr "Reception"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 97
+msgid "Registe uma nova unidade e defina logo a equipa alocada."
+msgstr "Register a new branch and assign its team right away."
+
+#: C:/clinicplus/accounts/utils.py:line 49
+msgid "Registos técnicos e logs do painel administrativo."
+msgstr "Technical records and admin panel logs."
+
+#: C:/clinicplus/accounts/forms.py:line 273
+#: C:/clinicplus/accounts/models.py:line 87
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 37
+msgid "Responsável"
+msgstr "Manager"
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 18
+msgid "Resposta rápida"
+msgstr "Fast response"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 46
+msgid "Resumo da alocação"
+msgstr "Allocation summary"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 59
+msgid "Resumo da unidade, contactos e equipa alocada."
+msgstr "A summary of the branch, contact details, and assigned team members."
+
+#: C:/clinicplus/accounts/views/users_view.py:line 62
+msgid "Resumo do acesso e perfis atribuídos."
+msgstr "Summary of access and assigned roles."
+
+#: C:/clinicplus/accounts/views/users_view.py:line 79
+msgid "Resumo do acesso, idioma, sucursais e perfis atribuídos."
+msgstr "Summary of access, language, branches, and assigned roles."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 30
+msgid "Resumo financeiro e capacidade"
+msgstr "Financial and capacity summary"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 11
+msgid "Retornos para confirmar"
+msgstr "Follow-up returns to confirm"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 12
+msgid "Revise os campos destacados e tente novamente."
+msgstr "Review the highlighted fields and try again."
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 16
+msgid "Ritmo semanal da clinica"
+msgstr "Clinic weekly pace"
+
+#: C:/clinicplus/clinic/templates/clinic/partials/navigation.html:match 2
+msgid "Sair"
+msgstr "Logout"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 6
+msgid "Satisfacao"
+msgstr "Satisfaction"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 11
+msgid "Seguinte"
+msgstr "Next"
+
+#: C:/clinicplus/accounts/forms.py:line 191
+msgid "Seleccione a sucursal principal a partir das sucursais atribuídas."
+msgstr "Select the primary branch from the assigned branches."
+
+#: C:/clinicplus/accounts/forms.py:line 427
+msgid "Seleccione as permissões que compõem este perfil."
+msgstr "Select the permissions that make up this role."
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 19
+msgid "Sem cidade"
+msgstr "No city"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 20
+msgid "Sem cidade registada"
+msgstr "No city registered"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 26
+msgid "Sem código postal"
+msgstr "No postal code"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 36
+msgid "Sem descrição adicional"
+msgstr "No additional description"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 21
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 30
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 15
+msgid "Sem email"
+msgstr "No email"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 42
+msgid "Sem email do responsável"
+msgstr "No manager email"
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 2
+msgid "Sem email registado"
+msgstr "No registered email"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 34
+msgid "Sem endereço registado"
+msgstr "No address registered"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 17
+msgid "Sem nome legal registado"
+msgstr "No legal name registered"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 18
+msgid "Sem NUIT registado"
+msgstr "No tax ID registered"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 24
+msgid "Sem país registado"
+msgstr "No country registered"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 22
+msgid "Sem perfis"
+msgstr "No roles"
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 26
+msgid "Sem perfis associados"
+msgstr "No roles assigned"
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 24
+msgid "Sem privilégios elevados"
+msgstr "No elevated privileges"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 22
+msgid "Sem província registada"
+msgstr "No province registered"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 21
+msgid "Sem registos para mostrar"
+msgstr "No records to show"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 38
+msgid "Sem responsável definido"
+msgstr "No manager defined"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 24
+msgid "Sem sucursais"
+msgstr "No branches"
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 28
+msgid "Sem sucursais associadas"
+msgstr "No branches assigned"
+
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 20
+msgid "Sem sucursal principal"
+msgstr "No primary branch"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 28
+msgid "Sem telefone"
+msgstr "No phone"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 40
+msgid "Sem telefone do responsável"
+msgstr "No manager phone"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 32
+msgid "Sem website"
+msgstr "No website"
+
+#: C:/clinicplus/clinic/views.py:line 93
+msgid "Sessão terminada com sucesso."
+msgstr "You have been signed out successfully."
+
+#: C:/clinicplus/accounts/utils.py:line 61
+msgid "Sessões"
+msgstr "Sessions"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 7
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 16
+#: C:/clinicplus/accounts/templates/accounts/permissions/includes/detail_content.html:match
+#: 5 C:/clinicplus/clinic/templates/clinic/partials/sidebar.html:match 6
+msgid "Sistema"
+msgstr "System"
+
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 9
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 27
+msgid "Sucesso"
+msgstr "Success"
+
+#: C:/clinicplus/accounts/models.py:line 109
+#: C:/clinicplus/accounts/views/organization_view.py:line 23
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 16
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 8 C:/clinicplus/clinic/templates/clinic/partials/sidebar.html:match 4
+msgid "Sucursais"
+msgstr "Branches"
+
+#: C:/clinicplus/accounts/forms.py:line 94
+#: C:/clinicplus/accounts/models.py:line 170
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 27
+msgid "Sucursais atribuídas"
+msgstr "Assigned branches"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 13
+msgid "Sucursais Clinic Plus"
+msgstr "Clinic Plus Branches"
+
+#: C:/clinicplus/accounts/utils.py:line 33
+msgid ""
+"Sucursais, preferências globais e definições complementares das contas."
+msgstr "Branches, global preferences, and complementary account settings."
+
+#: C:/clinicplus/accounts/models.py:line 108
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 14
+msgid "Sucursal"
+msgstr "Branch"
+
+#: C:/clinicplus/accounts/views/preferences_view.py:line 133
+msgid "Sucursal activa alterada para %(branch)s."
+msgstr "Active branch changed to %(branch)s."
+
+#: C:/clinicplus/clinic/views.py:line 113
+msgid "Sucursal activa: %(branch)s"
+msgstr "Active branch: %(branch)s"
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 170
+msgid "Sucursal activada com sucesso."
+msgstr "Branch activated successfully."
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 157
+msgid "Sucursal actualizada com sucesso."
+msgstr "Branch updated successfully."
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 118
+msgid "Sucursal criada com sucesso."
+msgstr "Branch created successfully."
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 172
+msgid "Sucursal desactivada com sucesso."
+msgstr "Branch deactivated successfully."
+
+#: C:/clinicplus/accounts/forms.py:line 104
+#: C:/clinicplus/accounts/models.py:line 178
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 19
+msgid "Sucursal principal"
+msgstr "Primary branch"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 53
+msgid "Sucursal principal para"
+msgstr "Primary branch for"
+
+#: C:/clinicplus/accounts/forms.py:line 270
+#: C:/clinicplus/accounts/models.py:line 81
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 27
+msgid "Telefone"
+msgstr "Phone"
+
+#: C:/clinicplus/accounts/forms.py:line 274
+#: C:/clinicplus/accounts/models.py:line 92
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 39
+msgid "Telefone do responsável"
+msgstr "Manager phone"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 14
+#: C:/clinicplus/accounts/templates/accounts/permissions/includes/detail_content.html:match
+#: 4
+msgid "Tipo"
+msgstr "Type"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 6
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 7
+msgid "Todas"
+msgstr "All"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 7
+#: C:/clinicplus/templates/includes/clinic_shell_scripts.html:match 17
+msgid "Todos"
+msgstr "All"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 28
+msgid "Top medicos da semana"
+msgstr "Top doctors of the week"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 1
+msgid "Total de perfis"
+msgstr "Total roles"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 1
+msgid "Total de permissões"
+msgstr "Total permissions"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 1
+msgid "Total de sucursais"
+msgstr "Total branches"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 1
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 48
+msgid "Total de utilizadores"
+msgstr "Total users"
+
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/permission_matrix.html:match
+#: 5
+msgid "Tudo"
+msgstr "All"
+
+#: C:/clinicplus/clinic/views.py:line 106
+msgid ""
+"Uma visao mais limpa da agenda, do atendimento e da saude financeira da "
+"clinica."
+msgstr ""
+"A cleaner overview of scheduling, patient flow, and clinic financial health."
+
+#: C:/clinicplus/accounts/forms.py:line 403
+msgid ""
+"Usado como idioma inicial quando o utilizador ainda não escolheu um idioma."
+msgstr "Used as the initial language when the user has not chosen one yet."
+
+#: C:/clinicplus/accounts/forms.py:line 494
+msgid "Use apenas letras minúsculas, números e underscore no código interno."
+msgstr ""
+"Use only lowercase letters, numbers, and underscore in the internal code."
+
+#: C:/clinicplus/accounts/forms.py:line 137
+msgid ""
+"Use apenas quando este utilizador precisar de acesso técnico reservado."
+msgstr "Use only when this user needs reserved technical access."
+
+#: C:/clinicplus/accounts/views/users_view.py:line 109
+msgid "Use esta área para registar uma nova conta de acesso ao sistema."
+msgstr "Use this area to register a new access account in the system."
+
+#: C:/clinicplus/accounts/views/organization_view.py:line 106
+msgid ""
+"Use esta área para registar uma nova sucursal e indicar quem pode operar "
+"nela."
+msgstr ""
+"Use this area to register a new branch and define which users can operate "
+"there."
+
+#: C:/clinicplus/accounts/forms.py:line 333
+msgid ""
+"Use este campo para observações operacionais, horário, especialização ou "
+"notas internas."
+msgstr ""
+"Use this field for operational notes, opening hours, specialization, or "
+"internal remarks."
+
+#: C:/clinicplus/accounts/forms.py:line 480
+msgid "Use letras minúsculas, números e underscore."
+msgstr "Use lowercase letters, numbers, and underscore."
+
+#: C:/clinicplus/clinic/templates/clinic/login.html:match 11
+msgid "Use o seu nome de utilizador e a sua palavra-passe."
+msgstr "Use your username and password."
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 121
+msgid "Use perfis para agrupar permissões por cargo ou responsabilidade."
+msgstr "Use roles to group permissions by position or responsibility."
+
+#: C:/clinicplus/accounts/forms.py:line 280
+msgid "Use um código curto para identificar a sucursal internamente."
+msgstr "Use a short code to identify the branch internally."
+
+#: C:/clinicplus/accounts/models.py:line 158
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 14
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 12
+msgid "Utilizador"
+msgstr "User"
+
+#: C:/clinicplus/accounts/views/users_view.py:line 162
+msgid "Utilizador actualizado com sucesso."
+msgstr "User updated successfully."
+
+#: C:/clinicplus/accounts/views/users_view.py:line 120
+msgid "Utilizador criado com sucesso."
+msgstr "User created successfully."
+
+#: C:/clinicplus/accounts/views/users_view.py:line 24
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 11
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 16 C:/clinicplus/clinic/templates/clinic/partials/sidebar.html:match 8
+msgid "Utilizadores"
+msgstr "Users"
+
+#: C:/clinicplus/accounts/forms.py:line 227
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 3
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 43
+msgid "Utilizadores alocados"
+msgstr "Allocated users"
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 13
+msgid "Utilizadores Clinic Plus"
+msgstr "Clinic Plus Users"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 9
+msgid "Utilizadores com este perfil"
+msgstr "Users with this role"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 11
+msgid "Utilizadores do perfil"
+msgstr "Users in role"
+
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 4
+#: C:/clinicplus/accounts/templates/accounts/roles/includes/detail_content.html:match
+#: 5
+msgid "Utilizadores ligados"
+msgstr "Linked users"
+
+#: C:/clinicplus/accounts/views/roles_view.py:line 63
+msgid "Veja o conjunto de permissões e os utilizadores ligados a este perfil."
+msgstr "See the permission set and users linked to this role."
+
+#: C:/clinicplus/accounts/views/permissions_view.py:line 82
+msgid "Veja onde a permissão é usada e se faz parte do sistema base."
+msgstr ""
+"See where the permission is used and whether it belongs to the base system."
+
+#: C:/clinicplus/accounts/utils.py:line 15
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/permission_matrix.html:match
+#: 6
+msgid "Ver"
+msgstr "View"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 2
+msgid "Ver agenda de hoje"
+msgstr "View today's schedule"
+
+#: C:/clinicplus/accounts/templates/accounts/permissions/list.html:match 18
+#: C:/clinicplus/accounts/templates/accounts/roles/list.html:match 13
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 28
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/list.html:match
+#: 22
+msgid "Ver detalhes"
+msgstr "View details"
+
+#: C:/clinicplus/clinic/templates/clinic/index.html:match 3
+msgid "Ver painel operacional"
+msgstr "View operations panel"
+
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 47
+msgid "Visão rápida da equipa principal desta unidade."
+msgstr "A quick view of the team centered on this branch."
+
+#: C:/clinicplus/accounts/templates/accounts/shared/form.html:match 1
+#: C:/clinicplus/accounts/templates/accounts/shared/includes/form_content.html:match
+#: 10
+msgid "Voltar"
+msgstr "Back"
+
+#: C:/clinicplus/accounts/forms.py:line 272
+#: C:/clinicplus/accounts/models.py:line 83
+#: C:/clinicplus/accounts/templates/accounts/organization/branches/includes/detail_content.html:match
+#: 31
+msgid "Website"
+msgstr "Website"
+
+#: C:/clinicplus/accounts/forms.py:line 296
+msgid "Ícone pequeno para separadores do navegador e atalhos."
+msgstr "Small icon for browser tabs and shortcuts."
+
+#: C:/clinicplus/accounts/templates/accounts/users/list.html:match 19
+#: C:/clinicplus/accounts/templates/accounts/users/includes/detail_content.html:match
+#: 16
+msgid "Último acesso"
+msgstr "Last access"

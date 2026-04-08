@@ -3,8 +3,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="description" content="{% ui 'Clinic Plus, painel operacional em estilo Material Dashboard.' 'Clinic Plus, operational dashboard in a Material Dashboard style.' %}">
-<link rel="apple-touch-icon" sizes="76x76" href="{% static "assets/img/apple-icon.png" %}">
-<link rel="icon" type="image/png" href="{% static "assets/img/favicon.png" %}">
+<link rel="apple-touch-icon" sizes="76x76" href="{% if current_branch and current_branch.logo %}{{ current_branch.logo.url }}{% else %}{% static "assets/img/apple-icon.png" %}{% endif %}">
+<link rel="icon" type="image/png" href="{% if current_branch and current_branch.favicon %}{{ current_branch.favicon.url }}{% else %}{% static "assets/img/favicon.png" %}{% endif %}">
 
 <title>{{ meta_title|default:"Clinic Plus" }}</title>
 

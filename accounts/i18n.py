@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.utils.functional import lazy
-from django.utils.translation import get_language
+from django.utils.translation import get_language, gettext
 
 
 def get_supported_languages() -> set[str]:
@@ -13,11 +13,14 @@ def normalize_language(language_code: str | None) -> str:
     return settings.LANGUAGE_CODE
 
 
-def ui_text_active(portuguese: str, english: str) -> str:
+def translate_catalog(portuguese: str, english: str | None = None) -> str:
+    translated = gettext(portuguese)
     language_code = normalize_language(get_language())
-    if language_code == "en":
+
+    if english and language_code == "en" and translated == portuguese:
         return english
-    return portuguese
+
+    return translated
 
 
-translate_pair = lazy(ui_text_active, str)
+translate_pair = lazy(translate_catalog, str)

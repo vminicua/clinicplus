@@ -78,17 +78,6 @@
           </form>
         </div>
       </div>
-
-      <div class="clinic-user-pill">
-        <span class="clinic-avatar">{{ greeting_name|first|upper }}</span>
-        <div>
-          <div class="text-sm font-weight-bold">{{ greeting_name }}</div>
-          {% if current_branch %}
-            <div class="text-xs text-secondary">{{ current_branch.name }}</div>
-          {% endif %}
-        </div>
-      </div>
-
       <a href="{% url 'clinic:logout' %}" class="btn btn-sm btn-outline-dark mb-0">
         <i class="material-symbols-rounded text-sm me-1">logout</i>
         {% ui "Sair" "Logout" %}

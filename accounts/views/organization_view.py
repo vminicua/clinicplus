@@ -111,7 +111,7 @@ class BranchCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, Crea
         context["submit_label"] = ui_text(self.request, "Guardar sucursal", "Save branch")
         context["cancel_url"] = reverse("accounts:branch_list")
         context["form_mode"] = "branch"
-        context["wide_fields"] = {"address", "assigned_users"}
+        context["wide_fields"] = {"address", "description", "assigned_users"}
         return context
 
     def get_success_message(self) -> str:
@@ -150,7 +150,7 @@ class BranchUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, Upda
         context["submit_label"] = ui_text(self.request, "Actualizar sucursal", "Update branch")
         context["cancel_url"] = reverse("accounts:branch_detail", args=[self.object.pk])
         context["form_mode"] = "branch"
-        context["wide_fields"] = {"address", "assigned_users"}
+        context["wide_fields"] = {"address", "description", "assigned_users"}
         return context
 
     def get_success_message(self) -> str:

@@ -237,19 +237,43 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
         fields = [
             "name",
             "code",
+            "legal_name",
+            "nuit",
+            "logo",
+            "favicon",
             "city",
+            "province",
+            "country",
+            "postal_code",
             "address",
             "phone",
             "email",
+            "website",
+            "manager_name",
+            "manager_phone",
+            "manager_email",
+            "description",
             "is_active",
         ]
         labels = {
             "name": tr("Nome da sucursal", "Branch name"),
             "code": tr("Código", "Code"),
+            "legal_name": tr("Nome legal", "Legal name"),
+            "nuit": tr("NUIT", "Tax ID"),
+            "logo": tr("Logotipo", "Logo"),
+            "favicon": tr("Favicon", "Favicon"),
             "city": tr("Cidade", "City"),
+            "province": tr("Província / estado", "Province / state"),
+            "country": tr("País", "Country"),
+            "postal_code": tr("Código postal", "Postal code"),
             "address": tr("Endereço", "Address"),
             "phone": tr("Telefone", "Phone"),
             "email": "Email",
+            "website": tr("Website", "Website"),
+            "manager_name": tr("Responsável", "Manager"),
+            "manager_phone": tr("Telefone do responsável", "Manager phone"),
+            "manager_email": tr("Email do responsável", "Manager email"),
+            "description": tr("Descrição", "Description"),
             "is_active": tr("Activa", "Active"),
         }
         help_texts = {
@@ -257,10 +281,58 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
                 "Use um código curto para identificar a sucursal internamente.",
                 "Use a short code to identify the branch internally.",
             ),
+            "legal_name": tr(
+                "Opcional. Preencha se a razão social for diferente do nome público da sucursal.",
+                "Optional. Fill this when the legal entity name differs from the branch display name.",
+            ),
+            "nuit": tr(
+                "Identificador fiscal da unidade. Guardamos apenas números.",
+                "Fiscal identifier for this branch. We store digits only.",
+            ),
+            "logo": tr(
+                "Imagem principal usada na identidade visual desta sucursal.",
+                "Primary image used in this branch's brand identity.",
+            ),
+            "favicon": tr(
+                "Ícone pequeno para separadores do navegador e atalhos.",
+                "Small icon for browser tabs and shortcuts.",
+            ),
             "city": tr("Cidade principal desta unidade.", "Main city for this branch."),
+            "province": tr(
+                "Província, estado ou região administrativa da unidade.",
+                "Province, state, or administrative region for this branch.",
+            ),
+            "country": tr(
+                "País onde esta sucursal opera. O padrão sugerido é Moçambique.",
+                "Country where this branch operates. Mozambique is the suggested default.",
+            ),
+            "postal_code": tr(
+                "Opcional. Útil para documentação, facturação e logística.",
+                "Optional. Useful for documentation, billing, and logistics.",
+            ),
             "address": tr(
                 "Morada física ou referência da unidade.",
                 "Physical address or a location reference for this branch.",
+            ),
+            "website": tr(
+                "Link público desta unidade, se existir.",
+                "Public website for this branch, if one exists.",
+            ),
+            "manager_name": tr(
+                "Pessoa de contacto principal para esta sucursal.",
+                "Main point of contact for this branch.",
+            ),
+            "manager_phone": tr(
+                "Contacto directo do responsável local.",
+                "Direct contact number for the local manager.",
+            ),
+            "manager_email": tr(
+                "Email institucional do responsável local.",
+                "Institutional email for the local manager.",
+            ),
+            "description": tr(
+                "Use este campo para observações operacionais, horário, especialização ou notas internas.",
+                "Use this field for operational notes, opening hours, specialization, or internal remarks.",
             ),
         }
 
@@ -277,6 +349,48 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
             self.fields["assigned_users"].initial = visible_users_queryset().filter(
                 profile__assigned_branches=self.instance
             )
+
+        autocomplete_map = {
+            "name": "section-branch organization",
+            "code": "off",
+            "legal_name": "section-branch organization",
+            "nuit": "off",
+            "city": "section-branch address-level2",
+            "province": "section-branch address-level1",
+            "country": "section-branch country-name",
+            "postal_code": "section-branch postal-code",
+            "address": "section-branch street-address",
+            "phone": "section-branch tel",
+            "email": "section-branch email",
+            "website": "section-branch url",
+            "manager_name": "section-branch name",
+            "manager_phone": "section-branch tel-national",
+            "manager_email": "section-branch email",
+            "description": "off",
+        }
+
+        for field_name, autocomplete_value in autocomplete_map.items():
+            if field_name not in self.fields:
+                continue
+            self.fields[field_name].widget.attrs["autocomplete"] = autocomplete_value
+            self.fields[field_name].widget.attrs["data-lpignore"] = "true"
+            self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"
+
+        for image_field in ("logo", "favicon"):
+            self.fields[image_field].widget.attrs["accept"] = "image/*"
+
+    def clean_nuit(self):
+        nuit = re.sub(r"\D", "", (self.cleaned_data.get("nuit") or ""))
+        if not nuit:
+            return None
+        if len(nuit) != 9:
+            raise forms.ValidationError(
+                tr(
+                    "O NUIT deve ter 9 dígitos.",
+                    "The tax ID must have 9 digits.",
+                )
+            )
+        return nuit
 
     @transaction.atomic
     def save(self, commit=True):

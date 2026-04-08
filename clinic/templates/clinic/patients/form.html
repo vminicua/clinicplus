@@ -1,0 +1,33 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row justify-content-center">
+      <div class="col-xl-10">
+        <div class="card clinic-form-card">
+          <div class="card-header p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+              <div>
+                <p class="text-sm text-secondary mb-1">{{ page_title }}</p>
+                <h3 class="mb-1">{{ form_title }}</h3>
+                <p class="text-secondary mb-0">{{ form_description }}</p>
+              </div>
+
+              <a href="{{ cancel_url }}" class="btn btn-outline-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">arrow_back</i>
+                {% ui "Voltar" "Back" %}
+              </a>
+            </div>
+          </div>
+
+          <div class="card-body p-4 pt-0">
+            {% include "clinic/patients/includes/form_content.html" %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

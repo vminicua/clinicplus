@@ -1,0 +1,180 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">groups</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Total de pacientes" "Total patients" %}</p>
+              <h4 class="mb-0">{{ total_patients }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">history</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Com histórico" "With history" %}</p>
+              <h4 class="mb-0">{{ patients_with_history }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">vaccines</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Com alergias" "With allergies" %}</p>
+              <h4 class="mb-0">{{ patients_with_allergies }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">person_add</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Novos este mês" "New this month" %}</p>
+              <h4 class="mb-0">{{ new_patients_this_month }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{% ui "Lista de pacientes" "Patient list" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Gerencie o cadastro, contactos, documentos e entrada rápida para a ficha clínica." "Manage registration data, contacts, documents, and quick entry to the clinical record." %}</p>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="clinic-pill-group">
+              <a href="#" class="clinic-pill active" data-table-pill="patients-table" data-column="4" data-value="">{% ui "Todos" "All" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="4" data-value="Masculino">{% ui "Masculino" "Male" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="4" data-value="Feminino">{% ui "Feminino" "Female" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="4" data-value="Outro">{% ui "Outro" "Other" %}</a>
+            </div>
+            {% if perms.clinic.add_paciente %}
+              <a href="{% url 'clinic:patient_create' %}" data-modal-url="{% url 'clinic:patient_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">person_add</i>
+                {% ui "Novo paciente" "New patient" %}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        <div class="clinic-datatable-shell">
+          <table id="patients-table" data-page-length="10" data-export-title="{% ui 'Pacientes Clinic Plus' 'Clinic Plus Patients' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+            <thead>
+              <tr>
+                <th class="ps-4">{% ui "Paciente" "Patient" %}</th>
+                <th>{% ui "Documento" "Document" %}</th>
+                <th>{% ui "Contactos" "Contacts" %}</th>
+                <th>{% ui "Unidade" "Unit" %}</th>
+                <th>{% ui "Género" "Gender" %}</th>
+                <th>{% ui "Histórico" "History" %}</th>
+                <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for patient in patients %}
+                <tr>
+                  <td class="ps-4">
+                    <div>
+                      <h6 class="mb-0 text-sm">{{ patient.full_name }}</h6>
+                      <p class="text-xs text-secondary mb-0">
+                        {% if patient.date_of_birth %}{{ patient.age }} {% ui "anos" "years" %} · {% endif %}
+                        {% if patient.user.email %}{{ patient.user.email }}{% else %}{% ui "Sem email registado" "No email registered" %}{% endif %}
+                      </p>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="text-sm">{{ patient.cpf }}</span>
+                    <span class="text-xs text-secondary d-block">{{ patient.date_of_birth|date:"d/m/Y" }}</span>
+                  </td>
+                  <td>
+                    <span class="text-sm d-block">{{ patient.phone }}</span>
+                    <span class="text-xs text-secondary">
+                      {% ui "Emergência" "Emergency" %}: {{ patient.emergency_phone }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="text-sm d-block">{{ patient.hospital.name }}</span>
+                    <span class="text-xs text-secondary">
+                      {% if patient.city %}{{ patient.city }}{% else %}{% ui "Sem cidade" "No city" %}{% endif %}
+                      {% if patient.state %} · {{ patient.state }}{% endif %}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="text-sm">{{ patient.get_gender_display }}</span>
+                  </td>
+                  <td>
+                    <span class="text-sm d-block">{{ patient.total_appointments }} {% ui "agendamentos" "appointments" %}</span>
+                    <span class="text-xs text-secondary d-block">{{ patient.total_consultations }} {% ui "consultas" "consultations" %}</span>
+                    <span class="text-xs text-secondary">
+                      {% if patient.last_appointment %}
+                        {% ui "Último" "Last" %}: {{ patient.last_appointment|date:"d/m/Y" }}
+                      {% else %}
+                        {% ui "Sem histórico ainda" "No history yet" %}
+                      {% endif %}
+                    </span>
+                  </td>
+                  <td class="text-end pe-4">
+                    <div class="clinic-action-stack">
+                      {% if perms.clinic.view_paciente %}
+                        <a href="{% url 'clinic:patient_detail' patient.pk %}" data-modal-url="{% url 'clinic:patient_detail' patient.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="{% ui 'Ver detalhes' 'View details' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
+                        </a>
+                      {% endif %}
+                      {% if perms.clinic.view_consulta %}
+                        <a href="{% url 'clinic:patient_history_detail' patient.pk %}" class="clinic-action-btn is-info" title="{% ui 'Abrir histórico' 'Open history' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">history</i>
+                        </a>
+                      {% endif %}
+                      {% if perms.clinic.change_paciente %}
+                        <a href="{% url 'clinic:patient_update' patient.pk %}" data-modal-url="{% url 'clinic:patient_update' patient.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-info" title="{% ui 'Editar paciente' 'Edit patient' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                        </a>
+                      {% endif %}
+                      {% if perms.clinic.delete_paciente and not patient.total_appointments %}
+                        <a href="#" data-confirm-action data-action-url="{% url 'clinic:patient_delete' patient.pk %}" data-confirm-title="{% ui 'Eliminar paciente' 'Delete patient' %}" data-confirm-text="{% ui 'Este paciente será removido do cadastro porque ainda não possui histórico clínico associado.' 'This patient will be removed from the registry because no linked clinical history exists yet.' %}" data-confirm-button="{% ui 'Eliminar' 'Delete' %}" data-confirm-icon="warning" class="clinic-action-btn is-warning" title="{% ui 'Eliminar paciente' 'Delete patient' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">delete</i>
+                        </a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

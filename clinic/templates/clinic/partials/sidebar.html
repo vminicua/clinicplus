@@ -23,6 +23,35 @@
           <span class="nav-link-text ms-2">{% ui "Dashboard" "Dashboard" %}</span>
         </a>
       </li>
+      {% if perms.clinic.view_paciente or perms.clinic.add_paciente or perms.clinic.change_paciente or perms.clinic.delete_paciente or perms.clinic.view_consulta %}
+        <li class="nav-item">
+          <a class="nav-link clinic-nav-parent {% if segment == 'patients' or segment == 'patient_history' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-patients" role="button" aria-expanded="{% if segment == 'patients' or segment == 'patient_history' %}true{% else %}false{% endif %}" aria-controls="sidebar-patients">
+            <span class="d-flex align-items-center">
+              <i class="material-symbols-rounded opacity-10">groups</i>
+              <span class="nav-link-text ms-2">{% ui "Pacientes" "Patients" %}</span>
+            </span>
+            <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
+          </a>
+          <div class="collapse {% if segment == 'patients' or segment == 'patient_history' %}show{% endif %}" id="sidebar-patients">
+            <ul class="nav flex-column clinic-submenu">
+              {% if perms.clinic.view_paciente %}
+                <li class="nav-item">
+                  <a class="nav-link {% if segment == 'patients' %}active{% endif %}" href="{% url 'clinic:patient_list' %}">
+                    <span class="nav-link-text">{% ui "Lista & CRUD" "List & CRUD" %}</span>
+                  </a>
+                </li>
+              {% endif %}
+              {% if perms.clinic.view_consulta %}
+                <li class="nav-item">
+                  <a class="nav-link {% if segment == 'patient_history' %}active{% endif %}" href="{% url 'clinic:patient_history_list' %}">
+                    <span class="nav-link-text">{% ui "Histórico do paciente" "Patient history" %}</span>
+                  </a>
+                </li>
+              {% endif %}
+            </ul>
+          </div>
+        </li>
+      {% endif %}
       <li class="nav-item">
         <a class="nav-link clinic-nav-parent {% if segment == 'branches' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-organization" role="button" aria-expanded="{% if segment == 'branches' %}true{% else %}false{% endif %}" aria-controls="sidebar-organization">
           <span class="d-flex align-items-center">

@@ -1,0 +1,175 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card clinic-detail-card">
+          <div class="card-header p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+              <div>
+                <p class="text-sm text-secondary mb-1">{% ui "Histórico clínico" "Clinical history" %}</p>
+                <h3 class="mb-1">{{ object.full_name }}</h3>
+                <p class="text-secondary mb-0">
+                  {{ object.cpf }}
+                  {% if object.date_of_birth %} · {{ object.age }} {% ui "anos" "years" %}{% endif %}
+                  {% if object.hospital %} · {{ object.hospital.name }}{% endif %}
+                </p>
+              </div>
+
+              <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ cancel_url }}" class="btn btn-outline-dark mb-0">
+                  <i class="material-symbols-rounded text-sm me-1">arrow_back</i>
+                  {% ui "Voltar" "Back" %}
+                </a>
+                {% if perms.clinic.view_paciente %}
+                  <a href="{% url 'clinic:patient_detail' object.pk %}" data-modal-url="{% url 'clinic:patient_detail' object.pk %}" data-modal-size="modal-xl" class="btn btn-outline-dark mb-0">{% ui "Ver ficha" "View record" %}</a>
+                {% endif %}
+                {% if perms.clinic.change_paciente %}
+                  <a href="{% url 'clinic:patient_update' object.pk %}" data-modal-url="{% url 'clinic:patient_update' object.pk %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">{% ui "Editar paciente" "Edit patient" %}</a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-8 mb-4 mb-lg-0">
+        <div class="card clinic-detail-card h-100">
+          <div class="card-header p-4 border-0">
+            <h5 class="mb-1">{% ui "Linha do tempo do paciente" "Patient timeline" %}</h5>
+            <p class="text-secondary mb-0">{% ui "Todos os registos de agendamento, consulta, diagnóstico e prescrição conhecidos." "All known appointment, visit, diagnosis, and prescription records." %}</p>
+          </div>
+          <div class="card-body pt-0">
+            {% for entry in history_entries %}
+              <div class="card border shadow-none mb-3">
+                <div class="card-body p-3">
+                  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                      <h6 class="mb-1">{{ entry.data|date:"d/m/Y" }} · {{ entry.hora|time:"H:i" }}</h6>
+                      <p class="text-sm text-secondary mb-0">
+                        {{ entry.medico }}
+                        {% if entry.medico.especialidade %} · {{ entry.medico.especialidade.name }}{% endif %}
+                      </p>
+                    </div>
+                    {% if entry.status == "concluido" %}
+                      <span class="clinic-status clinic-status-success">{{ entry.get_status_display }}</span>
+                    {% elif entry.status == "cancelado" or entry.status == "nao_compareceu" %}
+                      <span class="clinic-status clinic-status-muted">{{ entry.get_status_display }}</span>
+                    {% else %}
+                      <span class="clinic-status clinic-status-info">{{ entry.get_status_display }}</span>
+                    {% endif %}
+                  </div>
+
+                  <div class="clinic-detail-grid">
+                    <div class="clinic-detail-item full-width">
+                      <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Motivo" "Reason" %}</p>
+                      <h6 class="mb-0">{{ entry.motivo }}</h6>
+                    </div>
+
+                    <div class="clinic-detail-item full-width">
+                      <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Notas do agendamento" "Appointment notes" %}</p>
+                      <h6 class="mb-0">{% if entry.notas %}{{ entry.notas|linebreaksbr }}{% else %}{% ui "Sem notas adicionais." "No additional notes." %}{% endif %}</h6>
+                    </div>
+                  </div>
+
+                  {% if entry.consulta %}
+                    <hr>
+                    <div class="clinic-detail-grid">
+                      <div class="clinic-detail-item full-width">
+                        <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Diagnóstico" "Diagnosis" %}</p>
+                        <h6 class="mb-0">{{ entry.consulta.diagnostico|linebreaksbr }}</h6>
+                      </div>
+
+                      <div class="clinic-detail-item full-width">
+                        <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Prescrição" "Prescription" %}</p>
+                        <h6 class="mb-0">{{ entry.consulta.prescricao|linebreaksbr }}</h6>
+                      </div>
+
+                      <div class="clinic-detail-item full-width">
+                        <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Notas médicas" "Medical notes" %}</p>
+                        <h6 class="mb-0">{% if entry.consulta.notas_medico %}{{ entry.consulta.notas_medico|linebreaksbr }}{% else %}{% ui "Sem notas médicas adicionais." "No additional medical notes." %}{% endif %}</h6>
+                      </div>
+                    </div>
+                  {% else %}
+                    <hr>
+                    <p class="text-sm text-secondary mb-0">{% ui "Ainda não existe consulta finalizada associada a este agendamento." "There is no completed consultation linked to this appointment yet." %}</p>
+                  {% endif %}
+                </div>
+              </div>
+            {% empty %}
+              <div class="text-center py-5">
+                <i class="material-symbols-rounded text-secondary mb-3" style="font-size: 3rem;">history_toggle_off</i>
+                <h6 class="mb-1">{% ui "Sem histórico registado" "No history recorded" %}</h6>
+                <p class="text-secondary mb-0">{% ui "Assim que este paciente tiver agendamentos ou consultas, eles aparecerão aqui." "As soon as this patient has appointments or visits, they will appear here." %}</p>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card clinic-detail-card mb-4">
+          <div class="card-header p-4 border-0">
+            <h5 class="mb-1">{% ui "Resumo clínico" "Clinical summary" %}</h5>
+            <p class="text-secondary mb-0">{% ui "Indicadores principais e dados permanentes do paciente." "Main indicators and persistent patient data." %}</p>
+          </div>
+          <div class="card-body pt-0">
+            <div class="clinic-detail-item mb-3">
+              <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Agendamentos" "Appointments" %}</p>
+              <h4 class="mb-0">{{ object.total_appointments }}</h4>
+            </div>
+            <div class="clinic-detail-item mb-3">
+              <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Consultas concluídas" "Completed consultations" %}</p>
+              <h4 class="mb-0">{{ object.total_consultations }}</h4>
+            </div>
+            <div class="clinic-detail-item mb-3">
+              <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Agendamentos concluídos" "Completed appointments" %}</p>
+              <h4 class="mb-0">{{ completed_appointments }}</h4>
+            </div>
+            <div class="clinic-detail-item">
+              <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Última consulta" "Latest consultation" %}</p>
+              <h6 class="mb-0">
+                {% if latest_consultation %}
+                  {{ latest_consultation.data|date:"d/m/Y" }} · {{ latest_consultation.hora|time:"H:i" }}
+                {% else %}
+                  {% ui "Sem consulta concluída" "No completed consultation" %}
+                {% endif %}
+              </h6>
+            </div>
+          </div>
+        </div>
+
+        <div class="card clinic-detail-card">
+          <div class="card-header p-4 border-0">
+            <h5 class="mb-1">{% ui "Ficha base" "Base record" %}</h5>
+            <p class="text-secondary mb-0">{% ui "Dados úteis para contexto clínico e contacto." "Useful data for clinical context and contact." %}</p>
+          </div>
+          <div class="card-body pt-0">
+            <div class="clinic-detail-item mb-3">
+              <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Telefone" "Phone" %}</p>
+              <h6 class="mb-0">{{ object.phone }}</h6>
+            </div>
+            <div class="clinic-detail-item mb-3">
+              <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Contacto de emergência" "Emergency contact" %}</p>
+              <h6 class="mb-0">{{ object.emergency_contact }} · {{ object.emergency_phone }}</h6>
+            </div>
+            <div class="clinic-detail-item mb-3">
+              <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Alergias" "Allergies" %}</p>
+              <h6 class="mb-0">{% if object.allergies %}{{ object.allergies|linebreaksbr }}{% else %}{% ui "Sem alergias registadas" "No allergies recorded" %}{% endif %}</h6>
+            </div>
+            <div class="clinic-detail-item">
+              <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Histórico clínico base" "Baseline medical history" %}</p>
+              <h6 class="mb-0">{% if object.medical_history %}{{ object.medical_history|linebreaksbr }}{% else %}{% ui "Sem histórico clínico base" "No baseline medical history" %}{% endif %}</h6>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

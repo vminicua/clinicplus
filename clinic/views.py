@@ -1,11 +1,16 @@
 import logging
 
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.db import DatabaseError
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.db import DatabaseError, transaction
+from django.db.models import Count, Max, Prefetch
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.views import View
+from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from accounts.ui import (
     BRANCH_SESSION_KEY,
@@ -14,9 +19,36 @@ from accounts.ui import (
     get_system_default_language,
     ui_text,
 )
-from clinic.models import Hospital, Medico, Paciente, Agendamento, Consulta
+from accounts.views.base_view import AppPermissionMixin, ClinicPageMixin, ModalDetailMixin, ModalFormMixin
+from clinic.forms import PatientForm
+from clinic.models import Agendamento, Consulta, Paciente
+
 
 logger = logging.getLogger(__name__)
+
+
+def patient_queryset():
+    return Paciente.objects.select_related("user", "hospital").annotate(
+        total_appointments=Count("agendamentos", distinct=True),
+        total_consultations=Count("agendamentos__consulta", distinct=True),
+        last_appointment=Max("agendamentos__data"),
+        last_consultation_at=Max("agendamentos__consulta__data_consulta"),
+    )
+
+
+def patient_history_queryset():
+    history_entries = Prefetch(
+        "agendamentos",
+        queryset=Agendamento.objects.select_related(
+            "medico__user",
+            "medico__especialidade",
+            "consulta",
+            "hospital",
+        ).order_by("-data", "-hora"),
+        to_attr="history_entries",
+    )
+    return patient_queryset().prefetch_related(history_entries)
+
 
 def custom_login(request):
     """Tela de login personalizada para a aplicação Clinic"""
@@ -85,6 +117,7 @@ def custom_login(request):
 
     return render(request, 'clinic/login.html', context)
 
+
 def custom_logout(request):
     """Logout personalizado"""
     logout(request)
@@ -93,6 +126,7 @@ def custom_logout(request):
         ui_text(request, 'Sessão terminada com sucesso.', 'You have been signed out successfully.'),
     )
     return redirect('clinic:login')
+
 
 @login_required(login_url='clinic:login')
 def dashboard(request):
@@ -246,4 +280,248 @@ def dashboard(request):
     }
 
     return render(request, 'clinic/index.html', context)
+
+
+class PatientListView(AppPermissionMixin, ClinicPageMixin, ListView):
+    template_name = "clinic/patients/list.html"
+    context_object_name = "patients"
+    permission_required = "clinic.view_paciente"
+    segment = "patients"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Pacientes", "Patients")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Cadastro central de pacientes com acesso rápido à ficha, edição e histórico clínico.",
+            "Central patient registry with quick access to records, editing, and clinical history.",
+        )
+
+    def get_queryset(self):
+        return patient_queryset().order_by("user__first_name", "user__last_name", "cpf")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_queryset = patient_queryset()
+        month_start = timezone.localdate().replace(day=1)
+        context["total_patients"] = base_queryset.count()
+        context["patients_with_history"] = base_queryset.filter(agendamentos__isnull=False).distinct().count()
+        context["patients_with_allergies"] = base_queryset.exclude(allergies="").count()
+        context["new_patients_this_month"] = base_queryset.filter(created_at__date__gte=month_start).count()
+        return context
+
+
+class PatientDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, DetailView):
+    template_name = "clinic/patients/detail.html"
+    permission_required = "clinic.view_paciente"
+    segment = "patients"
+    modal_size = "modal-xl"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Detalhes do paciente", "Patient details")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Resumo completo da ficha, contactos e sinais clínicos registados.",
+            "Complete overview of the record, contacts, and registered clinical notes.",
+        )
+
+    def get_queryset(self):
+        return patient_history_queryset()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        history_entries = list(getattr(self.object, "history_entries", []))
+        latest_consultation = next(
+            (entry for entry in history_entries if getattr(entry, "consulta", None)),
+            None,
+        )
+        context["detail_partial"] = "clinic/patients/includes/detail_content.html"
+        context["modal_heading"] = self.object.full_name
+        context["modal_description"] = ui_text(
+            self.request,
+            "Dados pessoais, emergência, alergias e resumo do histórico mais recente.",
+            "Personal data, emergency information, allergies, and a summary of the most recent history.",
+        )
+        context["recent_history_entries"] = history_entries[:4]
+        context["latest_consultation"] = latest_consultation
+        context["can_delete_patient"] = not self.object.total_appointments
+        return context
+
+
+class PatientCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
+    model = Paciente
+    form_class = PatientForm
+    template_name = "clinic/patients/form.html"
+    modal_template_name = "clinic/patients/modal_form.html"
+    success_url = reverse_lazy("clinic:patient_list")
+    permission_required = "clinic.add_paciente"
+    segment = "patients"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo paciente", "New patient")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Registe dados pessoais, contacto e informação clínica inicial do paciente.",
+            "Register personal data, contact details, and the patient's initial clinical information.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar paciente", "Create patient")
+        context["form_description"] = ui_text(
+            self.request,
+            "Preencha a ficha base do paciente para começar a acompanhar atendimentos e histórico.",
+            "Fill in the patient's base record to start tracking visits and history.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar paciente", "Save patient")
+        context["cancel_url"] = reverse("clinic:patient_list")
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Paciente criado com sucesso.", "Patient created successfully.")
+
+
+class PatientUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
+    form_class = PatientForm
+    template_name = "clinic/patients/form.html"
+    modal_template_name = "clinic/patients/modal_form.html"
+    success_url = reverse_lazy("clinic:patient_list")
+    permission_required = "clinic.change_paciente"
+    segment = "patients"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar paciente", "Edit patient")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize os dados cadastrais e o resumo clínico do paciente seleccionado.",
+            "Update the selected patient's registration data and clinical summary.",
+        )
+
+    def get_queryset(self):
+        return patient_queryset()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar paciente", "Edit patient")
+        context["form_description"] = ui_text(
+            self.request,
+            "Revise contactos, documentos e observações clínicas sempre que houver mudanças.",
+            "Review contacts, documents, and clinical notes whenever there are changes.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar paciente", "Update patient")
+        context["cancel_url"] = reverse("clinic:patient_detail", args=[self.object.pk])
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Paciente actualizado com sucesso.", "Patient updated successfully.")
+
+
+class PatientDeleteView(AppPermissionMixin, View):
+    permission_required = "clinic.delete_paciente"
+    login_url = "clinic:login"
+
+    @transaction.atomic
+    def post(self, request, pk):
+        patient = get_object_or_404(patient_queryset(), pk=pk)
+
+        if patient.total_appointments:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": ui_text(
+                        request,
+                        "Não é possível eliminar um paciente com agendamentos ou histórico clínico associado. Edite a ficha para manter a rastreabilidade.",
+                        "You cannot delete a patient who has linked appointments or clinical history. Edit the record to preserve traceability.",
+                    ),
+                },
+                status=400,
+            )
+
+        patient_name = patient.full_name
+        patient.user.delete()
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": ui_text(
+                    request,
+                    "Paciente %(patient)s eliminado com sucesso.",
+                    "Patient %(patient)s deleted successfully.",
+                )
+                % {"patient": patient_name},
+                "redirect_url": reverse("clinic:patient_list"),
+            }
+        )
+
+
+class PatientHistoryListView(AppPermissionMixin, ClinicPageMixin, ListView):
+    template_name = "clinic/patients/history_list.html"
+    context_object_name = "patients"
+    permission_required = ("clinic.view_paciente", "clinic.view_consulta")
+    segment = "patient_history"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Histórico de pacientes", "Patient history")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Escolha um paciente para abrir toda a linha do tempo de consultas, notas e prescrições.",
+            "Choose a patient to open the full timeline of visits, notes, and prescriptions.",
+        )
+
+    def get_queryset(self):
+        return (
+            patient_queryset()
+            .filter(agendamentos__isnull=False)
+            .distinct()
+            .order_by("-last_consultation_at", "-last_appointment", "user__first_name", "user__last_name")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_queryset = patient_queryset()
+        context["patients_with_history"] = self.object_list.count()
+        context["patients_with_consultations"] = base_queryset.filter(agendamentos__consulta__isnull=False).distinct().count()
+        context["total_consultations"] = Consulta.objects.count()
+        context["appointments_today"] = Agendamento.objects.filter(data=timezone.localdate()).count()
+        return context
+
+
+class PatientHistoryDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
+    template_name = "clinic/patients/history_detail.html"
+    permission_required = ("clinic.view_paciente", "clinic.view_consulta")
+    segment = "patient_history"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Histórico do paciente", "Patient history")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Linha do tempo clínica completa com consultas, prescrições e notas associadas.",
+            "Complete clinical timeline with visits, prescriptions, and associated notes.",
+        )
+
+    def get_queryset(self):
+        return patient_history_queryset()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        history_entries = list(getattr(self.object, "history_entries", []))
+        consultation_entries = [entry for entry in history_entries if getattr(entry, "consulta", None)]
+        latest_consultation = consultation_entries[0] if consultation_entries else None
+        context["history_entries"] = history_entries
+        context["consultation_entries"] = consultation_entries
+        context["latest_consultation"] = latest_consultation
+        context["completed_appointments"] = sum(1 for entry in history_entries if entry.status == "concluido")
+        context["cancel_url"] = reverse("clinic:patient_history_list")
+        return context
 

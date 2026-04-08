@@ -1,0 +1,82 @@
+{% load ui_extras %}
+<form method="post" action="{{ request.path }}" class="{% if is_modal_request %}js-modal-form{% endif %}" autocomplete="off" data-swal-submit data-processing-title="{% ui 'Processando...' 'Processing...' %}" data-processing-text="{% ui 'Estamos a guardar a ficha do paciente.' 'We are saving the patient record.' %}">
+  {% csrf_token %}
+  {% if is_modal_request %}
+    <input type="hidden" name="modal" value="1">
+  {% endif %}
+
+  {% for hidden_field in form.hidden_fields %}
+    {{ hidden_field }}
+  {% endfor %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger text-white mb-4">
+      {% for error in form.non_field_errors %}
+        <div>{{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="js-wizard">
+    <div class="clinic-wizard-nav">
+      <div class="clinic-wizard-pill" data-step-target="0">
+        <div class="text-xs text-secondary text-uppercase">{% ui "Passo 1" "Step 1" %}</div>
+        <strong>{% ui "Identificação" "Identification" %}</strong>
+      </div>
+      <div class="clinic-wizard-pill" data-step-target="1">
+        <div class="text-xs text-secondary text-uppercase">{% ui "Passo 2" "Step 2" %}</div>
+        <strong>{% ui "Contactos" "Contacts" %}</strong>
+      </div>
+      <div class="clinic-wizard-pill" data-step-target="2">
+        <div class="text-xs text-secondary text-uppercase">{% ui "Passo 3" "Step 3" %}</div>
+        <strong>{% ui "Histórico clínico" "Clinical history" %}</strong>
+      </div>
+    </div>
+
+    <div data-step-panel="0">
+      <div class="clinic-form-grid">
+        {% include "accounts/shared/includes/form_field.html" with field=form.first_name wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.last_name wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.email wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.hospital wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.cpf wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.date_of_birth wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.gender wide_fields="" %}
+      </div>
+    </div>
+
+    <div data-step-panel="1" class="d-none">
+      <div class="clinic-form-grid">
+        {% include "accounts/shared/includes/form_field.html" with field=form.phone wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.city wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.state wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.zip_code wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.emergency_contact wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.emergency_phone wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.address wide_fields="address" %}
+      </div>
+    </div>
+
+    <div data-step-panel="2" class="d-none">
+      <div class="clinic-form-grid">
+        {% include "accounts/shared/includes/form_field.html" with field=form.allergies wide_fields="allergies medical_history" %}
+        {% include "accounts/shared/includes/form_field.html" with field=form.medical_history wide_fields="allergies medical_history" %}
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-2 mt-4 flex-wrap">
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-dark mb-0" data-wizard-prev>{% ui "Voltar" "Back" %}</button>
+        <button type="button" class="btn btn-outline-dark mb-0" data-wizard-next>{% ui "Seguinte" "Next" %}</button>
+      </div>
+      <div class="d-flex gap-2">
+        {% if is_modal_request %}
+          <button type="button" class="btn btn-outline-secondary mb-0" data-bs-dismiss="modal">{% ui "Cancelar" "Cancel" %}</button>
+        {% else %}
+          <a href="{{ cancel_url }}" class="btn btn-outline-secondary mb-0">{% ui "Cancelar" "Cancel" %}</a>
+        {% endif %}
+        <button type="submit" class="btn bg-gradient-dark mb-0 d-none" data-wizard-submit>{{ submit_label }}</button>
+      </div>
+    </div>
+  </div>
+</form>

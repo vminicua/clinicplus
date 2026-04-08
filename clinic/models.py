@@ -91,6 +91,21 @@ class Paciente(models.Model):
     def __str__(self):
         return self.user.get_full_name()
 
+    @property
+    def full_name(self):
+        return self.user.get_full_name() or self.user.username
+
+    @property
+    def age(self):
+        if not self.date_of_birth:
+            return None
+
+        today = timezone.localdate()
+        years = today.year - self.date_of_birth.year
+        if (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day):
+            years -= 1
+        return years
+
 
 # Agendamentos Model
 class Agendamento(models.Model):

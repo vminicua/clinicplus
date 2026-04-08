@@ -71,7 +71,7 @@
       </div>
 
       <div class="card-body px-0 pb-0">
-        <div class="table-responsive">
+        <div class="clinic-datatable-shell">
           <table id="permissions-table" data-page-length="15" data-export-title="Permissões Clinic Plus" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
@@ -99,7 +99,7 @@
                   </td>
                   <td class="text-end pe-4">
                     <div class="clinic-action-stack">
-                      <a href="{% url 'accounts:permission_detail' permission.pk %}" class="clinic-action-btn is-muted" title="Ver detalhes">
+                      <a href="{% url 'accounts:permission_detail' permission.pk %}" data-modal-url="{% url 'accounts:permission_detail' permission.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-muted" title="Ver detalhes">
                         <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
                       </a>
                       {% if not permission|permission_is_system %}

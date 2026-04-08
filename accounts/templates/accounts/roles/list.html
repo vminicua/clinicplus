@@ -76,7 +76,7 @@
       </div>
 
       <div class="card-body px-0 pb-0">
-        <div class="table-responsive">
+        <div class="clinic-datatable-shell">
           <table id="roles-table" data-page-length="10" data-export-title="Perfis Clinic Plus" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
@@ -96,7 +96,7 @@
                   <td><span class="text-sm">{{ role.user_set.all|length }}</span></td>
                   <td class="text-end pe-4">
                     <div class="clinic-action-stack">
-                      <a href="{% url 'accounts:role_detail' role.pk %}" class="clinic-action-btn is-muted" title="Ver detalhes">
+                      <a href="{% url 'accounts:role_detail' role.pk %}" data-modal-url="{% url 'accounts:role_detail' role.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="Ver detalhes">
                         <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
                       </a>
                       <a href="{% url 'accounts:role_update' role.pk %}" data-modal-url="{% url 'accounts:role_update' role.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-info" title="Editar perfil">

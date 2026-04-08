@@ -6,7 +6,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from accounts.forms import PermissionForm
 from accounts.utils import is_system_permission
 
-from .base_view import AppPermissionMixin, ClinicPageMixin, ModalFormMixin
+from .base_view import AppPermissionMixin, ClinicPageMixin, ModalDetailMixin, ModalFormMixin
 
 
 class EditablePermissionMixin:
@@ -60,18 +60,22 @@ class PermissionListView(AppPermissionMixin, ClinicPageMixin, ListView):
         return context
 
 
-class PermissionDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
+class PermissionDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, DetailView):
     queryset = Permission.objects.select_related("content_type").prefetch_related("group_set")
     template_name = "accounts/permissions/detail.html"
     permission_required = "auth.view_permission"
     segment = "permissions"
     page_title = "Detalhes da permissão"
     page_subtitle = "Veja onde a permissão é usada e se faz parte do sistema base."
+    modal_size = "modal-lg"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["is_system_permission"] = is_system_permission(self.object)
         context["linked_roles"] = self.object.group_set.order_by("name")
+        context["detail_partial"] = "accounts/permissions/includes/detail_content.html"
+        context["modal_heading"] = self.object.name
+        context["modal_description"] = "Escopo, tipo e perfis que herdam esta permissão."
         return context
 
 

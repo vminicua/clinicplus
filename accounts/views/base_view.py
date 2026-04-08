@@ -100,3 +100,7 @@ class ModalFormMixin(ModalResponseMixin):
 
         messages.error(self.request, self.error_message)
         return self.render_to_response(self.get_context_data(form=form), status=422)
+
+
+class ModalDetailMixin(ModalResponseMixin):
+    modal_template_name = "accounts/shared/modal_detail.html"

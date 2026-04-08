@@ -8,7 +8,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from accounts.forms import UserForm
 from accounts.utils import visible_users_queryset
 
-from .base_view import AppPermissionMixin, ClinicPageMixin, ModalFormMixin
+from .base_view import AppPermissionMixin, ClinicPageMixin, ModalDetailMixin, ModalFormMixin
 
 
 User = get_user_model()
@@ -40,13 +40,21 @@ class UserListView(AppPermissionMixin, ClinicPageMixin, ListView):
         return context
 
 
-class UserDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
+class UserDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, DetailView):
     queryset = visible_users_queryset().select_related("profile").prefetch_related("groups")
     template_name = "accounts/users/detail.html"
     permission_required = "auth.view_user"
     segment = "users"
     page_title = "Detalhes do utilizador"
     page_subtitle = "Resumo do acesso e perfis atribuídos."
+    modal_size = "modal-xl"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["detail_partial"] = "accounts/users/includes/detail_content.html"
+        context["modal_heading"] = self.object.get_full_name() or self.object.username
+        context["modal_description"] = "Resumo do acesso, idioma e perfis atribuídos."
+        return context
 
 
 class UserCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):

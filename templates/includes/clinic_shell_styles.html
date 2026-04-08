@@ -200,6 +200,16 @@
     vertical-align: middle;
   }
 
+  .clinic-data-table {
+    width: 100% !important;
+    margin-bottom: 0 !important;
+  }
+
+  .clinic-data-table thead th,
+  .clinic-data-table tbody td {
+    white-space: normal;
+  }
+
   .clinic-status {
     display: inline-flex;
     align-items: center;
@@ -369,6 +379,12 @@
 
   .clinic-modal-card .modal-body {
     padding: 1.1rem 1.5rem 1.25rem;
+  }
+
+  .clinic-modal-scroll-body {
+    max-height: min(78vh, 900px);
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .clinic-modal-card .modal-footer {
@@ -542,6 +558,25 @@
     color: #0f766e;
   }
 
+  .clinic-datatable-shell {
+    width: 100%;
+    overflow: visible;
+  }
+
+  .clinic-datatable-shell .dataTables_wrapper {
+    width: 100%;
+    padding: 0 1.5rem 1.5rem;
+  }
+
+  .clinic-datatable-shell .dataTables_scroll,
+  .clinic-datatable-shell .dataTables_scrollBody {
+    overflow: visible !important;
+  }
+
+  .clinic-datatable-shell .table {
+    table-layout: auto;
+  }
+
   .dt-buttons .btn {
     border-radius: 999px !important;
     margin-right: 0.5rem;
@@ -635,6 +670,33 @@
   }
 
   @media (max-width: 991.98px) {
+    .clinic-datatable-shell .dataTables_wrapper {
+      padding: 0 1rem 1rem;
+    }
+
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dt-buttons,
+    .dataTables_wrapper .dataTables_paginate {
+      width: 100%;
+    }
+
+    .dataTables_wrapper .dataTables_filter label,
+    .dataTables_wrapper .dataTables_length label {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .dataTables_wrapper .dataTables_filter input,
+    .dataTables_wrapper .dataTables_length select {
+      width: 100%;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .pagination {
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
     .clinic-navbar-actions {
       gap: 0.75rem;
       width: 100%;

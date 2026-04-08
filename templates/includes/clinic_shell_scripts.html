@@ -205,7 +205,7 @@
               },
             });
             const html = await response.text();
-            modalElement.querySelector('.modal-dialog').className = `modal-dialog modal-dialog-centered ${modalSize}`;
+            modalElement.querySelector('.modal-dialog').className = `modal-dialog modal-dialog-centered modal-dialog-scrollable ${modalSize}`;
             modalElement.querySelector('.modal-content').innerHTML = html;
             modalInstance.show();
             Swal.close();
@@ -319,6 +319,7 @@
           responsive: false,
           autoWidth: false,
           pagingType: 'simple_numbers',
+          info: true,
           language: {
             search: 'Pesquisar:',
             lengthMenu: 'Mostrar _MENU_ registos',
@@ -327,10 +328,10 @@
             infoFiltered: '(filtrado de _MAX_ registos)',
             zeroRecords: 'Nenhum registo encontrado',
             paginate: {
-              first: 'Primeiro',
-              previous: 'Anterior',
-              next: 'Seguinte',
-              last: 'Último'
+              first: '<<',
+              previous: '<',
+              next: '>',
+              last: '>>'
             }
           },
           dom:
@@ -373,7 +374,13 @@
                 columns: ':not(.not-export)'
               }
             }
-          ]
+          ],
+          initComplete: function() {
+            const wrapper = tableElement.closest('.dataTables_wrapper');
+            if (wrapper) {
+              wrapper.classList.add('clinic-datatable-ready');
+            }
+          }
         });
 
         const tableId = tableElement.id;

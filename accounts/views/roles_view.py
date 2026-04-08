@@ -6,7 +6,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from accounts.forms import RoleForm
 from accounts.utils import visible_users_queryset
 
-from .base_view import AppPermissionMixin, ClinicPageMixin, ModalFormMixin
+from .base_view import AppPermissionMixin, ClinicPageMixin, ModalDetailMixin, ModalFormMixin
 
 
 class RoleListView(AppPermissionMixin, ClinicPageMixin, ListView):
@@ -37,7 +37,7 @@ class RoleListView(AppPermissionMixin, ClinicPageMixin, ListView):
         return context
 
 
-class RoleDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
+class RoleDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, DetailView):
     queryset = Group.objects.prefetch_related(
         "permissions",
         Prefetch("user_set", queryset=visible_users_queryset().order_by("first_name", "last_name", "username")),
@@ -47,6 +47,7 @@ class RoleDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
     segment = "roles"
     page_title = "Detalhes do perfil"
     page_subtitle = "Veja o conjunto de permissões e os utilizadores ligados a este perfil."
+    modal_size = "modal-xl"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -54,6 +55,9 @@ class RoleDetailView(AppPermissionMixin, ClinicPageMixin, DetailView):
             "content_type"
         ).order_by("content_type__app_label", "content_type__model", "name")
         context["assigned_users"] = self.object.user_set.all()
+        context["detail_partial"] = "accounts/roles/includes/detail_content.html"
+        context["modal_heading"] = self.object.name
+        context["modal_description"] = "Conjunto de permissões e utilizadores ligados a este perfil."
         return context
 
 

@@ -83,7 +83,7 @@
       </div>
 
       <div class="card-body px-0 pb-0">
-        <div class="table-responsive">
+        <div class="clinic-datatable-shell">
           <table id="users-table" data-page-length="10" data-export-title="Utilizadores Clinic Plus" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
             <thead>
               <tr>
@@ -134,7 +134,7 @@
                   </td>
                   <td class="text-end pe-4">
                     <div class="clinic-action-stack">
-                      <a href="{% url 'accounts:user_detail' user_item.pk %}" class="clinic-action-btn is-muted" title="Ver detalhes">
+                      <a href="{% url 'accounts:user_detail' user_item.pk %}" data-modal-url="{% url 'accounts:user_detail' user_item.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="Ver detalhes">
                         <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
                       </a>
                       <a href="{% url 'accounts:user_update' user_item.pk %}" data-modal-url="{% url 'accounts:user_update' user_item.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="Editar utilizador">

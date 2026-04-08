@@ -21,8 +21,12 @@
             {% if perms.clinic.view_consulta %}
               <a href="{% url 'clinic:patient_history_detail' object.pk %}" class="btn btn-outline-dark mb-0">{% ui "Ver histórico" "View history" %}</a>
             {% endif %}
-            {% if perms.clinic.delete_paciente and can_delete_patient %}
-              <a href="#" data-confirm-action data-action-url="{% url 'clinic:patient_delete' object.pk %}" data-confirm-title="{% ui 'Eliminar paciente' 'Delete patient' %}" data-confirm-text="{% ui 'Este registo será removido porque ainda não possui histórico clínico associado.' 'This record will be removed because it has no linked clinical history yet.' %}" data-confirm-button="{% ui 'Eliminar' 'Delete' %}" data-confirm-icon="warning" class="btn btn-outline-warning mb-0">{% ui "Eliminar" "Delete" %}</a>
+            {% if perms.clinic.change_paciente %}
+              {% if object.is_active %}
+                <a href="#" data-confirm-action data-action-url="{% url 'clinic:patient_toggle_status' object.pk %}" data-confirm-title="{% ui 'Desactivar paciente' 'Deactivate patient' %}" data-confirm-text="{% ui 'O paciente continuará registado, mas ficará marcado como inactivo.' 'The patient will remain registered, but will be marked as inactive.' %}" data-confirm-button="{% ui 'Desactivar' 'Deactivate' %}" data-confirm-icon="warning" class="btn btn-outline-warning mb-0">{% ui "Desactivar" "Deactivate" %}</a>
+              {% else %}
+                <a href="#" data-confirm-action data-action-url="{% url 'clinic:patient_toggle_status' object.pk %}" data-confirm-title="{% ui 'Activar paciente' 'Activate patient' %}" data-confirm-text="{% ui 'O paciente voltará a ficar activo para as operações da clínica.' 'The patient will become active again for clinic operations.' %}" data-confirm-button="{% ui 'Activar' 'Activate' %}" data-confirm-icon="question" class="btn btn-outline-success mb-0">{% ui "Activar" "Activate" %}</a>
+              {% endif %}
             {% endif %}
           </div>
         </div>
@@ -30,25 +34,43 @@
 
       <div class="card-body pt-0">
         <div class="d-flex align-items-center gap-2 flex-wrap mb-4">
-          <span class="clinic-inline-badge">{{ object.hospital.name }}</span>
+          <span class="clinic-inline-badge">{% if object.clinic_name %}{{ object.clinic_name }}{% else %}{% ui "Sem clínica atribuída" "No clinic assigned" %}{% endif %}</span>
           <span class="clinic-inline-badge">{{ object.get_gender_display }}</span>
+          {% if object.is_active %}
+            <span class="clinic-inline-badge">{% ui "Activo" "Active" %}</span>
+          {% else %}
+            <span class="clinic-inline-badge">{% ui "Inactivo" "Inactive" %}</span>
+          {% endif %}
           {% if object.allergies %}
             <span class="clinic-inline-badge">{% ui "Alergias registadas" "Allergies recorded" %}</span>
-          {% endif %}
-          {% if not can_delete_patient %}
-            <span class="clinic-inline-badge">{% ui "Com histórico protegido" "Protected history" %}</span>
           {% endif %}
         </div>
 
         <div class="clinic-detail-grid">
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Documento" "Document" %}</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "BI / Passaporte" "ID / Passport" %}</p>
             <h6 class="mb-0">{{ object.cpf }}</h6>
           </div>
 
           <div class="clinic-detail-item">
             <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Nascimento" "Birth date" %}</p>
             <h6 class="mb-0">{{ object.date_of_birth|date:"d/m/Y" }}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Clínica" "Clinic" %}</p>
+            <h6 class="mb-0">{% if object.clinic_name %}{{ object.clinic_name }}{% else %}{% ui "Sem clínica atribuída" "No clinic assigned" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Estado" "Status" %}</p>
+            <h6 class="mb-0">
+              {% if object.is_active %}
+                {% ui "Activo" "Active" %}
+              {% else %}
+                {% ui "Inactivo" "Inactive" %}
+              {% endif %}
+            </h6>
           </div>
 
           <div class="clinic-detail-item">

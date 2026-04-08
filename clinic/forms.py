@@ -5,10 +5,11 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
+from accounts.models import Branch
 from accounts.forms import StyledFormMixin
 from accounts.i18n import translate_pair
 
-from .models import Hospital, Paciente
+from .models import Paciente
 
 
 User = get_user_model()
@@ -23,7 +24,7 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Paciente
         fields = [
-            "hospital",
+            "branch",
             "cpf",
             "date_of_birth",
             "gender",
@@ -38,8 +39,8 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
             "medical_history",
         ]
         labels = {
-            "hospital": tr("Hospital / clínica", "Hospital / clinic"),
-            "cpf": tr("Documento / CPF", "Document / CPF"),
+            "branch": tr("Clínica", "Clinic"),
+            "cpf": tr("BI / Passaporte", "ID / Passport"),
             "date_of_birth": tr("Data de nascimento", "Date of birth"),
             "gender": tr("Género", "Gender"),
             "phone": tr("Telefone", "Phone"),
@@ -53,13 +54,13 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
             "medical_history": tr("Histórico clínico base", "Baseline medical history"),
         }
         help_texts = {
-            "hospital": tr(
-                "Escolha a unidade principal à qual este paciente ficará associado.",
-                "Choose the main unit this patient will be associated with.",
+            "branch": tr(
+                "Opcional. Associe o paciente a uma das suas sucursais clínicas.",
+                "Optional. Link the patient to one of your clinic branches.",
             ),
             "cpf": tr(
-                "Pode usar BI, documento interno ou CPF. Guardamos apenas letras e números.",
-                "You can use an ID, internal document number, or CPF. We keep only letters and numbers.",
+                "Use o número de BI ou Passaporte. Guardamos apenas letras e números.",
+                "Use the ID or passport number. We keep only letters and numbers.",
             ),
             "date_of_birth": tr(
                 "Use a data real do paciente para calcular a idade automaticamente.",
@@ -91,19 +92,18 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
         self.apply_widget_classes()
-        self.fields["hospital"].queryset = Hospital.objects.order_by("name")
-        if not self.fields["hospital"].queryset.exists():
-            self.fields["hospital"].help_text = tr(
-                "Ainda não existem hospitais registados. Crie pelo menos um hospital antes de guardar pacientes.",
-                "There are no hospitals registered yet. Create at least one hospital before saving patients.",
-            )
+        self.fields["branch"].required = False
+        self.fields["branch"].queryset = Branch.objects.order_by("name")
 
         if self.instance and self.instance.pk:
             self.fields["first_name"].initial = self.instance.user.first_name
             self.fields["last_name"].initial = self.instance.user.last_name
             self.fields["email"].initial = self.instance.user.email
+        elif self.request is not None and getattr(self.request, "clinic_current_branch", None):
+            self.fields["branch"].initial = self.request.clinic_current_branch
 
         autocomplete_map = {
             "first_name": "given-name",
@@ -198,11 +198,12 @@ class PatientForm(StyledFormMixin, forms.ModelForm):
         user.email = self.cleaned_data.get("email", "").strip()
         user.is_staff = False
         user.is_superuser = False
-        user.is_active = False
+        user.is_active = patient.is_active
 
         if commit:
             user.save()
             patient.user = user
+            patient.hospital = None
             patient.save()
             self.save_m2m()
 

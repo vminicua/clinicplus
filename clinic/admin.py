@@ -27,13 +27,17 @@ class MedicoAdmin(admin.ModelAdmin):
 
 @admin.register(Paciente)
 class PacienteAdmin(admin.ModelAdmin):
-    list_display = ('get_full_name', 'hospital', 'cpf', 'phone', 'gender')
+    list_display = ('get_full_name', 'get_clinic', 'cpf', 'phone', 'gender', 'is_active')
     search_fields = ('user__first_name', 'user__last_name', 'cpf')
-    list_filter = ('hospital', 'gender', 'city')
+    list_filter = ('branch', 'gender', 'city', 'is_active')
     
     def get_full_name(self, obj):
         return obj.user.get_full_name()
     get_full_name.short_description = 'Paciente'
+
+    def get_clinic(self, obj):
+        return obj.clinic_name or "Sem clínica"
+    get_clinic.short_description = 'Clínica'
 
 @admin.register(Agendamento)
 class AgendamentoAdmin(admin.ModelAdmin):

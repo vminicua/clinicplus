@@ -23,7 +23,7 @@
           <span class="nav-link-text ms-2">{% ui "Dashboard" "Dashboard" %}</span>
         </a>
       </li>
-      {% if perms.clinic.view_paciente or perms.clinic.add_paciente or perms.clinic.change_paciente or perms.clinic.delete_paciente or perms.clinic.view_consulta %}
+      {% if perms.clinic.view_paciente or perms.clinic.add_paciente or perms.clinic.change_paciente or perms.clinic.view_consulta %}
         <li class="nav-item">
           <a class="nav-link clinic-nav-parent {% if segment == 'patients' or segment == 'patient_history' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-patients" role="button" aria-expanded="{% if segment == 'patients' or segment == 'patient_history' %}true{% else %}false{% endif %}" aria-controls="sidebar-patients">
             <span class="d-flex align-items-center">
@@ -37,7 +37,7 @@
               {% if perms.clinic.view_paciente %}
                 <li class="nav-item">
                   <a class="nav-link {% if segment == 'patients' %}active{% endif %}" href="{% url 'clinic:patient_list' %}">
-                    <span class="nav-link-text">{% ui "Lista & CRUD" "List & CRUD" %}</span>
+                    <span class="nav-link-text">{% ui "Gerir Pacientes" "Manage patients" %}</span>
                   </a>
                 </li>
               {% endif %}

@@ -23,11 +23,11 @@
         <div class="card clinic-stat-card h-100">
           <div class="card-header p-3 position-relative">
             <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
-              <i class="material-symbols-rounded opacity-10">history</i>
+              <i class="material-symbols-rounded opacity-10">verified_user</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">{% ui "Com histórico" "With history" %}</p>
-              <h4 class="mb-0">{{ patients_with_history }}</h4>
+              <p class="text-sm mb-0">{% ui "Activos" "Active" %}</p>
+              <h4 class="mb-0">{{ active_patients }}</h4>
             </div>
           </div>
         </div>
@@ -37,11 +37,11 @@
         <div class="card clinic-stat-card h-100">
           <div class="card-header p-3 position-relative">
             <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
-              <i class="material-symbols-rounded opacity-10">vaccines</i>
+              <i class="material-symbols-rounded opacity-10">person_off</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">{% ui "Com alergias" "With allergies" %}</p>
-              <h4 class="mb-0">{{ patients_with_allergies }}</h4>
+              <p class="text-sm mb-0">{% ui "Inactivos" "Inactive" %}</p>
+              <h4 class="mb-0">{{ inactive_patients }}</h4>
             </div>
           </div>
         </div>
@@ -73,9 +73,8 @@
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <div class="clinic-pill-group">
               <a href="#" class="clinic-pill active" data-table-pill="patients-table" data-column="4" data-value="">{% ui "Todos" "All" %}</a>
-              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="4" data-value="Masculino">{% ui "Masculino" "Male" %}</a>
-              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="4" data-value="Feminino">{% ui "Feminino" "Female" %}</a>
-              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="4" data-value="Outro">{% ui "Outro" "Other" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="4" data-value="{% ui 'Activo' 'Active' %}">{% ui "Activos" "Active" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="patients-table" data-column="4" data-value="{% ui 'Inactivo' 'Inactive' %}">{% ui "Inactivos" "Inactive" %}</a>
             </div>
             {% if perms.clinic.add_paciente %}
               <a href="{% url 'clinic:patient_create' %}" data-modal-url="{% url 'clinic:patient_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
@@ -93,10 +92,10 @@
             <thead>
               <tr>
                 <th class="ps-4">{% ui "Paciente" "Patient" %}</th>
-                <th>{% ui "Documento" "Document" %}</th>
+                <th>{% ui "BI / Passaporte" "ID / Passport" %}</th>
                 <th>{% ui "Contactos" "Contacts" %}</th>
-                <th>{% ui "Unidade" "Unit" %}</th>
-                <th>{% ui "Género" "Gender" %}</th>
+                <th>{% ui "Clínica" "Clinic" %}</th>
+                <th>{% ui "Estado" "Status" %}</th>
                 <th>{% ui "Histórico" "History" %}</th>
                 <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
               </tr>
@@ -124,14 +123,18 @@
                     </span>
                   </td>
                   <td>
-                    <span class="text-sm d-block">{{ patient.hospital.name }}</span>
+                    <span class="text-sm d-block">{% if patient.clinic_name %}{{ patient.clinic_name }}{% else %}{% ui "Sem clínica atribuída" "No clinic assigned" %}{% endif %}</span>
                     <span class="text-xs text-secondary">
                       {% if patient.city %}{{ patient.city }}{% else %}{% ui "Sem cidade" "No city" %}{% endif %}
                       {% if patient.state %} · {{ patient.state }}{% endif %}
                     </span>
                   </td>
                   <td>
-                    <span class="text-sm">{{ patient.get_gender_display }}</span>
+                    {% if patient.is_active %}
+                      <span class="clinic-status clinic-status-success">{% ui "Activo" "Active" %}</span>
+                    {% else %}
+                      <span class="clinic-status clinic-status-muted">{% ui "Inactivo" "Inactive" %}</span>
+                    {% endif %}
                   </td>
                   <td>
                     <span class="text-sm d-block">{{ patient.total_appointments }} {% ui "agendamentos" "appointments" %}</span>
@@ -161,10 +164,16 @@
                           <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
                         </a>
                       {% endif %}
-                      {% if perms.clinic.delete_paciente and not patient.total_appointments %}
-                        <a href="#" data-confirm-action data-action-url="{% url 'clinic:patient_delete' patient.pk %}" data-confirm-title="{% ui 'Eliminar paciente' 'Delete patient' %}" data-confirm-text="{% ui 'Este paciente será removido do cadastro porque ainda não possui histórico clínico associado.' 'This patient will be removed from the registry because no linked clinical history exists yet.' %}" data-confirm-button="{% ui 'Eliminar' 'Delete' %}" data-confirm-icon="warning" class="clinic-action-btn is-warning" title="{% ui 'Eliminar paciente' 'Delete patient' %}">
-                          <i class="material-symbols-rounded" style="font-size: 1rem;">delete</i>
-                        </a>
+                      {% if perms.clinic.change_paciente %}
+                        {% if patient.is_active %}
+                          <a href="#" data-confirm-action data-action-url="{% url 'clinic:patient_toggle_status' patient.pk %}" data-confirm-title="{% ui 'Desactivar paciente' 'Deactivate patient' %}" data-confirm-text="{% ui 'O paciente continuará registado, mas ficará marcado como inactivo.' 'The patient will remain registered, but will be marked as inactive.' %}" data-confirm-button="{% ui 'Desactivar' 'Deactivate' %}" data-confirm-icon="warning" class="clinic-action-btn is-warning" title="{% ui 'Desactivar paciente' 'Deactivate patient' %}">
+                            <i class="material-symbols-rounded" style="font-size: 1rem;">person_off</i>
+                          </a>
+                        {% else %}
+                          <a href="#" data-confirm-action data-action-url="{% url 'clinic:patient_toggle_status' patient.pk %}" data-confirm-title="{% ui 'Activar paciente' 'Activate patient' %}" data-confirm-text="{% ui 'O paciente voltará a ficar disponível como activo na operação clínica.' 'The patient will become active again in clinical operations.' %}" data-confirm-button="{% ui 'Activar' 'Activate' %}" data-confirm-icon="question" class="clinic-action-btn is-info" title="{% ui 'Activar paciente' 'Activate patient' %}">
+                            <i class="material-symbols-rounded" style="font-size: 1rem;">person_check</i>
+                          </a>
+                        {% endif %}
                       {% endif %}
                     </div>
                   </td>

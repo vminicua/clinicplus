@@ -2,29 +2,26 @@ from django.contrib.auth.models import Permission, User
 from django.test import Client, TestCase
 from django.urls import reverse
 
+from accounts.models import Branch
 from clinic.forms import PatientForm
 from clinic.models import Agendamento, Consulta, Hospital, Medico, Paciente
 
 
 class PatientFormTests(TestCase):
     def setUp(self):
-        self.hospital = Hospital.objects.create(
+        self.branch = Branch.objects.create(
             name="Clinic Plus Central",
-            email="central@clinic.test",
-            phone="840000000",
-            address="Av. da Saúde",
+            code="CPC",
             city="Maputo",
-            state="Maputo",
-            zip_code="1100",
         )
 
-    def test_patient_form_creates_linked_inactive_user(self):
+    def test_patient_form_creates_linked_active_user_and_optional_branch(self):
         form = PatientForm(
             data={
                 "first_name": "Ana",
                 "last_name": "Mabote",
                 "email": "ana@example.com",
-                "hospital": self.hospital.pk,
+                "branch": self.branch.pk,
                 "cpf": "AB-12345",
                 "date_of_birth": "1995-02-10",
                 "gender": "F",
@@ -47,7 +44,9 @@ class PatientFormTests(TestCase):
         self.assertEqual(patient.user.last_name, "Mabote")
         self.assertEqual(patient.user.username, "pac_ab12345")
         self.assertFalse(patient.user.has_usable_password())
-        self.assertFalse(patient.user.is_active)
+        self.assertTrue(patient.user.is_active)
+        self.assertEqual(patient.branch, self.branch)
+        self.assertIsNone(patient.hospital)
 
 
 class PatientViewsTests(TestCase):
@@ -62,10 +61,10 @@ class PatientViewsTests(TestCase):
             state="Maputo",
             zip_code="1100",
         )
+        self.branch = Branch.objects.create(name="Clinic Plus Baixa", code="CPB", city="Maputo")
         self.user = User.objects.create_user(username="gestor", password="123456")
         self.user.user_permissions.add(
             Permission.objects.get(codename="view_paciente"),
-            Permission.objects.get(codename="delete_paciente"),
             Permission.objects.get(codename="view_consulta"),
             Permission.objects.get(codename="change_paciente"),
         )
@@ -75,7 +74,7 @@ class PatientViewsTests(TestCase):
         patient_user = User.objects.create(username=f"user_{document.lower()}", first_name="Maria", last_name="Silva")
         return Paciente.objects.create(
             user=patient_user,
-            hospital=self.hospital,
+            branch=self.branch,
             cpf=document,
             phone="840333333",
             date_of_birth="1990-01-01",
@@ -90,42 +89,31 @@ class PatientViewsTests(TestCase):
             allergies="",
         )
 
-    def test_delete_patient_without_history(self):
-        patient = self.create_patient("DEL12345")
+    def test_toggle_patient_to_inactive(self):
+        patient = self.create_patient("STAT1234")
 
-        response = self.client.post(reverse("clinic:patient_delete", args=[patient.pk]))
+        response = self.client.post(reverse("clinic:patient_toggle_status", args=[patient.pk]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(Paciente.objects.filter(pk=patient.pk).exists())
-        self.assertFalse(User.objects.filter(username="user_del12345").exists())
+        patient.refresh_from_db()
+        patient.user.refresh_from_db()
+        self.assertFalse(patient.is_active)
+        self.assertFalse(patient.user.is_active)
 
-    def test_delete_patient_with_history_is_blocked(self):
-        patient = self.create_patient("HIS12345")
-        doctor_user = User.objects.create(username="doctor1", first_name="Joao", last_name="Medico")
-        doctor = Medico.objects.create(
-            user=doctor_user,
-            hospital=self.hospital,
-            especialidade=None,
-            crm="CRM001",
-            phone="840555555",
-        )
-        Agendamento.objects.create(
-            paciente=patient,
-            medico=doctor,
-            hospital=self.hospital,
-            data="2026-04-01",
-            hora="09:00",
-            motivo="Consulta de rotina",
-            status="agendado",
-            notas="",
-        )
+    def test_toggle_patient_back_to_active(self):
+        patient = self.create_patient("ACT12345")
+        patient.is_active = False
+        patient.save(update_fields=["is_active"])
+        patient.user.is_active = False
+        patient.user.save(update_fields=["is_active"])
 
-        response = self.client.post(reverse("clinic:patient_delete", args=[patient.pk]))
-        payload = response.json()
+        response = self.client.post(reverse("clinic:patient_toggle_status", args=[patient.pk]))
 
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("histórico clínico", payload["message"])
-        self.assertTrue(Paciente.objects.filter(pk=patient.pk).exists())
+        self.assertEqual(response.status_code, 200)
+        patient.refresh_from_db()
+        patient.user.refresh_from_db()
+        self.assertTrue(patient.is_active)
+        self.assertTrue(patient.user.is_active)
 
     def test_history_detail_view_renders_consultation_data(self):
         patient = self.create_patient("CONS1234")

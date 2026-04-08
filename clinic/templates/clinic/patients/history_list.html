@@ -90,7 +90,7 @@
             <thead>
               <tr>
                 <th class="ps-4">{% ui "Paciente" "Patient" %}</th>
-                <th>{% ui "Documento" "Document" %}</th>
+                <th>{% ui "BI / Passaporte" "ID / Passport" %}</th>
                 <th>{% ui "Última actividade" "Latest activity" %}</th>
                 <th>{% ui "Consultas" "Consultations" %}</th>
                 <th>{% ui "Cobertura" "Coverage" %}</th>
@@ -104,7 +104,7 @@
                     <div>
                       <h6 class="mb-0 text-sm">{{ patient.full_name }}</h6>
                       <p class="text-xs text-secondary mb-0">
-                        {{ patient.hospital.name }}
+                        {% if patient.clinic_name %}{{ patient.clinic_name }}{% else %}{% ui "Sem clínica atribuída" "No clinic assigned" %}{% endif %}
                         {% if patient.city %} · {{ patient.city }}{% endif %}
                       </p>
                     </div>

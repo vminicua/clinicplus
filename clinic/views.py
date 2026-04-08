@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 def patient_queryset():
-    return Paciente.objects.select_related("user", "hospital").annotate(
+    return Paciente.objects.select_related("user", "hospital", "branch").annotate(
         total_appointments=Count("agendamentos", distinct=True),
         total_consultations=Count("agendamentos__consulta", distinct=True),
         last_appointment=Max("agendamentos__data"),
@@ -306,8 +306,9 @@ class PatientListView(AppPermissionMixin, ClinicPageMixin, ListView):
         base_queryset = patient_queryset()
         month_start = timezone.localdate().replace(day=1)
         context["total_patients"] = base_queryset.count()
+        context["active_patients"] = base_queryset.filter(is_active=True).count()
+        context["inactive_patients"] = base_queryset.filter(is_active=False).count()
         context["patients_with_history"] = base_queryset.filter(agendamentos__isnull=False).distinct().count()
-        context["patients_with_allergies"] = base_queryset.exclude(allergies="").count()
         context["new_patients_this_month"] = base_queryset.filter(created_at__date__gte=month_start).count()
         return context
 
@@ -347,7 +348,6 @@ class PatientDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, D
         )
         context["recent_history_entries"] = history_entries[:4]
         context["latest_consultation"] = latest_consultation
-        context["can_delete_patient"] = not self.object.total_appointments
         return context
 
 
@@ -381,6 +381,11 @@ class PatientCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, Cre
         context["submit_label"] = ui_text(self.request, "Guardar paciente", "Save patient")
         context["cancel_url"] = reverse("clinic:patient_list")
         return context
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
 
     def get_success_message(self) -> str:
         return ui_text(self.request, "Paciente criado com sucesso.", "Patient created successfully.")
@@ -419,43 +424,44 @@ class PatientUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, Upd
         context["cancel_url"] = reverse("clinic:patient_detail", args=[self.object.pk])
         return context
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
+
     def get_success_message(self) -> str:
         return ui_text(self.request, "Paciente actualizado com sucesso.", "Patient updated successfully.")
 
 
-class PatientDeleteView(AppPermissionMixin, View):
-    permission_required = "clinic.delete_paciente"
+class PatientToggleStatusView(AppPermissionMixin, View):
+    permission_required = "clinic.change_paciente"
     login_url = "clinic:login"
 
     @transaction.atomic
     def post(self, request, pk):
         patient = get_object_or_404(patient_queryset(), pk=pk)
-
-        if patient.total_appointments:
-            return JsonResponse(
-                {
-                    "success": False,
-                    "message": ui_text(
-                        request,
-                        "Não é possível eliminar um paciente com agendamentos ou histórico clínico associado. Edite a ficha para manter a rastreabilidade.",
-                        "You cannot delete a patient who has linked appointments or clinical history. Edit the record to preserve traceability.",
-                    ),
-                },
-                status=400,
-            )
-
-        patient_name = patient.full_name
-        patient.user.delete()
+        patient.is_active = not patient.is_active
+        patient.save(update_fields=["is_active", "updated_at"])
+        if patient.user.is_active != patient.is_active:
+            patient.user.is_active = patient.is_active
+            patient.user.save(update_fields=["is_active"])
 
         return JsonResponse(
             {
                 "success": True,
                 "message": ui_text(
                     request,
-                    "Paciente %(patient)s eliminado com sucesso.",
-                    "Patient %(patient)s deleted successfully.",
+                    "Paciente %(patient)s %(status)s com sucesso.",
+                    "Patient %(patient)s %(status)s successfully.",
                 )
-                % {"patient": patient_name},
+                % {
+                    "patient": patient.full_name,
+                    "status": ui_text(
+                        request,
+                        "activado" if patient.is_active else "desactivado",
+                        "activated" if patient.is_active else "deactivated",
+                    ),
+                },
                 "redirect_url": reverse("clinic:patient_list"),
             }
         )

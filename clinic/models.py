@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 
+from accounts.models import Branch
+
 # Hospital/Clínica Model
 class Hospital(models.Model):
     name = models.CharField(max_length=255)
@@ -68,7 +70,20 @@ class Paciente(models.Model):
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE, related_name='pacientes')
+    hospital = models.ForeignKey(
+        Hospital,
+        on_delete=models.CASCADE,
+        related_name='pacientes',
+        null=True,
+        blank=True,
+    )
+    branch = models.ForeignKey(
+        Branch,
+        on_delete=models.SET_NULL,
+        related_name='pacientes',
+        null=True,
+        blank=True,
+    )
     cpf = models.CharField(max_length=14, unique=True)
     phone = models.CharField(max_length=20)
     date_of_birth = models.DateField()
@@ -81,6 +96,7 @@ class Paciente(models.Model):
     emergency_phone = models.CharField(max_length=20)
     medical_history = models.TextField(blank=True)
     allergies = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -94,6 +110,14 @@ class Paciente(models.Model):
     @property
     def full_name(self):
         return self.user.get_full_name() or self.user.username
+
+    @property
+    def clinic_name(self):
+        if self.branch_id:
+            return self.branch.name
+        if self.hospital_id:
+            return self.hospital.name
+        return ""
 
     @property
     def age(self):

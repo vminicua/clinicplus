@@ -16,7 +16,7 @@ from accounts.i18n import translate_pair
 from accounts.ui import available_branches_for_user
 from accounts.utils import visible_users_queryset
 
-from .models import Agendamento, Consulta, HorarioTrabalho, Hospital, Medico, Paciente
+from .models import Agendamento, Consulta, Departamento, Especialidade, HorarioTrabalho, Hospital, Medicamento, Medico, Paciente
 
 
 User = get_user_model()
@@ -249,6 +249,12 @@ class DoctorChoiceField(forms.ModelChoiceField):
         return full_name
 
 
+class DepartmentChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        unit_name = obj.unit_name or tr("Sem unidade", "No unit")
+        return f"{obj.name} · {unit_name}"
+
+
 def appointment_doctor_user_queryset():
     doctor_group = Group.objects.filter(name="Médico").first() or Group.objects.filter(pk=4).first()
     queryset = visible_users_queryset().filter(is_active=True)
@@ -298,6 +304,10 @@ def resolve_legacy_hospital(branch=None, patient=None, doctor_user=None):
         candidate_branches.append(patient.branch)
 
     for candidate_branch in candidate_branches:
+        if getattr(candidate_branch, "clinic_id", None):
+            matched_hospital = Hospital.objects.filter(name__iexact=candidate_branch.clinic.name).first()
+            if matched_hospital:
+                return matched_hospital
         matched_hospital = Hospital.objects.filter(name__iexact=candidate_branch.name).first()
         if matched_hospital:
             return matched_hospital
@@ -680,6 +690,183 @@ class ConsultationForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_widget_classes()
+
+
+class SpecialtyForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = Especialidade
+        fields = ["name", "description", "icon"]
+        labels = {
+            "name": tr("Especialidade", "Specialty"),
+            "description": tr("Descrição", "Description"),
+            "icon": tr("Ícone", "Icon"),
+        }
+        help_texts = {
+            "name": tr(
+                "Use a designação clínica que aparecerá no perfil do médico, por exemplo Ginecologista.",
+                "Use the clinical designation that will appear in the doctor's profile, for example Gynecologist.",
+            ),
+            "description": tr(
+                "Explique rapidamente o âmbito clínico desta especialidade.",
+                "Quickly explain the clinical scope of this specialty.",
+            ),
+            "icon": tr(
+                "Opcional. Nome do ícone usado em interfaces e dashboards.",
+                "Optional. Icon name used in interfaces and dashboards.",
+            ),
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+
+
+class DepartmentForm(StyledFormMixin, forms.ModelForm):
+    branch = forms.ModelChoiceField(
+        queryset=Branch.objects.none(),
+        label=tr("Sucursal", "Branch"),
+    )
+    responsavel_user = DoctorChoiceField(
+        queryset=User.objects.none(),
+        required=False,
+        label=tr("Responsável clínico", "Clinical lead"),
+    )
+
+    class Meta:
+        model = Departamento
+        fields = ["name", "branch", "responsavel_user", "descricao"]
+        labels = {
+            "name": tr("Departamento", "Department"),
+            "descricao": tr("Descrição", "Description"),
+        }
+        help_texts = {
+            "name": tr(
+                "Use o nome do serviço ou área clínica, por exemplo Ginecologia.",
+                "Use the service or clinical area name, for example Gynecology.",
+            ),
+            "branch": tr(
+                "Sucursal onde este departamento opera.",
+                "Branch where this department operates.",
+            ),
+            "responsavel_user": tr(
+                "Opcional. Médico responsável por este serviço.",
+                "Optional. Doctor responsible for this service.",
+            ),
+            "descricao": tr(
+                "Resumo do âmbito operacional e clínico do departamento.",
+                "Summary of the operational and clinical scope of the department.",
+            ),
+        }
+        widgets = {
+            "descricao": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        self.fields["branch"].queryset = appointment_branch_queryset(self.request)
+        self.fields["responsavel_user"].queryset = appointment_doctor_user_queryset()
+
+        if self.instance.pk and self.instance.branch_id:
+            self.fields["branch"].initial = self.instance.branch
+        elif not self.initial.get("branch"):
+            current_branch = getattr(self.request, "clinic_current_branch", None) if self.request else None
+            if current_branch and self.fields["branch"].queryset.filter(pk=current_branch.pk).exists():
+                self.fields["branch"].initial = current_branch
+
+        if self.instance.pk and self.instance.responsavel_id:
+            self.fields["responsavel_user"].initial = self.instance.responsavel.user
+
+    def clean(self):
+        cleaned_data = super().clean()
+        branch = cleaned_data.get("branch")
+        responsavel_user = cleaned_data.get("responsavel_user")
+
+        if responsavel_user and branch:
+            has_clinical_schedule = appointment_schedule_queryset(responsavel_user, branch).exists()
+            if not has_clinical_schedule:
+                self.add_error(
+                    "responsavel_user",
+                    tr(
+                        "Seleccione um médico com agenda activa nesta sucursal para assumir este departamento.",
+                        "Select a doctor with an active agenda in this branch to lead this department.",
+                    ),
+                )
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        department = super().save(commit=False)
+        branch = self.cleaned_data.get("branch")
+        responsavel_user = self.cleaned_data.get("responsavel_user")
+        department.branch = branch
+        department.hospital = resolve_legacy_hospital(branch=branch, doctor_user=responsavel_user)
+        department.responsavel = (
+            ensure_doctor_profile(responsavel_user, branch=branch)
+            if responsavel_user is not None
+            else None
+        )
+
+        if commit:
+            department.save()
+            self.save_m2m()
+
+        return department
+
+
+class MedicationForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = Medicamento
+        fields = ["name", "principio_ativo", "dosagem", "quantidade", "preco", "descricao"]
+        labels = {
+            "name": tr("Medicamento", "Medication"),
+            "principio_ativo": tr("Princípio activo", "Active ingredient"),
+            "dosagem": tr("Dosagem", "Dosage"),
+            "quantidade": tr("Quantidade", "Quantity"),
+            "preco": tr("Preço", "Price"),
+            "descricao": tr("Descrição", "Description"),
+        }
+        help_texts = {
+            "name": tr(
+                "Nome comercial ou interno do medicamento.",
+                "Commercial or internal medication name.",
+            ),
+            "principio_ativo": tr(
+                "Substância principal usada para catalogar e pesquisar o medicamento.",
+                "Main substance used to catalog and search the medication.",
+            ),
+            "dosagem": tr(
+                "Ex.: 500 mg, 10 ml, 1 g/5 ml.",
+                "Example: 500 mg, 10 ml, 1 g/5 ml.",
+            ),
+            "quantidade": tr(
+                "Quantidade actual disponível em stock.",
+                "Current quantity available in stock.",
+            ),
+            "preco": tr(
+                "Preço unitário de referência.",
+                "Reference unit price.",
+            ),
+            "descricao": tr(
+                "Observações adicionais para uso clínico, apresentação ou stock.",
+                "Additional notes for clinical use, presentation, or stock.",
+            ),
+        }
+        widgets = {
+            "descricao": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        for field_name in ("name", "principio_ativo", "dosagem", "descricao"):
+            self.fields[field_name].widget.attrs["autocomplete"] = "off"
+            self.fields[field_name].widget.attrs["data-lpignore"] = "true"
+            self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"
 
 
 WORK_SCHEDULE_WEEKDAY_OPTIONS = [

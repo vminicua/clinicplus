@@ -17,9 +17,9 @@ class EspecialidadeAdmin(admin.ModelAdmin):
 
 @admin.register(Medico)
 class MedicoAdmin(admin.ModelAdmin):
-    list_display = ('get_full_name', 'hospital', 'especialidade', 'crm', 'phone')
+    list_display = ('get_full_name', 'departamento', 'hospital', 'especialidade', 'crm', 'phone')
     search_fields = ('user__first_name', 'user__last_name', 'crm')
-    list_filter = ('hospital', 'especialidade')
+    list_filter = ('departamento', 'hospital', 'especialidade')
     
     def get_full_name(self, obj):
         return obj.user.get_full_name()
@@ -43,7 +43,7 @@ class PacienteAdmin(admin.ModelAdmin):
 class AgendamentoAdmin(admin.ModelAdmin):
     list_display = ('get_paciente', 'get_medico', 'data', 'hora', 'status')
     search_fields = ('paciente__user__first_name', 'medico__user__first_name')
-    list_filter = ('status', 'data', 'hospital')
+    list_filter = ('status', 'data', 'branch', 'hospital')
     
     def get_paciente(self, obj):
         return obj.paciente.user.get_full_name()
@@ -74,9 +74,9 @@ class MedicamentoAdmin(admin.ModelAdmin):
 
 @admin.register(Departamento)
 class DepartamentoAdmin(admin.ModelAdmin):
-    list_display = ('name', 'hospital', 'get_responsavel')
+    list_display = ('name', 'branch', 'hospital', 'get_responsavel')
     search_fields = ('name',)
-    list_filter = ('hospital',)
+    list_filter = ('branch', 'hospital')
     
     def get_responsavel(self, obj):
         if obj.responsavel:

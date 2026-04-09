@@ -5,9 +5,12 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.db.models import Q
+
+from clinic.models import Departamento, Especialidade, Hospital, Medico
 
 from .i18n import translate_pair
-from .models import Branch, SystemPreference, UserProfile
+from .models import Branch, Clinic, SystemPreference, UserProfile
 from .utils import build_permission_matrix, describe_permission_scope, visible_users_queryset
 
 
@@ -61,6 +64,66 @@ class ContentTypeChoiceField(forms.ModelChoiceField):
         return f"{obj.app_label}.{obj.model}"
 
 
+class ClinicalSpecialtyChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj: Especialidade) -> str:
+        return obj.name
+
+
+class ClinicalDepartmentChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj: Departamento) -> str:
+        unit_name = obj.unit_name or tr("Sem unidade", "No unit")
+        return f"{obj.name} · {unit_name}"
+
+
+def doctor_group():
+    return Group.objects.filter(name="Médico").first() or Group.objects.filter(pk=4).first()
+
+
+def has_doctor_role(groups) -> bool:
+    doctor_role = doctor_group()
+    if doctor_role is None or groups is None:
+        return False
+    group_ids = {group.pk for group in groups}
+    return doctor_role.pk in group_ids
+
+
+def generate_medico_crm(user: User) -> str:
+    base_value = f"AUTOCRM{user.pk or 'NEW'}"
+    candidate = base_value
+    counter = 1
+    while Medico.objects.filter(crm=candidate).exclude(user=user).exists():
+        candidate = f"{base_value}_{counter}"
+        counter += 1
+    return candidate
+
+
+def get_default_clinic():
+    return Clinic.objects.filter(is_active=True).order_by("name", "id").first() or Clinic.objects.order_by(
+        "name",
+        "id",
+    ).first()
+
+
+def resolve_legacy_hospital_for_branch(branch: Branch | None):
+    if branch is not None and getattr(branch, "clinic_id", None):
+        matched = Hospital.objects.filter(name__iexact=branch.clinic.name).first()
+        if matched:
+            return matched
+
+    if branch is None:
+        return Hospital.objects.order_by("id").first()
+
+    matched = Hospital.objects.filter(name__iexact=branch.name).first()
+    if matched:
+        return matched
+
+    existing = Hospital.objects.order_by("id").first()
+    if existing and Hospital.objects.count() == 1:
+        return existing
+
+    return None
+
+
 class UserForm(StyledFormMixin, forms.ModelForm):
     password1 = forms.CharField(
         label=tr("Palavra-passe", "Password"),
@@ -109,6 +172,31 @@ class UserForm(StyledFormMixin, forms.ModelForm):
             "Optional. It must be one of the assigned branches.",
         ),
     )
+    medical_specialty = ClinicalSpecialtyChoiceField(
+        queryset=Especialidade.objects.order_by("name"),
+        required=False,
+        label=tr("Especialidade clínica", "Clinical specialty"),
+    )
+    medical_department = ClinicalDepartmentChoiceField(
+        queryset=Departamento.objects.select_related("branch").order_by("branch__name", "name"),
+        required=False,
+        label=tr("Departamento clínico", "Clinical department"),
+    )
+    medical_crm = forms.CharField(
+        max_length=20,
+        required=False,
+        label=tr("Cédula / CRM", "License / CRM"),
+    )
+    medical_phone = forms.CharField(
+        max_length=20,
+        required=False,
+        label=tr("Telefone clínico", "Clinical phone"),
+    )
+    medical_bio = forms.CharField(
+        required=False,
+        label=tr("Perfil clínico", "Clinical profile"),
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
 
     class Meta:
         model = User
@@ -146,18 +234,48 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.is_create = not bool(self.instance and self.instance.pk)
         self.apply_widget_classes()
+        if self.instance and self.instance.pk:
+            try:
+                self.doctor_profile = self.instance.medico
+            except Medico.DoesNotExist:
+                self.doctor_profile = None
+        else:
+            self.doctor_profile = None
 
         self.fields["username"].widget.attrs["autocomplete"] = "username"
         self.fields["email"].widget.attrs["autocomplete"] = "email"
         self.fields["groups"].queryset = Group.objects.order_by("name")
         self.fields["assigned_branches"].queryset = Branch.objects.order_by("name")
         self.fields["default_branch"].queryset = Branch.objects.order_by("name")
+        self.fields["medical_specialty"].queryset = Especialidade.objects.order_by("name")
+        self.fields["medical_department"].queryset = Departamento.objects.select_related("branch").order_by(
+            "branch__name",
+            "name",
+        )
+        self.fields["medical_specialty"].help_text = tr(
+            "Designação clínica do médico, por exemplo Ginecologista ou Pediatra.",
+            "Doctor's clinical designation, for example Gynecologist or Pediatrician.",
+        )
+        self.fields["medical_department"].help_text = tr(
+            "Serviço clínico ao qual este médico pertence.",
+            "Clinical service this doctor belongs to.",
+        )
+        self.fields["medical_crm"].help_text = tr(
+            "Opcional. Se deixar vazio, o sistema gera um identificador provisório.",
+            "Optional. If left empty, the system generates a provisional identifier.",
+        )
 
         if self.instance and self.instance.pk:
             profile, _ = UserProfile.objects.get_or_create(user=self.instance)
             self.fields["preferred_language"].initial = profile.preferred_language
             self.fields["assigned_branches"].initial = profile.assigned_branches.all()
             self.fields["default_branch"].initial = profile.default_branch
+            if self.doctor_profile is not None:
+                self.fields["medical_specialty"].initial = self.doctor_profile.especialidade
+                self.fields["medical_department"].initial = self.doctor_profile.departamento
+                self.fields["medical_crm"].initial = self.doctor_profile.crm
+                self.fields["medical_phone"].initial = self.doctor_profile.phone
+                self.fields["medical_bio"].initial = self.doctor_profile.bio
         else:
             self.fields["preferred_language"].initial = UserProfile.LANGUAGE_PORTUGUESE
 
@@ -167,6 +285,23 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         password2 = cleaned_data.get("password2", "")
         assigned_branches = cleaned_data.get("assigned_branches")
         default_branch = cleaned_data.get("default_branch")
+        groups = cleaned_data.get("groups")
+        medical_specialty = cleaned_data.get("medical_specialty")
+        medical_department = cleaned_data.get("medical_department")
+        medical_crm = (cleaned_data.get("medical_crm") or "").strip()
+        medical_phone = (cleaned_data.get("medical_phone") or "").strip()
+        medical_bio = (cleaned_data.get("medical_bio") or "").strip()
+        wants_clinical_profile = any(
+            value
+            for value in (
+                medical_specialty,
+                medical_department,
+                medical_crm,
+                medical_phone,
+                medical_bio,
+            )
+        )
+        has_medical_role = has_doctor_role(groups)
 
         if self.is_create and not password1:
             self.add_error(
@@ -196,6 +331,48 @@ class UserForm(StyledFormMixin, forms.ModelForm):
                 ),
             )
 
+        if wants_clinical_profile and not has_medical_role:
+            self.add_error(
+                "groups",
+                tr(
+                    "Para preencher o perfil clínico, atribua primeiro o perfil Médico a este utilizador.",
+                    "To fill in the clinical profile, assign the Doctor role to this user first.",
+                ),
+            )
+
+        if medical_department and medical_department.branch_id:
+            allowed_branches = set()
+            if assigned_branches is not None:
+                allowed_branches.update(branch.pk for branch in assigned_branches)
+            if default_branch is not None:
+                allowed_branches.add(default_branch.pk)
+            if allowed_branches and medical_department.branch_id not in allowed_branches:
+                self.add_error(
+                    "medical_department",
+                    tr(
+                        "Seleccione um departamento pertencente a uma das sucursais atribuídas ao utilizador.",
+                        "Select a department that belongs to one of the branches assigned to the user.",
+                    ),
+                )
+
+        if medical_crm:
+            duplicate_qs = Medico.objects.filter(crm=medical_crm)
+            if self.instance and self.instance.pk:
+                duplicate_qs = duplicate_qs.exclude(user=self.instance)
+            if duplicate_qs.exists():
+                self.add_error(
+                    "medical_crm",
+                    tr(
+                        "Já existe outro médico com esta cédula/CRM.",
+                        "There is already another doctor with this license/CRM.",
+                    ),
+                )
+
+        cleaned_data["medical_crm"] = medical_crm
+        cleaned_data["medical_phone"] = medical_phone
+        cleaned_data["medical_bio"] = medical_bio
+        cleaned_data["has_medical_role"] = has_medical_role
+        cleaned_data["wants_clinical_profile"] = wants_clinical_profile
         return cleaned_data
 
     @transaction.atomic
@@ -219,6 +396,42 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         profile.save()
         profile.assigned_branches.set(self.cleaned_data.get("assigned_branches") or [])
 
+        should_persist_clinical_profile = (
+            self.cleaned_data.get("has_medical_role")
+            or self.cleaned_data.get("wants_clinical_profile")
+            or self.doctor_profile is not None
+        )
+        if should_persist_clinical_profile:
+            specialty = self.cleaned_data.get("medical_specialty")
+            department = self.cleaned_data.get("medical_department")
+            preferred_branch = (
+                department.branch
+                if department and department.branch_id
+                else self.cleaned_data.get("default_branch")
+            )
+            if preferred_branch is None:
+                assigned = list(self.cleaned_data.get("assigned_branches") or [])
+                preferred_branch = assigned[0] if assigned else None
+
+            doctor_profile, _ = Medico.objects.get_or_create(
+                user=user,
+                defaults={
+                    "hospital": resolve_legacy_hospital_for_branch(preferred_branch),
+                    "crm": self.cleaned_data.get("medical_crm") or generate_medico_crm(user),
+                    "phone": self.cleaned_data.get("medical_phone") or "",
+                    "bio": self.cleaned_data.get("medical_bio") or "",
+                },
+            )
+            doctor_profile.especialidade = specialty
+            doctor_profile.departamento = department
+            doctor_profile.phone = self.cleaned_data.get("medical_phone") or ""
+            doctor_profile.bio = self.cleaned_data.get("medical_bio") or ""
+            doctor_profile.crm = self.cleaned_data.get("medical_crm") or doctor_profile.crm or generate_medico_crm(user)
+            resolved_hospital = resolve_legacy_hospital_for_branch(preferred_branch)
+            if resolved_hospital is not None or doctor_profile.hospital_id is None:
+                doctor_profile.hospital = resolved_hospital
+            doctor_profile.save()
+
         return user
 
 
@@ -237,6 +450,7 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Branch
         fields = [
+            "clinic",
             "name",
             "code",
             "legal_name",
@@ -258,6 +472,7 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
             "is_active",
         ]
         labels = {
+            "clinic": tr("Clínica-mãe", "Parent clinic"),
             "name": tr("Nome da sucursal", "Branch name"),
             "code": tr("Código", "Code"),
             "legal_name": tr("Nome legal", "Legal name"),
@@ -279,6 +494,10 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
             "is_active": tr("Activa", "Active"),
         }
         help_texts = {
+            "clinic": tr(
+                "Clínica à qual esta sucursal pertence.",
+                "Clinic this branch belongs to.",
+            ),
             "code": tr(
                 "Use um código curto para identificar a sucursal internamente.",
                 "Use a short code to identify the branch internally.",
@@ -341,11 +560,21 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_widget_classes()
+        clinic_queryset = Clinic.objects.filter(is_active=True)
+        if self.instance and self.instance.pk and self.instance.clinic_id:
+            clinic_queryset = Clinic.objects.filter(Q(is_active=True) | Q(pk=self.instance.clinic_id))
+        self.fields["clinic"].queryset = clinic_queryset.distinct().order_by("name")
+        self.fields["clinic"].required = True
         self.fields["assigned_users"].queryset = visible_users_queryset().order_by(
             "first_name",
             "last_name",
             "username",
         )
+
+        if not self.instance.pk and not self.initial.get("clinic"):
+            default_clinic = get_default_clinic()
+            if default_clinic is not None:
+                self.fields["clinic"].initial = default_clinic
 
         if self.instance and self.instance.pk:
             self.fields["assigned_users"].initial = visible_users_queryset().filter(
@@ -353,6 +582,7 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
             )
 
         autocomplete_map = {
+            "clinic": "section-branch organization",
             "name": "section-branch organization",
             "code": "off",
             "legal_name": "section-branch organization",
@@ -417,6 +647,106 @@ class BranchForm(StyledFormMixin, forms.ModelForm):
                 profile.save(update_fields=["default_branch", "updated_at"])
 
         return branch
+
+
+class ClinicForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = Clinic
+        fields = [
+            "name",
+            "legal_name",
+            "nuit",
+            "logo",
+            "favicon",
+            "city",
+            "province",
+            "country",
+            "postal_code",
+            "address",
+            "phone",
+            "email",
+            "website",
+            "description",
+            "is_active",
+        ]
+        labels = {
+            "name": tr("Nome da clínica", "Clinic name"),
+            "legal_name": tr("Nome legal", "Legal name"),
+            "nuit": tr("NUIT", "Tax ID"),
+            "logo": tr("Logotipo", "Logo"),
+            "favicon": tr("Favicon", "Favicon"),
+            "city": tr("Cidade", "City"),
+            "province": tr("Província / estado", "Province / state"),
+            "country": tr("País", "Country"),
+            "postal_code": tr("Código postal", "Postal code"),
+            "address": tr("Endereço", "Address"),
+            "phone": tr("Telefone", "Phone"),
+            "email": "Email",
+            "website": tr("Website", "Website"),
+            "description": tr("Descrição", "Description"),
+            "is_active": tr("Activa", "Active"),
+        }
+        help_texts = {
+            "name": tr(
+                "Nome principal da clínica mãe.",
+                "Main name of the parent clinic.",
+            ),
+            "legal_name": tr(
+                "Opcional. Use quando a razão social for diferente do nome público.",
+                "Optional. Use when the legal entity name differs from the public name.",
+            ),
+            "nuit": tr(
+                "Identificador fiscal da clínica. Guardamos apenas números.",
+                "Clinic tax identifier. We store digits only.",
+            ),
+            "address": tr(
+                "Endereço principal ou sede da clínica.",
+                "Main address or headquarters of the clinic.",
+            ),
+            "description": tr(
+                "Resumo institucional da clínica e do seu posicionamento.",
+                "Institutional summary of the clinic and its positioning.",
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+
+        autocomplete_map = {
+            "name": "section-clinic organization",
+            "legal_name": "section-clinic organization",
+            "nuit": "off",
+            "city": "section-clinic address-level2",
+            "province": "section-clinic address-level1",
+            "country": "section-clinic country-name",
+            "postal_code": "section-clinic postal-code",
+            "address": "section-clinic street-address",
+            "phone": "section-clinic tel",
+            "email": "section-clinic email",
+            "website": "section-clinic url",
+            "description": "off",
+        }
+        for field_name, autocomplete_value in autocomplete_map.items():
+            self.fields[field_name].widget.attrs["autocomplete"] = autocomplete_value
+            self.fields[field_name].widget.attrs["data-lpignore"] = "true"
+            self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"
+
+        for image_field in ("logo", "favicon"):
+            self.fields[image_field].widget.attrs["accept"] = "image/*"
+
+    def clean_nuit(self):
+        nuit = re.sub(r"\D", "", (self.cleaned_data.get("nuit") or ""))
+        if not nuit:
+            return None
+        if len(nuit) != 9:
+            raise forms.ValidationError(
+                tr(
+                    "O NUIT deve ter 9 dígitos.",
+                    "The tax ID must have 9 digits.",
+                )
+            )
+        return nuit
 
 
 class SystemPreferenceForm(StyledFormMixin, forms.ModelForm):

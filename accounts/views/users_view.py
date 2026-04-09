@@ -8,6 +8,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from accounts.forms import UserForm
 from accounts.ui import filter_users_for_branch, ui_text
 from accounts.utils import visible_users_queryset
+from clinic.models import Medico
 
 from .base_view import AppPermissionMixin, ClinicPageMixin, ModalDetailMixin, ModalFormMixin
 
@@ -33,7 +34,14 @@ class UserListView(AppPermissionMixin, ClinicPageMixin, ListView):
     def get_queryset(self):
         return (
             filter_users_for_branch(visible_users_queryset(), self.request)
-            .select_related("profile", "profile__default_branch")
+            .select_related(
+                "profile",
+                "profile__default_branch",
+                "medico",
+                "medico__especialidade",
+                "medico__departamento",
+                "medico__departamento__branch",
+            )
             .prefetch_related("profile__assigned_branches")
             .prefetch_related("groups")
             .order_by("first_name", "last_name", "username")
@@ -68,12 +76,23 @@ class UserDetailView(AppPermissionMixin, ModalDetailMixin, ClinicPageMixin, Deta
     def get_queryset(self):
         return (
             filter_users_for_branch(visible_users_queryset(), self.request)
-            .select_related("profile", "profile__default_branch")
+            .select_related(
+                "profile",
+                "profile__default_branch",
+                "medico",
+                "medico__especialidade",
+                "medico__departamento",
+                "medico__departamento__branch",
+            )
             .prefetch_related("profile__assigned_branches", "groups")
         )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        try:
+            context["clinical_profile"] = self.object.medico
+        except Medico.DoesNotExist:
+            context["clinical_profile"] = None
         context["detail_partial"] = "accounts/users/includes/detail_content.html"
         context["modal_heading"] = self.object.get_full_name() or self.object.username
         context["modal_description"] = ui_text(
@@ -92,6 +111,7 @@ class UserCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, Create
     success_url = reverse_lazy("accounts:user_list")
     permission_required = "auth.add_user"
     segment = "users"
+    modal_size = "modal-xl"
 
     def get_page_title(self) -> str:
         return ui_text(self.request, "Novo utilizador", "New user")
@@ -127,6 +147,7 @@ class UserUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, Update
     success_url = reverse_lazy("accounts:user_list")
     permission_required = "auth.change_user"
     segment = "users"
+    modal_size = "modal-xl"
 
     def get_page_title(self) -> str:
         return ui_text(self.request, "Editar utilizador", "Edit user")
@@ -141,7 +162,14 @@ class UserUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, Update
     def get_queryset(self):
         return (
             filter_users_for_branch(visible_users_queryset(), self.request)
-            .select_related("profile", "profile__default_branch")
+            .select_related(
+                "profile",
+                "profile__default_branch",
+                "medico",
+                "medico__especialidade",
+                "medico__departamento",
+                "medico__departamento__branch",
+            )
             .prefetch_related("profile__assigned_branches", "groups")
         )
 

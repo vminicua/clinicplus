@@ -1,0 +1,164 @@
+{% load ui_extras %}
+<div class="row mb-4">
+  <div class="col-lg-8 mb-4 mb-lg-0">
+    <div class="card clinic-detail-card h-100">
+      <div class="card-header p-4 border-0">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <p class="text-sm text-secondary mb-1">{% ui "Ficha da clínica" "Clinic record" %}</p>
+            <h3 class="mb-1">{{ object.name }}</h3>
+            <p class="text-secondary mb-0">
+              {% if object.city %}{{ object.city }}{% else %}{% ui "Sem cidade" "No city" %}{% endif %}
+              {% if object.province %} · {{ object.province }}{% endif %}
+              {% if object.email %} · {{ object.email }}{% endif %}
+            </p>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            {% if perms.accounts.change_clinic %}
+              <a href="{% url 'accounts:clinic_update' object.pk %}" data-modal-url="{% url 'accounts:clinic_update' object.pk %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">{% ui "Editar" "Edit" %}</a>
+            {% endif %}
+            {% if perms.accounts.change_clinic %}
+              {% if object.is_active %}
+                <a href="#" data-confirm-action data-action-url="{% url 'accounts:clinic_toggle_status' object.pk %}" data-confirm-title="{% ui 'Desactivar clínica' 'Deactivate clinic' %}" data-confirm-text="{% ui 'A clínica deixará de aparecer como activa.' 'The clinic will stop appearing as active.' %}" data-confirm-button="{% ui 'Desactivar' 'Deactivate' %}" data-confirm-icon="warning" class="btn btn-outline-warning mb-0">{% ui "Desactivar" "Deactivate" %}</a>
+              {% else %}
+                <a href="#" data-confirm-action data-action-url="{% url 'accounts:clinic_toggle_status' object.pk %}" data-confirm-title="{% ui 'Activar clínica' 'Activate clinic' %}" data-confirm-text="{% ui 'A clínica voltará a estar disponível.' 'The clinic will be available again.' %}" data-confirm-button="{% ui 'Activar' 'Activate' %}" data-confirm-icon="question" class="btn btn-outline-success mb-0">{% ui "Activar" "Activate" %}</a>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body pt-0">
+        <div class="d-flex align-items-center gap-3 flex-wrap mb-4">
+          <div class="clinic-avatar-square d-flex align-items-center justify-content-center bg-gray-100 border-radius-xl overflow-hidden" style="width: 4.5rem; height: 4.5rem;">
+            {% if object.logo %}
+              <img src="{{ object.logo.url }}" alt="{{ object.name }}" class="w-100 h-100" style="object-fit: cover;">
+            {% else %}
+              <i class="material-symbols-rounded text-secondary" style="font-size: 2rem;">local_hospital</i>
+            {% endif %}
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if object.nuit %}
+              <span class="clinic-inline-badge">NUIT: {{ object.nuit }}</span>
+            {% endif %}
+            {% if object.favicon %}
+              <span class="clinic-inline-badge">{% ui "Favicon carregado" "Favicon uploaded" %}</span>
+            {% endif %}
+            <span class="clinic-inline-badge">
+              {% if object.is_active %}
+                {% ui "Clínica activa" "Active clinic" %}
+              {% else %}
+                {% ui "Clínica inactiva" "Inactive clinic" %}
+              {% endif %}
+            </span>
+          </div>
+        </div>
+
+        <div class="clinic-detail-grid">
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Estado" "Status" %}</p>
+            {% if object.is_active %}
+              <span class="clinic-status clinic-status-success">{% ui "Activa" "Active" %}</span>
+            {% else %}
+              <span class="clinic-status clinic-status-muted">{% ui "Inactiva" "Inactive" %}</span>
+            {% endif %}
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Nome legal" "Legal name" %}</p>
+            <h6 class="mb-0">{% if object.legal_name %}{{ object.legal_name }}{% else %}{% ui "Sem nome legal registado" "No legal name registered" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">NUIT</p>
+            <h6 class="mb-0">{% if object.nuit %}{{ object.nuit }}{% else %}{% ui "Sem NUIT registado" "No tax ID registered" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Cidade" "City" %}</p>
+            <h6 class="mb-0">{% if object.city %}{{ object.city }}{% else %}{% ui "Sem cidade registada" "No city registered" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Província / estado" "Province / state" %}</p>
+            <h6 class="mb-0">{% if object.province %}{{ object.province }}{% else %}{% ui "Sem província registada" "No province registered" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "País" "Country" %}</p>
+            <h6 class="mb-0">{% if object.country %}{{ object.country }}{% else %}{% ui "Sem país registado" "No country registered" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Código postal" "Postal code" %}</p>
+            <h6 class="mb-0">{% if object.postal_code %}{{ object.postal_code }}{% else %}{% ui "Sem código postal" "No postal code" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Telefone" "Phone" %}</p>
+            <h6 class="mb-0">{% if object.phone %}{{ object.phone }}{% else %}{% ui "Sem telefone" "No phone" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Email" "Email" %}</p>
+            <h6 class="mb-0">{% if object.email %}{{ object.email }}{% else %}{% ui "Sem email" "No email" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Website" "Website" %}</p>
+            <h6 class="mb-0">
+              {% if object.website %}
+                <a href="{{ object.website }}" target="_blank" rel="noreferrer">{{ object.website }}</a>
+              {% else %}
+                {% ui "Sem website" "No website" %}
+              {% endif %}
+            </h6>
+          </div>
+
+          <div class="clinic-detail-item full-width">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Endereço" "Address" %}</p>
+            <h6 class="mb-0">{% if object.address %}{{ object.address }}{% else %}{% ui "Sem endereço registado" "No address registered" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item full-width">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Descrição" "Description" %}</p>
+            <h6 class="mb-0">{% if object.description %}{{ object.description|linebreaksbr }}{% else %}{% ui "Sem descrição adicional" "No additional description" %}{% endif %}</h6>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card clinic-detail-card h-100">
+      <div class="card-header p-4 border-0">
+        <h5 class="mb-1">{% ui "Rede de sucursais" "Branch network" %}</h5>
+        <p class="text-secondary mb-0">{% ui "Visão rápida das sucursais ligadas a esta clínica." "Quick view of the branches linked to this clinic." %}</p>
+      </div>
+      <div class="card-body pt-0">
+        <div class="clinic-detail-item mb-3">
+          <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Total de sucursais" "Total branches" %}</p>
+          <h4 class="mb-0">{{ linked_branches|length }}</h4>
+        </div>
+
+        <div class="clinic-detail-item mb-3">
+          <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Sucursais activas" "Active branches" %}</p>
+          <h6 class="mb-0">{{ object.branches.filter(is_active=True).count }}</h6>
+        </div>
+
+        <div class="clinic-inline-list">
+          {% for branch in linked_branches %}
+            <span class="clinic-inline-badge">
+              {{ branch.name }}
+              {% if branch.city %} · {{ branch.city }}{% endif %}
+            </span>
+          {% empty %}
+            <span class="text-sm text-secondary">{% ui "Nenhuma sucursal ligada a esta clínica." "No branches linked to this clinic." %}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

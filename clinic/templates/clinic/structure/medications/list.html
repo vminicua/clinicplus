@@ -1,0 +1,138 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">medication</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Total de medicamentos" "Total medications" %}</p>
+              <h4 class="mb-0">{{ total_medications }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">inventory_2</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Com stock" "In stock" %}</p>
+              <h4 class="mb-0">{{ in_stock_medications }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">warning</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Stock baixo" "Low stock" %}</p>
+              <h4 class="mb-0">{{ low_stock_medications }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">summarize</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Unidades totais" "Total units" %}</p>
+              <h4 class="mb-0">{{ total_units }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{% ui "Catálogo de medicamentos" "Medication catalog" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Gerencie princípio activo, dosagem, quantidade e preço de referência." "Manage active ingredient, dosage, quantity, and reference price." %}</p>
+          </div>
+
+          {% if perms.clinic.add_medicamento %}
+            <a href="{% url 'clinic:medication_create' %}" data-modal-url="{% url 'clinic:medication_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">add</i>
+              {% ui "Novo medicamento" "New medication" %}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        {% if medications %}
+          <div class="clinic-datatable-shell">
+            <table id="medications-table" data-page-length="10" data-export-title="{% ui 'Medicamentos Clinic Plus' 'Clinic Plus Medications' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+              <thead>
+                <tr>
+                  <th class="ps-4">{% ui "Medicamento" "Medication" %}</th>
+                  <th>{% ui "Princípio activo" "Active ingredient" %}</th>
+                  <th>{% ui "Dosagem" "Dosage" %}</th>
+                  <th>{% ui "Stock" "Stock" %}</th>
+                  <th>{% ui "Preço" "Price" %}</th>
+                  <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for medication in medications %}
+                  <tr>
+                    <td class="ps-4">
+                      <h6 class="mb-0 text-sm">{{ medication.name }}</h6>
+                      <p class="text-xs text-secondary mb-0">{{ medication.descricao|default:"-"|truncatechars:80 }}</p>
+                    </td>
+                    <td><span class="text-sm">{{ medication.principio_ativo }}</span></td>
+                    <td><span class="text-sm">{{ medication.dosagem }}</span></td>
+                    <td>
+                      {% if medication.quantidade <= 0 %}
+                        <span class="clinic-status clinic-status-warning">{% ui "Sem stock" "Out of stock" %}</span>
+                      {% elif medication.quantidade <= 10 %}
+                        <span class="clinic-status clinic-status-info">{{ medication.quantidade }}</span>
+                      {% else %}
+                        <span class="text-sm">{{ medication.quantidade }}</span>
+                      {% endif %}
+                    </td>
+                    <td><span class="text-sm">{{ medication.preco }}</span></td>
+                    <td class="text-end pe-4">
+                      {% if perms.clinic.change_medicamento %}
+                        <a href="{% url 'clinic:medication_update' medication.pk %}" data-modal-url="{% url 'clinic:medication_update' medication.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="{% ui 'Editar medicamento' 'Edit medication' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                        </a>
+                      {% else %}
+                        <span class="text-sm text-secondary">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="px-4 py-5 text-center text-secondary">
+            {% ui "Ainda não existem medicamentos registados." "There are no medications registered yet." %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

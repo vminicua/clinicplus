@@ -22,6 +22,14 @@ CURRENCY_CHOICES = [
 
 
 class Branch(models.Model):
+    clinic = models.ForeignKey(
+        "accounts.Clinic",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="branches",
+        verbose_name=translate_pair("Clínica", "Clinic"),
+    )
     name = models.CharField(
         max_length=150,
         unique=True,
@@ -110,6 +118,78 @@ class Branch(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.code})"
+
+
+class Clinic(models.Model):
+    name = models.CharField(
+        max_length=180,
+        unique=True,
+        verbose_name=translate_pair("Nome da clínica", "Clinic name"),
+    )
+    legal_name = models.CharField(
+        max_length=220,
+        blank=True,
+        verbose_name=translate_pair("Nome legal", "Legal name"),
+    )
+    nuit = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        unique=True,
+        verbose_name=translate_pair("NUIT", "Tax ID"),
+    )
+    logo = models.ImageField(
+        upload_to="clinics/logos/",
+        blank=True,
+        null=True,
+        verbose_name=translate_pair("Logotipo", "Logo"),
+    )
+    favicon = models.ImageField(
+        upload_to="clinics/favicons/",
+        blank=True,
+        null=True,
+        verbose_name=translate_pair("Favicon", "Favicon"),
+    )
+    city = models.CharField(max_length=120, blank=True, verbose_name=translate_pair("Cidade", "City"))
+    province = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name=translate_pair("Província / estado", "Province / state"),
+    )
+    country = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Moçambique",
+        verbose_name=translate_pair("País", "Country"),
+    )
+    postal_code = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name=translate_pair("Código postal", "Postal code"),
+    )
+    address = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=translate_pair("Endereço", "Address"),
+    )
+    phone = models.CharField(max_length=30, blank=True, verbose_name=translate_pair("Telefone", "Phone"))
+    email = models.EmailField(blank=True, verbose_name="Email")
+    website = models.URLField(blank=True, verbose_name=translate_pair("Website", "Website"))
+    description = models.TextField(
+        blank=True,
+        verbose_name=translate_pair("Descrição", "Description"),
+    )
+    is_active = models.BooleanField(default=True, verbose_name=translate_pair("Activa", "Active"))
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("name",)
+        verbose_name = translate_pair("Clínica", "Clinic")
+        verbose_name_plural = translate_pair("Clínicas", "Clinics")
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class SystemPreference(models.Model):

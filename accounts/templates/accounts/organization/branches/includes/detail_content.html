@@ -57,6 +57,11 @@
           </div>
 
           <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Clínica-mãe" "Parent clinic" %}</p>
+            <h6 class="mb-0">{% if object.clinic %}{{ object.clinic.name }}{% else %}{% ui "Sem clínica associada" "No linked clinic" %}{% endif %}</h6>
+          </div>
+
+          <div class="clinic-detail-item">
             <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Nome legal" "Legal name" %}</p>
             <h6 class="mb-0">{% if object.legal_name %}{{ object.legal_name }}{% else %}{% ui "Sem nome legal registado" "No legal name registered" %}{% endif %}</h6>
           </div>

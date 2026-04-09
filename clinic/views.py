@@ -3,13 +3,11 @@ from datetime import date, timedelta
 from io import BytesIO
 from urllib.parse import urlencode
 
-import logging
-
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import DatabaseError, transaction
-from django.db.models import Count, Exists, Max, OuterRef, Prefetch, Q
+from django.db.models import Count, Exists, Max, OuterRef, Prefetch, Q, Sum
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -18,6 +16,7 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
+from accounts.models import Clinic
 from accounts.ui import (
     BRANCH_SESSION_KEY,
     LANGUAGE_SESSION_KEY,
@@ -30,11 +29,14 @@ from accounts.views.base_view import AppPermissionMixin, ClinicPageMixin, ModalD
 from clinic.forms import (
     AppointmentForm,
     ConsultationForm,
+    MedicationForm,
+    DepartmentForm,
     PatientForm,
+    SpecialtyForm,
     WorkScheduleBatchCreateForm,
     WorkScheduleForm,
 )
-from clinic.models import Agendamento, Consulta, HorarioTrabalho, Medico, Paciente
+from clinic.models import Agendamento, Consulta, Departamento, Especialidade, HorarioTrabalho, Medicamento, Medico, Paciente
 
 
 logger = logging.getLogger(__name__)
@@ -73,6 +75,8 @@ def patient_history_queryset():
         queryset=Agendamento.objects.select_related(
             "medico__user",
             "medico__especialidade",
+            "medico__departamento",
+            "medico__departamento__branch",
             "branch",
             "consulta",
             "hospital",
@@ -89,6 +93,8 @@ def work_schedule_queryset():
             "user",
             "branch",
             "user__medico__especialidade",
+            "user__medico__departamento",
+            "user__medico__departamento__branch",
             "user__medico__hospital",
         )
         .annotate(
@@ -115,6 +121,8 @@ def appointment_queryset():
             "paciente__branch",
             "medico__user",
             "medico__especialidade",
+            "medico__departamento",
+            "medico__departamento__branch",
             "branch",
             "consulta",
             "hospital",
@@ -162,16 +170,14 @@ def build_appointment_professionals(schedule_list, reference_date):
         entry["future_appointments"] = max(entry["future_appointments"], schedule.future_appointments or 0)
 
         if schedule.linked_medico is not None and not entry["doctor_badge"]:
-            specialty = (
-                schedule.linked_medico.especialidade.name
-                if schedule.linked_medico.especialidade_id
-                else ""
-            )
-            entry["doctor_badge"] = (
-                f"{specialty} · {schedule.linked_medico.crm}"
-                if specialty
-                else schedule.linked_medico.crm
-            )
+            badge_parts = []
+            if schedule.linked_medico.especialidade_id:
+                badge_parts.append(schedule.linked_medico.especialidade.name)
+            if schedule.linked_medico.departamento_id:
+                badge_parts.append(schedule.linked_medico.departamento.name)
+            if schedule.linked_medico.crm:
+                badge_parts.append(schedule.linked_medico.crm)
+            entry["doctor_badge"] = " · ".join(part for part in badge_parts if part)
 
     return sorted(registry.values(), key=lambda item: item["professional_name"].lower())
 
@@ -207,10 +213,14 @@ def serialize_work_schedule(schedule):
         "future_appointments": schedule.future_appointments or 0,
         "linked_doctor": linked_medico is not None,
         "doctor_badge": (
-            (
-                f"{linked_medico.especialidade.name} · {linked_medico.crm}"
-                if linked_medico.especialidade_id
-                else linked_medico.crm
+            " · ".join(
+                part
+                for part in [
+                    linked_medico.especialidade.name if linked_medico and linked_medico.especialidade_id else "",
+                    linked_medico.departamento.name if linked_medico and linked_medico.departamento_id else "",
+                    linked_medico.crm if linked_medico else "",
+                ]
+                if part
             )
             if linked_medico is not None
             else ""
@@ -328,7 +338,7 @@ def dashboard(request):
         'current_date': timezone.localdate(),
         'greeting_name': greeting_name,
         'current_branch': current_branch,
-        'total_hospitals': 1,
+        'total_clinics': Clinic.objects.filter(is_active=True).count() or Clinic.objects.count() or 1,
         'total_doctors': 5,
         'total_patients': 24,
         'total_appointments': 48,
@@ -992,7 +1002,9 @@ class AppointmentAgendaView(AppPermissionMixin, ClinicPageMixin, TemplateView):
         )
         selected_user_id = selected_professional["user_id"] if selected_professional else None
         selected_medico = (
-            Medico.objects.select_related("user", "especialidade", "hospital").filter(user_id=selected_user_id).first()
+            Medico.objects.select_related("user", "especialidade", "departamento", "departamento__branch", "hospital")
+            .filter(user_id=selected_user_id)
+            .first()
             if selected_user_id
             else None
         )
@@ -1067,6 +1079,331 @@ class AppointmentAgendaView(AppPermissionMixin, ClinicPageMixin, TemplateView):
         context["list_url"] = reverse("clinic:appointment_list")
         context["create_url"] = reverse("clinic:appointment_create")
         return context
+
+
+class SpecialtyListView(AppPermissionMixin, ClinicPageMixin, ListView):
+    model = Especialidade
+    template_name = "clinic/structure/specialties/list.html"
+    context_object_name = "specialties"
+    permission_required = "clinic.view_especialidade"
+    segment = "specialties"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Especialidades", "Specialties")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Defina as designações clínicas usadas nos perfis dos médicos.",
+            "Define the clinical designations used in doctor profiles.",
+        )
+
+    def get_queryset(self):
+        return Especialidade.objects.annotate(doctor_count=Count("medico")).order_by("name")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_queryset = self.get_queryset()
+        context["total_specialties"] = base_queryset.count()
+        context["specialties_with_doctors"] = base_queryset.filter(doctor_count__gt=0).count()
+        context["total_linked_doctors"] = Medico.objects.filter(especialidade__isnull=False).count()
+        return context
+
+
+class SpecialtyCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
+    model = Especialidade
+    form_class = SpecialtyForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:specialty_list")
+    permission_required = "clinic.add_especialidade"
+    segment = "specialties"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Nova especialidade", "New specialty")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Registe uma nova designação clínica para os profissionais.",
+            "Register a new clinical designation for professionals.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar especialidade", "Create specialty")
+        context["form_description"] = ui_text(
+            self.request,
+            "Esta especialidade poderá ser atribuída aos médicos e aparecerá nas consultas e agendas.",
+            "This specialty can be assigned to doctors and will appear in consultations and agendas.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar especialidade", "Save specialty")
+        context["cancel_url"] = reverse("clinic:specialty_list")
+        context["wide_fields"] = ("description",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Especialidade criada com sucesso.", "Specialty created successfully.")
+
+
+class SpecialtyUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
+    queryset = Especialidade.objects.all()
+    form_class = SpecialtyForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:specialty_list")
+    permission_required = "clinic.change_especialidade"
+    segment = "specialties"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar especialidade", "Edit specialty")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize a designação e a descrição desta especialidade.",
+            "Update the designation and description of this specialty.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar especialidade", "Edit specialty")
+        context["form_description"] = ui_text(
+            self.request,
+            "As alterações reflectem-se imediatamente nos perfis clínicos associados.",
+            "Changes are immediately reflected in the linked clinical profiles.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar especialidade", "Update specialty")
+        context["cancel_url"] = reverse("clinic:specialty_list")
+        context["wide_fields"] = ("description",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Especialidade actualizada com sucesso.", "Specialty updated successfully.")
+
+
+class DepartmentListView(AppPermissionMixin, ClinicPageMixin, ListView):
+    model = Departamento
+    template_name = "clinic/structure/departments/list.html"
+    context_object_name = "departments"
+    permission_required = "clinic.view_departamento"
+    segment = "departments"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Departamentos", "Departments")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Organize os serviços clínicos por sucursal e defina o responsável de cada área.",
+            "Organize clinical services by branch and define the lead for each area.",
+        )
+
+    def get_queryset(self):
+        return (
+            Departamento.objects.select_related(
+                "branch",
+                "hospital",
+                "responsavel__user",
+                "responsavel__especialidade",
+            )
+            .annotate(doctor_count=Count("medicos"))
+            .order_by("branch__name", "name")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_queryset = self.get_queryset()
+        context["total_departments"] = base_queryset.count()
+        context["departments_with_lead"] = base_queryset.filter(responsavel__isnull=False).count()
+        context["departments_with_doctors"] = base_queryset.filter(doctor_count__gt=0).count()
+        return context
+
+
+class DepartmentCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
+    model = Departamento
+    form_class = DepartmentForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:department_list")
+    permission_required = "clinic.add_departamento"
+    segment = "departments"
+    modal_size = "modal-xl"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo departamento", "New department")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Crie um serviço clínico por sucursal e defina a liderança médica.",
+            "Create a clinical service by branch and define the medical lead.",
+        )
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar departamento", "Create department")
+        context["form_description"] = ui_text(
+            self.request,
+            "Use departamentos para estruturar áreas como Ginecologia, Pediatria ou Ortopedia.",
+            "Use departments to structure areas such as Gynecology, Pediatrics, or Orthopedics.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar departamento", "Save department")
+        context["cancel_url"] = reverse("clinic:department_list")
+        context["wide_fields"] = ("descricao",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Departamento criado com sucesso.", "Department created successfully.")
+
+
+class DepartmentUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
+    queryset = Departamento.objects.select_related("branch", "responsavel__user")
+    form_class = DepartmentForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:department_list")
+    permission_required = "clinic.change_departamento"
+    segment = "departments"
+    modal_size = "modal-xl"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar departamento", "Edit department")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize o serviço, a sucursal e o responsável desta área clínica.",
+            "Update the service, branch, and lead of this clinical area.",
+        )
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar departamento", "Edit department")
+        context["form_description"] = ui_text(
+            self.request,
+            "As alterações reflectem-se nos perfis médicos e na leitura operacional da sucursal.",
+            "Changes are reflected in doctor profiles and the branch operational view.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar departamento", "Update department")
+        context["cancel_url"] = reverse("clinic:department_list")
+        context["wide_fields"] = ("descricao",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Departamento actualizado com sucesso.", "Department updated successfully.")
+
+
+class MedicationListView(AppPermissionMixin, ClinicPageMixin, ListView):
+    model = Medicamento
+    template_name = "clinic/structure/medications/list.html"
+    context_object_name = "medications"
+    permission_required = "clinic.view_medicamento"
+    segment = "medications"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Medicamentos", "Medications")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Catálogo de medicamentos e stock de referência usado pela operação clínica e farmácia.",
+            "Medication catalog and reference stock used by clinical operations and pharmacy.",
+        )
+
+    def get_queryset(self):
+        return Medicamento.objects.order_by("name", "dosagem")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_queryset = self.get_queryset()
+        context["total_medications"] = base_queryset.count()
+        context["in_stock_medications"] = base_queryset.filter(quantidade__gt=0).count()
+        context["low_stock_medications"] = base_queryset.filter(quantidade__gt=0, quantidade__lte=10).count()
+        context["total_units"] = base_queryset.aggregate(total=Sum("quantidade")).get("total") or 0
+        return context
+
+
+class MedicationCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
+    model = Medicamento
+    form_class = MedicationForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:medication_list")
+    permission_required = "clinic.add_medicamento"
+    segment = "medications"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo medicamento", "New medication")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Registe um medicamento para catálogo clínico e controlo de stock.",
+            "Register a medication for the clinical catalog and stock control.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar medicamento", "Create medication")
+        context["form_description"] = ui_text(
+            self.request,
+            "Use esta ficha para manter o catálogo farmacêutico organizado.",
+            "Use this record to keep the pharmacy catalog organized.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar medicamento", "Save medication")
+        context["cancel_url"] = reverse("clinic:medication_list")
+        context["wide_fields"] = ("descricao",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Medicamento criado com sucesso.", "Medication created successfully.")
+
+
+class MedicationUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
+    queryset = Medicamento.objects.all()
+    form_class = MedicationForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:medication_list")
+    permission_required = "clinic.change_medicamento"
+    segment = "medications"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar medicamento", "Edit medication")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize princípio activo, stock e preço de referência.",
+            "Update the active ingredient, stock, and reference price.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar medicamento", "Edit medication")
+        context["form_description"] = ui_text(
+            self.request,
+            "As alterações reflectem-se imediatamente nas listagens operacionais.",
+            "Changes are immediately reflected in operational listings.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar medicamento", "Update medication")
+        context["cancel_url"] = reverse("clinic:medication_list")
+        context["wide_fields"] = ("descricao",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Medicamento actualizado com sucesso.", "Medication updated successfully.")
 
 
 class WorkScheduleListView(AppPermissionMixin, ClinicPageMixin, ListView):

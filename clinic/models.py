@@ -7,7 +7,8 @@ from django.utils import timezone
 
 from accounts.models import Branch
 
-# Hospital/Clínica Model
+
+# Legacy organizational model kept only for backward compatibility.
 class Hospital(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField()
@@ -21,8 +22,8 @@ class Hospital(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Hospital"
-        verbose_name_plural = "Hospitais"
+        verbose_name = "Clínica legada"
+        verbose_name_plural = "Clínicas legadas"
     
     def __str__(self):
         return self.name
@@ -53,6 +54,13 @@ class Medico(models.Model):
         blank=True,
     )
     especialidade = models.ForeignKey(Especialidade, on_delete=models.SET_NULL, null=True)
+    departamento = models.ForeignKey(
+        "Departamento",
+        on_delete=models.SET_NULL,
+        related_name="medicos",
+        null=True,
+        blank=True,
+    )
     crm = models.CharField(max_length=20, unique=True)
     phone = models.CharField(max_length=20)
     bio = models.TextField(blank=True)
@@ -466,8 +474,27 @@ class Medicamento(models.Model):
 # Departamentos Model
 class Departamento(models.Model):
     name = models.CharField(max_length=255)
-    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE, related_name='departamentos')
-    responsavel = models.ForeignKey(Medico, on_delete=models.SET_NULL, null=True, blank=True)
+    branch = models.ForeignKey(
+        Branch,
+        on_delete=models.SET_NULL,
+        related_name="departamentos",
+        null=True,
+        blank=True,
+    )
+    hospital = models.ForeignKey(
+        Hospital,
+        on_delete=models.SET_NULL,
+        related_name='departamentos',
+        null=True,
+        blank=True,
+    )
+    responsavel = models.ForeignKey(
+        Medico,
+        on_delete=models.SET_NULL,
+        related_name="departamentos_responsavel",
+        null=True,
+        blank=True,
+    )
     descricao = models.TextField(blank=True)
     
     class Meta:
@@ -476,4 +503,12 @@ class Departamento(models.Model):
     
     def __str__(self):
         return self.name
+
+    @property
+    def unit_name(self):
+        if self.branch_id:
+            return self.branch.name
+        if self.hospital_id:
+            return self.hospital.name
+        return ""
 

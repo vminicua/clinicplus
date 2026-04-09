@@ -11,7 +11,7 @@
           </div>
 
           <div class="d-flex gap-2 flex-wrap">
-            <a href="{% url 'accounts:user_update' object.pk %}" data-modal-url="{% url 'accounts:user_update' object.pk %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">{% ui "Editar" "Edit" %}</a>
+            <a href="{% url 'accounts:user_update' object.pk %}" data-modal-url="{% url 'accounts:user_update' object.pk %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">{% ui "Editar" "Edit" %}</a>
             {% if object.is_active %}
               <a href="#" data-confirm-action data-action-url="{% url 'accounts:user_toggle_status' object.pk %}" data-confirm-title="{% ui 'Desactivar utilizador' 'Deactivate user' %}" data-confirm-text="{% ui 'O acesso deste utilizador será bloqueado até nova activação.' 'This user will be blocked until reactivated.' %}" data-confirm-button="{% ui 'Desactivar' 'Deactivate' %}" data-confirm-icon="warning" class="btn btn-outline-warning mb-0">{% ui "Desactivar" "Deactivate" %}</a>
             {% else %}
@@ -93,6 +93,77 @@
                 <span class="text-sm text-secondary">{% ui "Sem sucursais associadas" "No branches assigned" %}</span>
               {% endfor %}
             </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="clinic-detail-grid">
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Perfil clínico" "Clinical profile" %}</p>
+            <h6 class="mb-0">
+              {% if clinical_profile %}
+                {% ui "Activo" "Active" %}
+              {% else %}
+                {% ui "Não configurado" "Not configured" %}
+              {% endif %}
+            </h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Designação" "Designation" %}</p>
+            <h6 class="mb-0">
+              {% if clinical_profile and clinical_profile.especialidade %}
+                {{ clinical_profile.especialidade.name }}
+              {% else %}
+                {% ui "Sem especialidade definida" "No specialty defined" %}
+              {% endif %}
+            </h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Departamento" "Department" %}</p>
+            <h6 class="mb-0">
+              {% if clinical_profile and clinical_profile.departamento %}
+                {{ clinical_profile.departamento.name }}
+                {% if clinical_profile.departamento.branch %} · {{ clinical_profile.departamento.branch.name }}{% endif %}
+              {% else %}
+                {% ui "Sem departamento definido" "No department defined" %}
+              {% endif %}
+            </h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Cédula / CRM" "License / CRM" %}</p>
+            <h6 class="mb-0">
+              {% if clinical_profile and clinical_profile.crm %}
+                {{ clinical_profile.crm }}
+              {% else %}
+                {% ui "Sem identificador clínico" "No clinical identifier" %}
+              {% endif %}
+            </h6>
+          </div>
+
+          <div class="clinic-detail-item">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Telefone clínico" "Clinical phone" %}</p>
+            <h6 class="mb-0">
+              {% if clinical_profile and clinical_profile.phone %}
+                {{ clinical_profile.phone }}
+              {% else %}
+                {% ui "Sem telefone clínico" "No clinical phone" %}
+              {% endif %}
+            </h6>
+          </div>
+
+          <div class="clinic-detail-item full-width">
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Resumo clínico" "Clinical summary" %}</p>
+            <h6 class="mb-0">
+              {% if clinical_profile and clinical_profile.bio %}
+                {{ clinical_profile.bio|linebreaksbr }}
+              {% else %}
+                {% ui "Sem resumo clínico registado." "No clinical summary recorded." %}
+              {% endif %}
+            </h6>
           </div>
         </div>
       </div>

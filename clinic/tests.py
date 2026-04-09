@@ -6,10 +6,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import Branch, SystemPreference
-from clinic.forms import AppointmentForm
-from clinic.forms import PatientForm
-from clinic.forms import WorkScheduleBatchCreateForm, WorkScheduleForm
-from clinic.models import Agendamento, Consulta, HorarioTrabalho, Hospital, Medico, Paciente
+from clinic.forms import AppointmentForm, DepartmentForm, MedicationForm, PatientForm, SpecialtyForm, WorkScheduleBatchCreateForm, WorkScheduleForm
+from clinic.models import Agendamento, Consulta, Departamento, Especialidade, HorarioTrabalho, Hospital, Medicamento, Medico, Paciente
 
 
 class PatientFormTests(TestCase):
@@ -661,3 +659,114 @@ class AppointmentFormTests(TestCase):
         self.assertIn("Próxima disponibilidade", form.errors["hora"][0])
         self.assertIn(next_available_date.strftime("%d/%m/%Y"), form.errors["hora"][0])
         self.assertIn("09:00", form.errors["hora"][0])
+
+
+class ClinicalStructureTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.branch = Branch.objects.create(name="Clinic Plus Estrutura", code="CPE", city="Maputo")
+        self.user = User.objects.create_user(username="estrutura", password="123456")
+        self.user.user_permissions.add(
+            Permission.objects.get(codename="view_especialidade"),
+            Permission.objects.get(codename="add_especialidade"),
+            Permission.objects.get(codename="change_especialidade"),
+            Permission.objects.get(codename="view_departamento"),
+            Permission.objects.get(codename="add_departamento"),
+            Permission.objects.get(codename="change_departamento"),
+            Permission.objects.get(codename="view_medicamento"),
+            Permission.objects.get(codename="add_medicamento"),
+            Permission.objects.get(codename="change_medicamento"),
+        )
+        self.client.force_login(self.user)
+
+    def test_specialty_form_creates_specialty(self):
+        form = SpecialtyForm(
+            data={
+                "name": "Ginecologista",
+                "description": "Saúde da mulher.",
+                "icon": "female",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        specialty = form.save()
+        self.assertEqual(specialty.name, "Ginecologista")
+
+    def test_department_form_creates_department_with_responsavel(self):
+        specialty = Especialidade.objects.create(name="Ginecologista")
+        doctor_user = User.objects.create(username="doc_struct", first_name="Ana", last_name="Mussa")
+        doctor = Medico.objects.create(
+            user=doctor_user,
+            hospital=None,
+            especialidade=specialty,
+            crm="CRM-DEP-1",
+            phone="840888111",
+        )
+        HorarioTrabalho.objects.create(
+            user=doctor_user,
+            branch=self.branch,
+            role=HorarioTrabalho.RoleChoices.MEDICO,
+            weekday=2,
+            start_time="08:00",
+            end_time="12:00",
+            slot_minutes=30,
+            valid_from="2026-04-01",
+            accepts_appointments=True,
+        )
+
+        form = DepartmentForm(
+            data={
+                "name": "Ginecologia",
+                "branch": self.branch.pk,
+                "responsavel_user": doctor_user.pk,
+                "descricao": "Serviço de ginecologia.",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        department = form.save()
+        doctor.refresh_from_db()
+        self.assertEqual(department.responsavel, doctor)
+        self.assertEqual(department.branch, self.branch)
+
+    def test_specialty_and_department_lists_render(self):
+        specialty = Especialidade.objects.create(name="Pediatra")
+        department = Departamento.objects.create(name="Pediatria", branch=self.branch)
+
+        specialty_response = self.client.get(reverse("clinic:specialty_list"))
+        department_response = self.client.get(reverse("clinic:department_list"))
+
+        self.assertEqual(specialty_response.status_code, 200)
+        self.assertContains(specialty_response, specialty.name)
+        self.assertEqual(department_response.status_code, 200)
+        self.assertContains(department_response, department.name)
+
+    def test_medication_form_creates_medication(self):
+        form = MedicationForm(
+            data={
+                "name": "Paracetamol",
+                "principio_ativo": "Paracetamol",
+                "dosagem": "500 mg",
+                "quantidade": 24,
+                "preco": "12.50",
+                "descricao": "Analgésico de referência.",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        medication = form.save()
+        self.assertEqual(medication.name, "Paracetamol")
+
+    def test_medication_list_renders(self):
+        medication = Medicamento.objects.create(
+            name="Ibuprofeno",
+            principio_ativo="Ibuprofeno",
+            dosagem="400 mg",
+            quantidade=12,
+            preco="15.00",
+        )
+
+        response = self.client.get(reverse("clinic:medication_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, medication.name)

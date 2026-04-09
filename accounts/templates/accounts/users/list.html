@@ -75,7 +75,7 @@
               <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="4" data-value="{% ui 'Activo' 'Active' %}">{% ui "Activos" "Active" %}</a>
               <a href="#" class="clinic-pill" data-table-pill="users-table" data-column="4" data-value="{% ui 'Inactivo' 'Inactive' %}">{% ui "Inactivos" "Inactive" %}</a>
             </div>
-            <a href="{% url 'accounts:user_create' %}" data-modal-url="{% url 'accounts:user_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+            <a href="{% url 'accounts:user_create' %}" data-modal-url="{% url 'accounts:user_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
               <i class="material-symbols-rounded text-sm me-1">person_add</i>
               {% ui "Novo utilizador" "New user" %}
             </a>
@@ -157,7 +157,7 @@
                       <a href="{% url 'accounts:user_detail' user_item.pk %}" data-modal-url="{% url 'accounts:user_detail' user_item.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="{% ui 'Ver detalhes' 'View details' %}">
                         <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
                       </a>
-                      <a href="{% url 'accounts:user_update' user_item.pk %}" data-modal-url="{% url 'accounts:user_update' user_item.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="{% ui 'Editar utilizador' 'Edit user' %}">
+                      <a href="{% url 'accounts:user_update' user_item.pk %}" data-modal-url="{% url 'accounts:user_update' user_item.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-info" title="{% ui 'Editar utilizador' 'Edit user' %}">
                         <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
                       </a>
                       {% if user_item.is_active %}

@@ -37,11 +37,11 @@
         <div class="card clinic-stat-card h-100">
           <div class="card-header p-3 position-relative">
             <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
-              <i class="material-symbols-rounded opacity-10">group</i>
+              <i class="material-symbols-rounded opacity-10">local_hospital</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">{% ui "Utilizadores alocados" "Allocated users" %}</p>
-              <h4 class="mb-0">{{ allocated_users }}</h4>
+              <p class="text-sm mb-0">{% ui "Clínicas ligadas" "Linked clinics" %}</p>
+              <h4 class="mb-0">{{ linked_clinics }}</h4>
             </div>
           </div>
         </div>
@@ -90,6 +90,7 @@
             <thead>
               <tr>
                 <th class="ps-4">{% ui "Sucursal" "Branch" %}</th>
+                <th>{% ui "Clínica" "Clinic" %}</th>
                 <th>{% ui "Localização" "Location" %}</th>
                 <th>{% ui "Utilizadores" "Users" %}</th>
                 <th>{% ui "Estado" "Status" %}</th>
@@ -120,6 +121,15 @@
                         </p>
                       </div>
                     </div>
+                  </td>
+                  <td>
+                    <span class="text-sm">
+                      {% if branch.clinic_id %}
+                        {{ branch.clinic.name }}
+                      {% else %}
+                        {% ui "Sem clínica" "No clinic" %}
+                      {% endif %}
+                    </span>
                   </td>
                   <td>
                     <span class="text-sm">

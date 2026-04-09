@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import RequestFactory, TestCase
 
-from accounts.forms import UserForm
-from accounts.models import Branch, SystemPreference
+from accounts.forms import BranchForm, ClinicForm, UserForm
+from accounts.models import Branch, Clinic, SystemPreference
 from accounts.ui import LANGUAGE_SESSION_KEY, resolve_language_for_request
+from clinic.models import Departamento, Especialidade, Medico
 
 
 User = get_user_model()
@@ -30,6 +32,35 @@ class SystemPreferenceTests(TestCase):
 
 
 class UserBranchValidationTests(TestCase):
+    def test_clinic_form_creates_parent_clinic(self):
+        form = ClinicForm(
+            data={
+                "name": "Clinic Plus",
+                "legal_name": "Clinic Plus, Lda",
+                "nuit": "400000001",
+                "city": "Maputo",
+                "province": "Maputo Cidade",
+                "country": "Moçambique",
+                "address": "Av. Eduardo Mondlane",
+                "phone": "840000001",
+                "email": "geral@clinicplus.test",
+                "is_active": "on",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        clinic = form.save()
+
+        self.assertEqual(clinic.name, "Clinic Plus")
+        self.assertTrue(clinic.is_active)
+
+    def test_branch_form_prefills_single_active_clinic(self):
+        clinic = Clinic.objects.create(name="Clinic Plus", is_active=True)
+
+        form = BranchForm()
+
+        self.assertEqual(form.fields["clinic"].initial, clinic)
+
     def test_default_branch_must_be_inside_assigned_branches(self):
         default_branch = Branch.objects.create(name="Maputo", code="MAP")
         other_branch = Branch.objects.create(name="Matola", code="MAT")
@@ -51,3 +82,61 @@ class UserBranchValidationTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("default_branch", form.errors)
+
+    def test_user_form_creates_clinical_profile_for_doctor_role(self):
+        branch = Branch.objects.create(name="Central", code="CEN")
+        specialty = Especialidade.objects.create(name="Ginecologista")
+        department = Departamento.objects.create(name="Ginecologia", branch=branch)
+        doctor_role = Group.objects.create(name="Médico")
+
+        form = UserForm(
+            data={
+                "username": "dra_sara",
+                "first_name": "Sara",
+                "last_name": "Mabunda",
+                "email": "sara@example.com",
+                "password1": "SenhaSegura123",
+                "password2": "SenhaSegura123",
+                "preferred_language": "pt",
+                "is_active": "on",
+                "groups": [str(doctor_role.pk)],
+                "assigned_branches": [str(branch.pk)],
+                "default_branch": str(branch.pk),
+                "medical_specialty": str(specialty.pk),
+                "medical_department": str(department.pk),
+                "medical_crm": "CRM-GIN-001",
+                "medical_phone": "840123456",
+                "medical_bio": "Especialista em saúde da mulher.",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        user = form.save()
+        clinical_profile = Medico.objects.get(user=user)
+
+        self.assertEqual(clinical_profile.especialidade, specialty)
+        self.assertEqual(clinical_profile.departamento, department)
+        self.assertEqual(clinical_profile.crm, "CRM-GIN-001")
+
+    def test_user_form_requires_doctor_role_for_clinical_profile(self):
+        branch = Branch.objects.create(name="Central", code="CEN")
+        specialty = Especialidade.objects.create(name="Pediatra")
+
+        form = UserForm(
+            data={
+                "username": "joana",
+                "first_name": "Joana",
+                "last_name": "Tembe",
+                "email": "joana@example.com",
+                "password1": "SenhaSegura123",
+                "password2": "SenhaSegura123",
+                "preferred_language": "pt",
+                "is_active": "on",
+                "assigned_branches": [str(branch.pk)],
+                "default_branch": str(branch.pk),
+                "medical_specialty": str(specialty.pk),
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("groups", form.errors)

@@ -1,13 +1,20 @@
 from django.contrib import admin
 
-from .models import Branch, SystemPreference, UserProfile
+from .models import Branch, Clinic, SystemPreference, UserProfile
+
+
+@admin.register(Clinic)
+class ClinicAdmin(admin.ModelAdmin):
+    list_display = ("name", "city", "is_active", "updated_at")
+    search_fields = ("name", "legal_name", "city", "email")
+    list_filter = ("is_active", "city")
 
 
 @admin.register(Branch)
 class BranchAdmin(admin.ModelAdmin):
-    list_display = ("name", "code", "city", "is_active", "updated_at")
-    search_fields = ("name", "code", "city", "email")
-    list_filter = ("is_active", "city")
+    list_display = ("name", "clinic", "code", "city", "is_active", "updated_at")
+    search_fields = ("name", "clinic__name", "code", "city", "email")
+    list_filter = ("clinic", "is_active", "city")
 
 
 @admin.register(SystemPreference)

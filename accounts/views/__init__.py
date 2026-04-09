@@ -11,6 +11,11 @@ from .organization_view import (
     BranchListView,
     BranchToggleStatusView,
     BranchUpdateView,
+    ClinicCreateView,
+    ClinicDetailView,
+    ClinicListView,
+    ClinicToggleStatusView,
+    ClinicUpdateView,
 )
 from .roles_view import (
     RoleCreateView,
@@ -45,6 +50,11 @@ __all__ = [
     "BranchCreateView",
     "BranchUpdateView",
     "BranchToggleStatusView",
+    "ClinicListView",
+    "ClinicDetailView",
+    "ClinicCreateView",
+    "ClinicUpdateView",
+    "ClinicToggleStatusView",
     "SystemPreferenceView",
     "LanguageSwitchView",
     "BranchSwitchView",

@@ -72,7 +72,12 @@
 
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <div class="clinic-pill-group">
-              <span class="clinic-pill active">{% ui "Pendentes" "Pending" %}: {{ pending_appointments }}</span>
+              <a href="#" class="clinic-pill active" data-table-pill="appointments-table" data-column="4" data-value="">{% ui "Todas" "All" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="appointments-table" data-column="4" data-value="Agendado">{% ui "Agendadas" "Scheduled" %}</a>
+              <a href="#" class="clinic-pill" data-table-pill="appointments-table" data-column="4" data-value="Concluído">{% ui "Concluídas" "Completed" %}</a>
+            </div>
+            <div class="clinic-pill-group">
+              <span class="clinic-pill">{% ui "Pendentes" "Pending" %}: {{ pending_appointments }}</span>
               <span class="clinic-pill">{% ui "Com consulta" "With consultation" %}: {{ appointments_with_consultation }}</span>
             </div>
             {% if perms.clinic.add_agendamento %}
@@ -124,6 +129,9 @@
                           {{ appointment.medico.especialidade.name }}
                         {% else %}
                           {% ui "Sem especialidade" "No specialty" %}
+                        {% endif %}
+                        {% if appointment.medico.departamento_id %}
+                          · {{ appointment.medico.departamento.name }}
                         {% endif %}
                       </span>
                     </td>

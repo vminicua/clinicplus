@@ -99,6 +99,7 @@
               {% if linked_medico %}
                 {{ linked_medico.crm }}
                 {% if linked_medico.especialidade %} · {{ linked_medico.especialidade.name }}{% endif %}
+                {% if linked_medico.departamento %} · {{ linked_medico.departamento.name }}{% endif %}
               {% else %}
                 {% ui "Não ligado a um perfil médico" "Not linked to a doctor profile" %}
               {% endif %}
@@ -106,12 +107,12 @@
           </div>
 
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Hospital legado" "Legacy hospital" %}</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Clínica legada" "Legacy clinic" %}</p>
             <h6 class="mb-0">
               {% if linked_medico and linked_medico.hospital %}
                 {{ linked_medico.hospital.name }}
               {% else %}
-                {% ui "Sem hospital legado associado" "No associated legacy hospital" %}
+                {% ui "Sem clínica legada associada" "No associated legacy clinic" %}
               {% endif %}
             </h6>
           </div>

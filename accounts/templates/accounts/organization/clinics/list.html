@@ -1,0 +1,172 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">local_hospital</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Total de clínicas" "Total clinics" %}</p>
+              <h4 class="mb-0">{{ total_clinics }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">verified</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Activas" "Active" %}</p>
+              <h4 class="mb-0">{{ active_clinics }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">apartment</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Sucursais" "Branches" %}</p>
+              <h4 class="mb-0">{{ total_branches }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">hub</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Com sucursais" "With branches" %}</p>
+              <h4 class="mb-0">{{ clinics_with_branches }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{% ui "Lista de clínicas" "Clinic list" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Gerencie a clínica mãe e a sua rede de sucursais." "Manage the parent clinic and its branch network." %}</p>
+          </div>
+
+          {% if perms.accounts.add_clinic %}
+            <a href="{% url 'accounts:clinic_create' %}" data-modal-url="{% url 'accounts:clinic_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">add_business</i>
+              {% ui "Nova clínica" "New clinic" %}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        {% if clinics %}
+          <div class="clinic-datatable-shell">
+            <table id="clinics-table" data-page-length="10" data-export-title="{% ui 'Clínicas Clinic Plus' 'Clinic Plus Clinics' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+              <thead>
+                <tr>
+                  <th class="ps-4">{% ui "Clínica" "Clinic" %}</th>
+                  <th>{% ui "Localização" "Location" %}</th>
+                  <th>{% ui "Sucursais" "Branches" %}</th>
+                  <th>{% ui "Estado" "Status" %}</th>
+                  <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for clinic in clinics %}
+                  <tr>
+                    <td class="ps-4">
+                      <div class="d-flex align-items-center gap-3">
+                        <div class="clinic-avatar-square d-flex align-items-center justify-content-center bg-gray-100 border-radius-lg overflow-hidden" style="width: 3rem; height: 3rem;">
+                          {% if clinic.logo %}
+                            <img src="{{ clinic.logo.url }}" alt="{{ clinic.name }}" class="w-100 h-100" style="object-fit: cover;">
+                          {% else %}
+                            <i class="material-symbols-rounded text-secondary">local_hospital</i>
+                          {% endif %}
+                        </div>
+                        <div>
+                          <h6 class="mb-0 text-sm">{{ clinic.name }}</h6>
+                          {% if clinic.legal_name %}
+                            <p class="text-xs text-secondary mb-0">{{ clinic.legal_name }}</p>
+                          {% endif %}
+                          <p class="text-xs text-secondary mb-0">
+                            {% if clinic.nuit %}NUIT {{ clinic.nuit }}{% endif %}
+                            {% if clinic.email %}{% if clinic.nuit %} · {% endif %}{{ clinic.email }}{% endif %}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="text-sm">
+                        {% if clinic.city %}{{ clinic.city }}{% else %}{% ui "Sem cidade" "No city" %}{% endif %}
+                        {% if clinic.province %}<span class="text-secondary"> · {{ clinic.province }}</span>{% endif %}
+                        {% if clinic.country %}<span class="text-secondary"> · {{ clinic.country }}</span>{% endif %}
+                        {% if clinic.address %}<span class="text-secondary d-block">{{ clinic.address }}</span>{% endif %}
+                      </span>
+                    </td>
+                    <td><span class="text-sm">{{ clinic.branches.all|length }}</span></td>
+                    <td>
+                      {% if clinic.is_active %}
+                        <span class="clinic-status clinic-status-success">{% ui "Activa" "Active" %}</span>
+                      {% else %}
+                        <span class="clinic-status clinic-status-muted">{% ui "Inactiva" "Inactive" %}</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                      <div class="clinic-action-stack">
+                        <a href="{% url 'accounts:clinic_detail' clinic.pk %}" data-modal-url="{% url 'accounts:clinic_detail' clinic.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="{% ui 'Ver detalhes' 'View details' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
+                        </a>
+                        {% if perms.accounts.change_clinic %}
+                          <a href="{% url 'accounts:clinic_update' clinic.pk %}" data-modal-url="{% url 'accounts:clinic_update' clinic.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-info" title="{% ui 'Editar clínica' 'Edit clinic' %}">
+                            <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                          </a>
+                        {% endif %}
+                        {% if perms.accounts.change_clinic %}
+                          {% if clinic.is_active %}
+                            <a href="#" data-confirm-action data-action-url="{% url 'accounts:clinic_toggle_status' clinic.pk %}" data-confirm-title="{% ui 'Desactivar clínica' 'Deactivate clinic' %}" data-confirm-text="{% ui 'A clínica deixará de aparecer como activa.' 'The clinic will stop appearing as active.' %}" data-confirm-button="{% ui 'Desactivar' 'Deactivate' %}" data-confirm-icon="warning" class="clinic-action-btn is-warning" title="{% ui 'Desactivar clínica' 'Deactivate clinic' %}">
+                              <i class="material-symbols-rounded" style="font-size: 1rem;">block</i>
+                            </a>
+                          {% else %}
+                            <a href="#" data-confirm-action data-action-url="{% url 'accounts:clinic_toggle_status' clinic.pk %}" data-confirm-title="{% ui 'Activar clínica' 'Activate clinic' %}" data-confirm-text="{% ui 'A clínica voltará a estar disponível.' 'The clinic will be available again.' %}" data-confirm-button="{% ui 'Activar' 'Activate' %}" data-confirm-icon="question" class="clinic-action-btn is-info" title="{% ui 'Activar clínica' 'Activate clinic' %}">
+                              <i class="material-symbols-rounded" style="font-size: 1rem;">check_circle</i>
+                            </a>
+                          {% endif %}
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="px-4 py-5 text-center text-secondary">
+            {% ui "Ainda não existem clínicas registadas." "There are no clinics registered yet." %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -34,6 +34,10 @@
           <div class="text-xs text-secondary text-uppercase">{% ui "Passo 3" "Step 3" %}</div>
           <strong>{% ui "Sucursais" "Branches" %}</strong>
         </div>
+        <div class="clinic-wizard-pill" data-step-target="3">
+          <div class="text-xs text-secondary text-uppercase">{% ui "Passo 4" "Step 4" %}</div>
+          <strong>{% ui "Perfil clínico" "Clinical profile" %}</strong>
+        </div>
       </div>
 
       <div data-step-panel="0">
@@ -80,6 +84,16 @@
         <div class="clinic-form-grid">
           {% include "accounts/shared/includes/form_field.html" with field=form.default_branch wide_fields="" %}
           {% include "accounts/shared/includes/form_field.html" with field=form.assigned_branches wide_fields="assigned_branches" %}
+        </div>
+      </div>
+
+      <div data-step-panel="3" class="d-none">
+        <div class="clinic-form-grid">
+          {% include "accounts/shared/includes/form_field.html" with field=form.medical_specialty wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.medical_department wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.medical_crm wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.medical_phone wide_fields="" %}
+          {% include "accounts/shared/includes/form_field.html" with field=form.medical_bio wide_fields="medical_bio" %}
         </div>
       </div>
 

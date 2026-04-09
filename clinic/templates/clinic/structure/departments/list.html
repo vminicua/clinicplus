@@ -1,0 +1,139 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-4 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">account_tree</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Total de departamentos" "Total departments" %}</p>
+              <h4 class="mb-0">{{ total_departments }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-4 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">supervisor_account</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Com responsável" "With lead" %}</p>
+              <h4 class="mb-0">{{ departments_with_lead }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-4 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">groups</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Com médicos ligados" "With linked doctors" %}</p>
+              <h4 class="mb-0">{{ departments_with_doctors }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{% ui "Lista de departamentos" "Department list" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Estruture serviços clínicos por sucursal e associe os médicos à área correcta." "Structure clinical services by branch and associate doctors with the right area." %}</p>
+          </div>
+
+          {% if perms.clinic.add_departamento %}
+            <a href="{% url 'clinic:department_create' %}" data-modal-url="{% url 'clinic:department_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">add</i>
+              {% ui "Novo departamento" "New department" %}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        {% if departments %}
+          <div class="clinic-datatable-shell">
+            <table id="departments-table" data-page-length="10" data-export-title="{% ui 'Departamentos Clinic Plus' 'Clinic Plus Departments' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+              <thead>
+                <tr>
+                  <th class="ps-4">{% ui "Departamento" "Department" %}</th>
+                  <th>{% ui "Sucursal" "Branch" %}</th>
+                  <th>{% ui "Responsável" "Lead" %}</th>
+                  <th>{% ui "Médicos" "Doctors" %}</th>
+                  <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for department in departments %}
+                  <tr>
+                    <td class="ps-4">
+                      <h6 class="mb-0 text-sm">{{ department.name }}</h6>
+                      <p class="text-xs text-secondary mb-0">{{ department.descricao|default:"-"|truncatechars:80 }}</p>
+                    </td>
+                    <td>
+                      <span class="text-sm">
+                        {% if department.branch_id %}
+                          {{ department.branch.name }}
+                        {% elif department.hospital_id %}
+                          {{ department.hospital.name }}
+                        {% else %}
+                          {% ui "Sem sucursal" "No branch" %}
+                        {% endif %}
+                      </span>
+                    </td>
+                    <td>
+                      {% if department.responsavel_id %}
+                        <span class="text-sm d-block">{{ department.responsavel.user.get_full_name|default:department.responsavel.user.username }}</span>
+                        <span class="text-xs text-secondary">
+                          {% if department.responsavel.especialidade_id %}
+                            {{ department.responsavel.especialidade.name }}
+                          {% else %}
+                            {% ui "Sem especialidade" "No specialty" %}
+                          {% endif %}
+                        </span>
+                      {% else %}
+                        <span class="text-sm text-secondary">{% ui "Sem responsável" "No lead" %}</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <span class="text-sm">{{ department.doctor_count }}</span>
+                    </td>
+                    <td class="text-end pe-4">
+                      {% if perms.clinic.change_departamento %}
+                        <a href="{% url 'clinic:department_update' department.pk %}" data-modal-url="{% url 'clinic:department_update' department.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-info" title="{% ui 'Editar departamento' 'Edit department' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                        </a>
+                      {% else %}
+                        <span class="text-sm text-secondary">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="px-4 py-5 text-center text-secondary">
+            {% ui "Ainda não existem departamentos registados." "There are no departments registered yet." %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

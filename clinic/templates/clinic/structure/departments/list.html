@@ -56,12 +56,22 @@
             <p class="text-secondary mb-0">{% ui "Estruture serviços clínicos por sucursal e associe os médicos à área correcta." "Structure clinical services by branch and associate doctors with the right area." %}</p>
           </div>
 
-          {% if perms.clinic.add_departamento %}
-            <a href="{% url 'clinic:department_create' %}" data-modal-url="{% url 'clinic:department_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
-              <i class="material-symbols-rounded text-sm me-1">add</i>
-              {% ui "Novo departamento" "New department" %}
-            </a>
-          {% endif %}
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if filter_branches %}
+              <div class="clinic-pill-group">
+                {% for branch in filter_branches %}
+                  <a href="#" class="clinic-pill {% if branch.pk == active_branch_filter_id %}active{% endif %}" data-table-pill="departments-table" data-column="1" data-value="{{ branch.name }}">{{ branch.name }}</a>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if perms.clinic.add_departamento %}
+              <a href="{% url 'clinic:department_create' %}" data-modal-url="{% url 'clinic:department_create' %}" data-modal-size="modal-xl" class="btn bg-gradient-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">add</i>
+                {% ui "Novo departamento" "New department" %}
+              </a>
+            {% endif %}
+          </div>
         </div>
       </div>
 
@@ -82,8 +92,8 @@
                 {% for department in departments %}
                   <tr>
                     <td class="ps-4">
-                      <h6 class="mb-0 text-sm">{{ department.name }}</h6>
-                      <p class="text-xs text-secondary mb-0">{{ department.descricao|default:"-"|truncatechars:80 }}</p>
+                      <h6 class="mb-0 text-sm">{{ department.display_name }}</h6>
+                      <p class="text-xs text-secondary mb-0">{{ department.display_description|default:"-"|truncatechars:80 }}</p>
                     </td>
                     <td>
                       <span class="text-sm">

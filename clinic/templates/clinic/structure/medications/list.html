@@ -97,8 +97,8 @@
                 {% for medication in medications %}
                   <tr>
                     <td class="ps-4">
-                      <h6 class="mb-0 text-sm">{{ medication.name }}</h6>
-                      <p class="text-xs text-secondary mb-0">{{ medication.descricao|default:"-"|truncatechars:80 }}</p>
+                      <h6 class="mb-0 text-sm">{{ medication.display_name }}</h6>
+                      <p class="text-xs text-secondary mb-0">{{ medication.display_description|default:"-"|truncatechars:80 }}</p>
                     </td>
                     <td><span class="text-sm">{{ medication.principio_ativo }}</span></td>
                     <td><span class="text-sm">{{ medication.dosagem }}</span></td>

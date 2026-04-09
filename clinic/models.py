@@ -8,6 +8,25 @@ from django.utils import timezone
 from accounts.models import Branch
 
 
+MOJIBAKE_MARKERS = ("Ã", "Â", "â€", "â€™", "â€œ", "â€“", "â€”")
+
+
+def normalize_mojibake_text(value: str) -> str:
+    if not isinstance(value, str) or not value:
+        return value
+    if not any(marker in value for marker in MOJIBAKE_MARKERS):
+        return value
+
+    for encoding in ("latin-1", "cp1252"):
+        try:
+            candidate = value.encode(encoding).decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            continue
+        if candidate and candidate != value:
+            return candidate
+    return value
+
+
 # Legacy organizational model kept only for backward compatibility.
 class Hospital(models.Model):
     name = models.CharField(max_length=255)
@@ -40,7 +59,21 @@ class Especialidade(models.Model):
         verbose_name_plural = "Especialidades"
     
     def __str__(self):
-        return self.name
+        return self.display_name
+
+    @property
+    def display_name(self):
+        return normalize_mojibake_text(self.name)
+
+    @property
+    def display_description(self):
+        return normalize_mojibake_text(self.description)
+
+    def save(self, *args, **kwargs):
+        self.name = normalize_mojibake_text(self.name)
+        self.description = normalize_mojibake_text(self.description)
+        self.icon = normalize_mojibake_text(self.icon)
+        super().save(*args, **kwargs)
 
 
 # Médicos Model
@@ -97,8 +130,6 @@ class HorarioTrabalho(models.Model):
         SATURDAY = 5, "Sábado"
         SUNDAY = 6, "Domingo"
 
-    MOJIBAKE_MARKERS = ("Ã", "Â", "â€", "â€™", "â€œ", "â€“", "â€”")
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="horarios_trabalho")
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="horarios_trabalho")
     role = models.CharField(max_length=20, choices=RoleChoices.choices)
@@ -137,19 +168,7 @@ class HorarioTrabalho(models.Model):
 
     @classmethod
     def normalize_text(cls, value: str) -> str:
-        if not isinstance(value, str) or not value:
-            return value
-        if not any(marker in value for marker in cls.MOJIBAKE_MARKERS):
-            return value
-
-        for encoding in ("latin-1", "cp1252"):
-            try:
-                candidate = value.encode(encoding).decode("utf-8")
-            except (UnicodeEncodeError, UnicodeDecodeError):
-                continue
-            if candidate and candidate != value:
-                return candidate
-        return value
+        return normalize_mojibake_text(value)
 
     @property
     def display_shift_name(self) -> str:
@@ -468,7 +487,22 @@ class Medicamento(models.Model):
         verbose_name_plural = "Medicamentos"
     
     def __str__(self):
-        return self.name
+        return self.display_name
+
+    @property
+    def display_name(self):
+        return normalize_mojibake_text(self.name)
+
+    @property
+    def display_description(self):
+        return normalize_mojibake_text(self.descricao)
+
+    def save(self, *args, **kwargs):
+        self.name = normalize_mojibake_text(self.name)
+        self.principio_ativo = normalize_mojibake_text(self.principio_ativo)
+        self.dosagem = normalize_mojibake_text(self.dosagem)
+        self.descricao = normalize_mojibake_text(self.descricao)
+        super().save(*args, **kwargs)
 
 
 # Departamentos Model
@@ -502,7 +536,20 @@ class Departamento(models.Model):
         verbose_name_plural = "Departamentos"
     
     def __str__(self):
-        return self.name
+        return self.display_name
+
+    @property
+    def display_name(self):
+        return normalize_mojibake_text(self.name)
+
+    @property
+    def display_description(self):
+        return normalize_mojibake_text(self.descricao)
+
+    def save(self, *args, **kwargs):
+        self.name = normalize_mojibake_text(self.name)
+        self.descricao = normalize_mojibake_text(self.descricao)
+        super().save(*args, **kwargs)
 
     @property
     def unit_name(self):

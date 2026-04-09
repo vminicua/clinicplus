@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from accounts.models import Branch, SystemPreference
 from clinic.forms import AppointmentForm, DepartmentForm, MedicationForm, PatientForm, SpecialtyForm, WorkScheduleBatchCreateForm, WorkScheduleForm
-from clinic.models import Agendamento, Consulta, Departamento, Especialidade, HorarioTrabalho, Hospital, Medicamento, Medico, Paciente
+from clinic.models import Agendamento, Consulta, Departamento, Especialidade, HorarioTrabalho, Hospital, Medicamento, Medico, Paciente, normalize_mojibake_text
 
 
 class PatientFormTests(TestCase):
@@ -665,6 +665,7 @@ class ClinicalStructureTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.branch = Branch.objects.create(name="Clinic Plus Estrutura", code="CPE", city="Maputo")
+        self.branch_two = Branch.objects.create(name="Clinic Plus Norte", code="CPN", city="Matola")
         self.user = User.objects.create_user(username="estrutura", password="123456")
         self.user.user_permissions.add(
             Permission.objects.get(codename="view_especialidade"),
@@ -691,6 +692,13 @@ class ClinicalStructureTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         specialty = form.save()
         self.assertEqual(specialty.name, "Ginecologista")
+
+    def test_normalize_mojibake_text_recovers_accents(self):
+        broken = "ServiÃ§o clÃ­nico para avaliaÃ§Ã£o, seguimento e prevenÃ§Ã£o."
+
+        normalized = normalize_mojibake_text(broken)
+
+        self.assertEqual(normalized, "Serviço clínico para avaliação, seguimento e prevenção.")
 
     def test_department_form_creates_department_with_responsavel(self):
         specialty = Especialidade.objects.create(name="Ginecologista")
@@ -738,8 +746,12 @@ class ClinicalStructureTests(TestCase):
 
         self.assertEqual(specialty_response.status_code, 200)
         self.assertContains(specialty_response, specialty.name)
+        self.assertContains(specialty_response, 'data-table-pill="specialties-table"')
+        self.assertContains(specialty_response, self.branch.name)
         self.assertEqual(department_response.status_code, 200)
         self.assertContains(department_response, department.name)
+        self.assertContains(department_response, 'data-table-pill="departments-table"')
+        self.assertContains(department_response, self.branch_two.name)
 
     def test_medication_form_creates_medication(self):
         form = MedicationForm(
@@ -770,3 +782,17 @@ class ClinicalStructureTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, medication.name)
+
+    def test_specialty_and_department_display_descriptions_are_normalized(self):
+        specialty = Especialidade.objects.create(
+            name="Cardiologista",
+            description="Especialista em avaliaÃ§Ã£o cardiovascular.",
+        )
+        department = Departamento.objects.create(
+            name="Cardiologia",
+            branch=self.branch,
+            descricao="ServiÃ§o clÃ­nico para avaliaÃ§Ã£o cardiovascular.",
+        )
+
+        self.assertEqual(specialty.display_description, "Especialista em avaliação cardiovascular.")
+        self.assertEqual(department.display_description, "Serviço clínico para avaliação cardiovascular.")

@@ -56,12 +56,22 @@
             <p class="text-secondary mb-0">{% ui "Defina as designações clínicas usadas nos perfis médicos e nas consultas." "Define the clinical designations used in doctor profiles and consultations." %}</p>
           </div>
 
-          {% if perms.clinic.add_especialidade %}
-            <a href="{% url 'clinic:specialty_create' %}" data-modal-url="{% url 'clinic:specialty_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
-              <i class="material-symbols-rounded text-sm me-1">add</i>
-              {% ui "Nova especialidade" "New specialty" %}
-            </a>
-          {% endif %}
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if filter_branches %}
+              <div class="clinic-pill-group">
+                {% for branch in filter_branches %}
+                  <a href="#" class="clinic-pill {% if branch.pk == active_branch_filter_id %}active{% endif %}" data-table-pill="specialties-table" data-column="2" data-value="{{ branch.name }}" data-search-mode="contains">{{ branch.name }}</a>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if perms.clinic.add_especialidade %}
+              <a href="{% url 'clinic:specialty_create' %}" data-modal-url="{% url 'clinic:specialty_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">add</i>
+                {% ui "Nova especialidade" "New specialty" %}
+              </a>
+            {% endif %}
+          </div>
         </div>
       </div>
 
@@ -73,6 +83,7 @@
                 <tr>
                   <th class="ps-4">{% ui "Especialidade" "Specialty" %}</th>
                   <th>{% ui "Descrição" "Description" %}</th>
+                  <th>{% ui "Sucursais" "Branches" %}</th>
                   <th>{% ui "Médicos" "Doctors" %}</th>
                   <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
                 </tr>
@@ -81,10 +92,19 @@
                 {% for specialty in specialties %}
                   <tr>
                     <td class="ps-4">
-                      <h6 class="mb-0 text-sm">{{ specialty.name }}</h6>
+                      <h6 class="mb-0 text-sm">{{ specialty.display_name }}</h6>
                     </td>
                     <td>
-                      <span class="text-sm text-secondary">{{ specialty.description|default:"-"|truncatechars:90 }}</span>
+                      <span class="text-sm text-secondary">{{ specialty.display_description|default:"-"|truncatechars:90 }}</span>
+                    </td>
+                    <td>
+                      <span class="text-sm">
+                        {% if specialty.branch_names_label %}
+                          {{ specialty.branch_names_label }}
+                        {% else %}
+                          {% ui "Sem sucursais activas" "No active branches" %}
+                        {% endif %}
+                      </span>
                     </td>
                     <td>
                       <span class="text-sm">{{ specialty.doctor_count }}</span>

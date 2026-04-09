@@ -504,27 +504,45 @@
         });
 
         const tableId = tableElement.id;
-        root.querySelectorAll(`[data-table-pill="${tableId}"]`).forEach((pill) => {
+        const pills = Array.from(root.querySelectorAll(`[data-table-pill="${tableId}"]`));
+        const applyTablePill = (pill) => {
+          const value = pill.dataset.value || '';
+          const column = Number(pill.dataset.column || 0);
+          const searchMode = pill.dataset.searchMode || 'exact';
+          pills.forEach((otherPill) => {
+            otherPill.classList.remove('active');
+          });
+          pill.classList.add('active');
+
+          if (!value) {
+            instance.column(column).search('').draw();
+            return;
+          }
+
+          if (searchMode === 'contains') {
+            instance.column(column).search(value, false, true).draw();
+            return;
+          }
+
+          instance.column(column).search(`^${value}$`, true, false).draw();
+        };
+
+        pills.forEach((pill) => {
           if (pill.dataset.ready === '1') {
             return;
           }
           pill.dataset.ready = '1';
           pill.addEventListener('click', (event) => {
             event.preventDefault();
-            const value = pill.dataset.value || '';
-            const column = Number(pill.dataset.column || 0);
-            root.querySelectorAll(`[data-table-pill="${tableId}"]`).forEach((otherPill) => {
-              otherPill.classList.remove('active');
-            });
-            pill.classList.add('active');
-
-            if (!value) {
-              instance.column(column).search('').draw();
-              return;
-            }
-            instance.column(column).search(`^${value}$`, true, false).draw();
+            applyTablePill(pill);
           });
         });
+
+        const activePill = pills.find((pill) => pill.classList.contains('active'));
+        if (activePill && activePill.dataset.initialized !== '1') {
+          activePill.dataset.initialized = '1';
+          applyTablePill(activePill);
+        }
       });
     }
 

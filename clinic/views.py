@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
-from accounts.models import Clinic
+from accounts.models import Branch, Clinic
 from accounts.ui import (
     BRANCH_SESSION_KEY,
     LANGUAGE_SESSION_KEY,
@@ -138,6 +138,20 @@ def appointment_queryset():
 
 def appointment_professional_schedule_queryset():
     return work_schedule_queryset().filter(is_active=True, accepts_appointments=True)
+
+
+def structure_filter_branches_for_request(request):
+    scoped_queryset = available_branches_for_user(request.user)
+    if scoped_queryset.exists():
+        return list(scoped_queryset)
+    return list(Branch.objects.filter(is_active=True).order_by("name"))
+
+
+def default_structure_branch_id(request, filter_branches):
+    current_branch = getattr(request, "clinic_current_branch", None)
+    if current_branch and any(branch.pk == current_branch.pk for branch in filter_branches):
+        return current_branch.pk
+    return filter_branches[0].pk if filter_branches else None
 
 
 def build_appointment_professionals(schedule_list, reference_date):
@@ -1099,14 +1113,42 @@ class SpecialtyListView(AppPermissionMixin, ClinicPageMixin, ListView):
         )
 
     def get_queryset(self):
-        return Especialidade.objects.annotate(doctor_count=Count("medico")).order_by("name")
+        return (
+            Especialidade.objects.annotate(doctor_count=Count("medico"))
+            .prefetch_related(
+                Prefetch(
+                    "medico_set",
+                    queryset=Medico.objects.select_related("departamento__branch"),
+                    to_attr="linked_doctors",
+                )
+            )
+            .order_by("name")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        filter_branches = structure_filter_branches_for_request(self.request)
+        active_branch_filter_id = default_structure_branch_id(self.request, filter_branches)
+        branch_name_fallback = [branch.name for branch in filter_branches]
+        specialties = context["specialties"]
+        for specialty in specialties:
+            linked_branch_names = sorted(
+                {
+                    doctor.departamento.branch.name
+                    for doctor in getattr(specialty, "linked_doctors", [])
+                    if doctor.departamento_id and doctor.departamento.branch_id
+                }
+            )
+            effective_branch_names = linked_branch_names or branch_name_fallback
+            specialty.branch_names = effective_branch_names
+            specialty.branch_names_label = " · ".join(effective_branch_names) if effective_branch_names else ""
+
         base_queryset = self.get_queryset()
         context["total_specialties"] = base_queryset.count()
         context["specialties_with_doctors"] = base_queryset.filter(doctor_count__gt=0).count()
         context["total_linked_doctors"] = Medico.objects.filter(especialidade__isnull=False).count()
+        context["filter_branches"] = filter_branches
+        context["active_branch_filter_id"] = active_branch_filter_id
         return context
 
 
@@ -1217,6 +1259,11 @@ class DepartmentListView(AppPermissionMixin, ClinicPageMixin, ListView):
         context["total_departments"] = base_queryset.count()
         context["departments_with_lead"] = base_queryset.filter(responsavel__isnull=False).count()
         context["departments_with_doctors"] = base_queryset.filter(doctor_count__gt=0).count()
+        context["filter_branches"] = structure_filter_branches_for_request(self.request)
+        context["active_branch_filter_id"] = default_structure_branch_id(
+            self.request,
+            context["filter_branches"],
+        )
         return context
 
 

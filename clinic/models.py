@@ -569,7 +569,7 @@ class Medicamento(models.Model):
         self.sku = normalize_mojibake_text(self.sku) or None
         self.principio_ativo = normalize_mojibake_text(self.principio_ativo)
         self.dosagem = normalize_mojibake_text(self.dosagem)
-        self.unidade_medida = normalize_mojibake_text(self.unidade_medida)
+        self.unidade_medida = (normalize_mojibake_text(self.unidade_medida) or "").strip().lower()
         self.descricao = normalize_mojibake_text(self.descricao)
         super().save(*args, **kwargs)
 
@@ -611,7 +611,7 @@ class Consumivel(models.Model):
     def save(self, *args, **kwargs):
         self.name = normalize_mojibake_text(self.name)
         self.sku = normalize_mojibake_text(self.sku) or None
-        self.unidade_medida = normalize_mojibake_text(self.unidade_medida)
+        self.unidade_medida = (normalize_mojibake_text(self.unidade_medida) or "").strip().lower()
         self.descricao = normalize_mojibake_text(self.descricao)
         super().save(*args, **kwargs)
 

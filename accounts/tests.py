@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.contrib.auth.models import Group
-from django.test import RequestFactory, TestCase
+from django.test import Client, RequestFactory, TestCase
+from django.urls import reverse
 
-from accounts.forms import BranchForm, ClinicForm, UserForm
-from accounts.models import Branch, Clinic, SystemPreference
+from accounts.forms import BranchForm, ClinicForm, MeasurementUnitForm, UserForm
+from accounts.models import Branch, Clinic, MeasurementUnit, SystemPreference
 from accounts.ui import LANGUAGE_SESSION_KEY, resolve_language_for_request
 from clinic.models import Departamento, Especialidade, Medico
 
@@ -29,6 +31,38 @@ class SystemPreferenceTests(TestCase):
         request.session = {LANGUAGE_SESSION_KEY: "pt"}
 
         self.assertEqual(resolve_language_for_request(request), "en")
+
+    def test_measurement_unit_form_normalizes_code(self):
+        form = MeasurementUnitForm(
+            data={
+                "code": " Caixa ",
+                "name": "Caixa",
+                "abbreviation": "cx",
+                "description": "Unidade usada para embalagens fechadas.",
+                "sort_order": 20,
+                "is_active": "on",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        unit = form.save()
+
+        self.assertEqual(unit.code, "caixa")
+        self.assertEqual(unit.abbreviation, "cx")
+
+    def test_measurement_unit_list_renders(self):
+        client = Client()
+        user = User.objects.create_user(username="prefs", password="123456")
+        user.user_permissions.add(
+            Permission.objects.get(codename="view_measurementunit"),
+        )
+        MeasurementUnit.objects.create(code="frasco", name="Frasco", abbreviation="fr", sort_order=15)
+        client.force_login(user)
+
+        response = client.get(reverse("accounts:measurement_unit_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Frasco")
 
 
 class UserBranchValidationTests(TestCase):

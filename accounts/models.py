@@ -21,6 +21,58 @@ CURRENCY_CHOICES = [
 ]
 
 
+class MeasurementUnit(models.Model):
+    code = models.CharField(
+        max_length=30,
+        unique=True,
+        verbose_name=translate_pair("Código", "Code"),
+    )
+    name = models.CharField(
+        max_length=120,
+        verbose_name=translate_pair("Unidade", "Unit"),
+    )
+    abbreviation = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name=translate_pair("Abreviatura", "Abbreviation"),
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name=translate_pair("Descrição", "Description"),
+    )
+    sort_order = models.PositiveIntegerField(
+        default=100,
+        verbose_name=translate_pair("Ordem", "Sort order"),
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=translate_pair("Activa", "Active"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("sort_order", "name", "code")
+        verbose_name = translate_pair("Unidade de medida", "Measurement unit")
+        verbose_name_plural = translate_pair("Unidades de medida", "Measurement units")
+
+    def __str__(self) -> str:
+        return self.select_label
+
+    @property
+    def select_label(self) -> str:
+        if self.abbreviation:
+            return f"{self.abbreviation} · {self.name}"
+        return f"{self.code} · {self.name}"
+
+    def save(self, *args, **kwargs):
+        self.code = (self.code or "").strip().lower()
+        self.name = (self.name or "").strip()
+        self.abbreviation = (self.abbreviation or "").strip()
+        self.description = (self.description or "").strip()
+        super().save(*args, **kwargs)
+
+
 class Branch(models.Model):
     clinic = models.ForeignKey(
         "accounts.Clinic",

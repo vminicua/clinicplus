@@ -1,0 +1,139 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">straighten</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Total de unidades" "Total units" %}</p>
+              <h4 class="mb-0">{{ total_units }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">verified</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Activas" "Active" %}</p>
+              <h4 class="mb-0">{{ active_units }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">inventory_2</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Em uso" "In use" %}</p>
+              <h4 class="mb-0">{{ units_in_use }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">build</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Personalizadas" "Custom" %}</p>
+              <h4 class="mb-0">{{ custom_units }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{% ui "Unidades de medida" "Measurement units" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Estas unidades alimentam os formulários de medicamentos e consumíveis do inventário." "These units feed the medication and consumable forms used by the inventory module." %}</p>
+          </div>
+
+          {% if perms.accounts.add_measurementunit %}
+            <a href="{% url 'accounts:measurement_unit_create' %}" data-modal-url="{% url 'accounts:measurement_unit_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">add</i>
+              {% ui "Nova unidade" "New unit" %}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        {% if units %}
+          <div class="clinic-datatable-shell">
+            <table id="measurement-units-table" data-page-length="10" data-export-title="{% ui 'Unidades Clinic Plus' 'Clinic Plus Units' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+              <thead>
+                <tr>
+                  <th class="ps-4">{% ui "Unidade" "Unit" %}</th>
+                  <th>{% ui "Código" "Code" %}</th>
+                  <th>{% ui "Abreviatura" "Abbreviation" %}</th>
+                  <th>{% ui "Uso" "Usage" %}</th>
+                  <th>{% ui "Estado" "Status" %}</th>
+                  <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for unit in units %}
+                  <tr>
+                    <td class="ps-4">
+                      <h6 class="mb-0 text-sm">{{ unit.name }}</h6>
+                      <p class="text-xs text-secondary mb-0">{{ unit.description|default:"-"|truncatechars:80 }}</p>
+                    </td>
+                    <td><span class="text-sm">{{ unit.code }}</span></td>
+                    <td><span class="text-sm">{{ unit.abbreviation|default:"-" }}</span></td>
+                    <td>
+                      <span class="text-sm d-block">{% ui "Medicamentos" "Medications" %}: {{ unit.linked_medications }}</span>
+                      <span class="text-xs text-secondary">{% ui "Consumíveis" "Consumables" %}: {{ unit.linked_consumables }}</span>
+                    </td>
+                    <td>
+                      {% if unit.is_active %}
+                        <span class="clinic-status clinic-status-success">{% ui "Activa" "Active" %}</span>
+                      {% else %}
+                        <span class="clinic-status clinic-status-muted">{% ui "Inactiva" "Inactive" %}</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                      {% if perms.accounts.change_measurementunit %}
+                        <a href="{% url 'accounts:measurement_unit_update' unit.pk %}" data-modal-url="{% url 'accounts:measurement_unit_update' unit.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="{% ui 'Editar unidade' 'Edit unit' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                        </a>
+                      {% else %}
+                        <span class="text-sm text-secondary">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="px-4 py-5 text-center text-secondary">
+            {% ui "Ainda não existem unidades registadas." "There are no registered units yet." %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

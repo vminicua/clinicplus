@@ -15,13 +15,19 @@
                 <p class="text-secondary mb-0">{{ page_subtitle }}</p>
               </div>
 
-              <div class="d-flex gap-2 flex-wrap">
+              <div class="d-flex gap-2 flex-wrap align-items-start">
                 <div class="clinic-inline-badge">
                   {% ui "Moeda base" "Base currency" %}: {{ object.get_default_currency_display }}
                 </div>
                 <div class="clinic-inline-badge">
                   {% ui "Prefixo de paciente" "Patient prefix" %}: {{ object.patient_code_prefix }}
                 </div>
+                {% if perms.accounts.view_measurementunit or perms.accounts.add_measurementunit or perms.accounts.change_measurementunit %}
+                  <a href="{{ measurement_units_url }}" class="btn btn-outline-dark mb-0">
+                    <i class="material-symbols-rounded text-sm me-1">straighten</i>
+                    {% ui "Gerir unidades" "Manage units" %}
+                  </a>
+                {% endif %}
               </div>
             </div>
           </div>

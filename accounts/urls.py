@@ -30,6 +30,13 @@ urlpatterns = [
         name="branch_toggle_status",
     ),
     path("preferencias/", views.SystemPreferenceView.as_view(), name="system_preferences"),
+    path("preferencias/unidades/", views.MeasurementUnitListView.as_view(), name="measurement_unit_list"),
+    path("preferencias/unidades/nova/", views.MeasurementUnitCreateView.as_view(), name="measurement_unit_create"),
+    path(
+        "preferencias/unidades/<int:pk>/editar/",
+        views.MeasurementUnitUpdateView.as_view(),
+        name="measurement_unit_update",
+    ),
     path("preferencias/idioma/", views.LanguageSwitchView.as_view(), name="switch_language"),
     path("preferencias/sucursal/", views.BranchSwitchView.as_view(), name="switch_branch"),
     path("perfis/", views.RoleListView.as_view(), name="role_list"),

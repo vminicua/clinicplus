@@ -10,7 +10,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from accounts.models import Branch
+from accounts.models import Branch, MeasurementUnit
 from accounts.forms import StyledFormMixin
 from accounts.i18n import translate_pair
 from accounts.ui import available_branches_for_user
@@ -307,6 +307,27 @@ def appointment_branch_queryset(request=None):
 
     scoped_queryset = available_branches_for_user(request.user)
     return scoped_queryset if scoped_queryset.exists() else queryset
+
+
+def measurement_unit_queryset(*codes):
+    requested_codes = [str(code).strip().lower() for code in codes if code]
+    queryset = MeasurementUnit.objects.filter(is_active=True)
+    if requested_codes:
+        queryset = MeasurementUnit.objects.filter(Q(is_active=True) | Q(code__in=requested_codes))
+    return queryset.order_by("sort_order", "name", "code")
+
+
+def measurement_unit_choices(*codes):
+    choices = [(unit.code, unit.select_label) for unit in measurement_unit_queryset(*codes)]
+    seen_codes = {code for code, _label in choices}
+    for code in codes:
+        normalized = str(code).strip().lower()
+        if normalized and normalized not in seen_codes:
+            choices.append((normalized, normalized))
+            seen_codes.add(normalized)
+    if choices:
+        return choices
+    return [("un", tr("un · Unidade", "un · Unit"))]
 
 
 def generate_doctor_crm(user):
@@ -851,6 +872,11 @@ class DepartmentForm(StyledFormMixin, forms.ModelForm):
 
 
 class MedicationForm(StyledFormMixin, forms.ModelForm):
+    unidade_medida = forms.ChoiceField(
+        label=tr("Unidade de medida", "Unit of measure"),
+        choices=(),
+    )
+
     class Meta:
         model = Medicamento
         fields = ["name", "sku", "principio_ativo", "dosagem", "unidade_medida", "preco", "descricao", "is_active"]
@@ -882,8 +908,8 @@ class MedicationForm(StyledFormMixin, forms.ModelForm):
                 "Example: 500 mg, 10 ml, 1 g/5 ml.",
             ),
             "unidade_medida": tr(
-                "Ex.: un, caixa, frasco, ampola.",
-                "Example: unit, box, bottle, ampoule.",
+                "Escolha uma unidade registada em Preferências > Unidades.",
+                "Choose a unit registered under Preferences > Units.",
             ),
             "preco": tr(
                 "Preço unitário de referência do catálogo.",
@@ -901,13 +927,26 @@ class MedicationForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_widget_classes()
+        current_unit = self.instance.unidade_medida if self.instance and self.instance.pk else None
+        bound_unit = self.data.get("unidade_medida") if self.is_bound else None
+        self.fields["unidade_medida"].choices = measurement_unit_choices(current_unit, bound_unit)
+        if not self.is_bound and not current_unit:
+            self.fields["unidade_medida"].initial = self.fields["unidade_medida"].choices[0][0]
         for field_name in ("name", "sku", "principio_ativo", "dosagem", "unidade_medida", "descricao"):
             self.fields[field_name].widget.attrs["autocomplete"] = "off"
             self.fields[field_name].widget.attrs["data-lpignore"] = "true"
             self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"
 
+    def clean_unidade_medida(self):
+        return (self.cleaned_data.get("unidade_medida") or "").strip().lower()
+
 
 class ConsumableForm(StyledFormMixin, forms.ModelForm):
+    unidade_medida = forms.ChoiceField(
+        label=tr("Unidade de medida", "Unit of measure"),
+        choices=(),
+    )
+
     class Meta:
         model = Consumivel
         fields = ["name", "sku", "unidade_medida", "preco_referencia", "descricao", "is_active"]
@@ -929,8 +968,8 @@ class ConsumableForm(StyledFormMixin, forms.ModelForm):
                 "Optional. Internal inventory or purchasing code.",
             ),
             "unidade_medida": tr(
-                "Ex.: un, caixa, rolo, par.",
-                "Example: unit, box, roll, pair.",
+                "Escolha uma unidade registada em Preferências > Unidades.",
+                "Choose a unit registered under Preferences > Units.",
             ),
             "preco_referencia": tr(
                 "Preço unitário de referência para reposição.",
@@ -948,10 +987,18 @@ class ConsumableForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_widget_classes()
+        current_unit = self.instance.unidade_medida if self.instance and self.instance.pk else None
+        bound_unit = self.data.get("unidade_medida") if self.is_bound else None
+        self.fields["unidade_medida"].choices = measurement_unit_choices(current_unit, bound_unit)
+        if not self.is_bound and not current_unit:
+            self.fields["unidade_medida"].initial = self.fields["unidade_medida"].choices[0][0]
         for field_name in ("name", "sku", "unidade_medida", "descricao"):
             self.fields[field_name].widget.attrs["autocomplete"] = "off"
             self.fields[field_name].widget.attrs["data-lpignore"] = "true"
             self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"
+
+    def clean_unidade_medida(self):
+        return (self.cleaned_data.get("unidade_medida") or "").strip().lower()
 
 
 class WarehouseForm(StyledFormMixin, forms.ModelForm):

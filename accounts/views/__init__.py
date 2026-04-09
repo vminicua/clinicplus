@@ -4,7 +4,14 @@ from .permissions_view import (
     PermissionListView,
     PermissionUpdateView,
 )
-from .preferences_view import BranchSwitchView, LanguageSwitchView, SystemPreferenceView
+from .preferences_view import (
+    BranchSwitchView,
+    LanguageSwitchView,
+    MeasurementUnitCreateView,
+    MeasurementUnitListView,
+    MeasurementUnitUpdateView,
+    SystemPreferenceView,
+)
 from .organization_view import (
     BranchCreateView,
     BranchDetailView,
@@ -56,6 +63,9 @@ __all__ = [
     "ClinicUpdateView",
     "ClinicToggleStatusView",
     "SystemPreferenceView",
+    "MeasurementUnitListView",
+    "MeasurementUnitCreateView",
+    "MeasurementUnitUpdateView",
     "LanguageSwitchView",
     "BranchSwitchView",
 ]

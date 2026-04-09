@@ -1,11 +1,12 @@
 from django.contrib import messages
+from django.db.models import Count
 from django.shortcuts import redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import UpdateView
+from django.views.generic import CreateView, ListView, UpdateView
 
-from accounts.forms import SystemPreferenceForm
-from accounts.models import SystemPreference, UserProfile
+from accounts.forms import MeasurementUnitForm, SystemPreferenceForm
+from accounts.models import MeasurementUnit, SystemPreference, UserProfile
 from accounts.ui import (
     BRANCH_SESSION_KEY,
     LANGUAGE_SESSION_KEY,
@@ -13,8 +14,9 @@ from accounts.ui import (
     normalize_language,
     ui_text,
 )
+from clinic.models import Consumivel, Medicamento
 
-from .base_view import AppPermissionMixin, ClinicPageMixin
+from .base_view import AppPermissionMixin, ClinicPageMixin, ModalFormMixin
 
 
 class SystemPreferenceView(AppPermissionMixin, ClinicPageMixin, UpdateView):
@@ -73,6 +75,7 @@ class SystemPreferenceView(AppPermissionMixin, ClinicPageMixin, UpdateView):
             },
         ]
         context["submit_label"] = ui_text(self.request, "Guardar preferências", "Save preferences")
+        context["measurement_units_url"] = reverse("accounts:measurement_unit_list")
         return context
 
     def form_valid(self, form):
@@ -86,6 +89,124 @@ class SystemPreferenceView(AppPermissionMixin, ClinicPageMixin, UpdateView):
             ),
         )
         return redirect(self.get_success_url())
+
+
+class MeasurementUnitListView(AppPermissionMixin, ClinicPageMixin, ListView):
+    model = MeasurementUnit
+    template_name = "accounts/preferences/units/list.html"
+    context_object_name = "units"
+    permission_required = "accounts.view_measurementunit"
+    segment = "preference_units"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Unidades", "Units")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Catálogo de unidades usadas no inventário, compras e formulários clínicos.",
+            "Catalog of units used across inventory, purchasing, and clinical forms.",
+        )
+
+    def get_queryset(self):
+        return MeasurementUnit.objects.order_by("sort_order", "name", "code")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        medication_usage = dict(
+            Medicamento.objects.values("unidade_medida")
+            .annotate(total=Count("id"))
+            .values_list("unidade_medida", "total")
+        )
+        consumable_usage = dict(
+            Consumivel.objects.values("unidade_medida")
+            .annotate(total=Count("id"))
+            .values_list("unidade_medida", "total")
+        )
+        units = list(context["units"])
+        for unit in units:
+            unit.linked_medications = medication_usage.get(unit.code, 0)
+            unit.linked_consumables = consumable_usage.get(unit.code, 0)
+            unit.total_usage = unit.linked_medications + unit.linked_consumables
+
+        context["units"] = units
+        context["total_units"] = len(units)
+        context["active_units"] = sum(1 for unit in units if unit.is_active)
+        context["units_in_use"] = sum(1 for unit in units if unit.total_usage > 0)
+        context["custom_units"] = sum(1 for unit in units if unit.sort_order >= 100)
+        return context
+
+
+class MeasurementUnitCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
+    model = MeasurementUnit
+    form_class = MeasurementUnitForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("accounts:measurement_unit_list")
+    permission_required = "accounts.add_measurementunit"
+    segment = "preference_units"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Nova unidade", "New unit")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Registe uma nova unidade de medida para o inventário e catálogo clínico.",
+            "Register a new measurement unit for inventory and clinical catalog usage.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar unidade", "Create unit")
+        context["form_description"] = ui_text(
+            self.request,
+            "Depois de criada, esta unidade passa a aparecer nos formulários de medicamentos e consumíveis.",
+            "Once created, this unit will appear in medication and consumable forms.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar unidade", "Save unit")
+        context["cancel_url"] = reverse("accounts:measurement_unit_list")
+        context["wide_fields"] = {"description"}
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Unidade criada com sucesso.", "Unit created successfully.")
+
+
+class MeasurementUnitUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
+    queryset = MeasurementUnit.objects.all()
+    form_class = MeasurementUnitForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("accounts:measurement_unit_list")
+    permission_required = "accounts.change_measurementunit"
+    segment = "preference_units"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar unidade", "Edit unit")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize nome, abreviatura e disponibilidade desta unidade no sistema.",
+            "Update the name, abbreviation, and availability of this unit in the system.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar unidade", "Edit unit")
+        context["form_description"] = ui_text(
+            self.request,
+            "As alterações reflectem-se imediatamente nos formulários que usam esta unidade.",
+            "Changes are immediately reflected in forms that use this unit.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar unidade", "Update unit")
+        context["cancel_url"] = reverse("accounts:measurement_unit_list")
+        context["wide_fields"] = {"description"}
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Unidade actualizada com sucesso.", "Unit updated successfully.")
 
 
 class LanguageSwitchView(View):

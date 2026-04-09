@@ -10,7 +10,7 @@ from django.db.models import Q
 from clinic.models import Departamento, Especialidade, Hospital, Medico
 
 from .i18n import translate_pair
-from .models import Branch, Clinic, SystemPreference, UserProfile
+from .models import Branch, Clinic, MeasurementUnit, SystemPreference, UserProfile
 from .utils import build_permission_matrix, describe_permission_scope, visible_users_queryset
 
 
@@ -795,6 +795,71 @@ class SystemPreferenceForm(StyledFormMixin, forms.ModelForm):
                 )
             )
         return prefix
+
+
+class MeasurementUnitForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = MeasurementUnit
+        fields = ["code", "name", "abbreviation", "description", "sort_order", "is_active"]
+        labels = {
+            "code": tr("Código", "Code"),
+            "name": tr("Unidade", "Unit"),
+            "abbreviation": tr("Abreviatura", "Abbreviation"),
+            "description": tr("Descrição", "Description"),
+            "sort_order": tr("Ordem", "Sort order"),
+            "is_active": tr("Activa", "Active"),
+        }
+        help_texts = {
+            "code": tr(
+                "Ex.: un, caixa, frasco, tubo. Este código é usado nos itens de inventário.",
+                "Example: un, box, bottle, tube. This code is used by inventory items.",
+            ),
+            "name": tr(
+                "Nome completo da unidade mostrado nos formulários.",
+                "Full unit name shown in forms.",
+            ),
+            "abbreviation": tr(
+                "Forma curta opcional, por exemplo cx, fr, amp.",
+                "Optional short form, for example bx, bt, amp.",
+            ),
+            "description": tr(
+                "Use para explicar onde e quando esta unidade costuma ser usada.",
+                "Use this to explain where and when this unit is usually used.",
+            ),
+            "sort_order": tr(
+                "Unidades com menor ordem aparecem primeiro nos selects.",
+                "Units with a lower order appear first in selects.",
+            ),
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        for field_name in ("code", "name", "abbreviation", "description"):
+            self.fields[field_name].widget.attrs["autocomplete"] = "off"
+            self.fields[field_name].widget.attrs["data-lpignore"] = "true"
+            self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"
+
+    def clean_code(self):
+        code = (self.cleaned_data.get("code") or "").strip().lower()
+        if not code:
+            raise forms.ValidationError(
+                tr(
+                    "Defina um código para a unidade.",
+                    "Define a code for the unit.",
+                )
+            )
+        if not re.fullmatch(r"[a-z0-9_-]+", code):
+            raise forms.ValidationError(
+                tr(
+                    "Use apenas letras minúsculas, números, hífen ou underscore no código.",
+                    "Use only lowercase letters, numbers, hyphen, or underscore in the code.",
+                )
+            )
+        return code
 
 
 class RoleForm(StyledFormMixin, forms.ModelForm):

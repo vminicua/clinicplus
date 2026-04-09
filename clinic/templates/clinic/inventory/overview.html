@@ -1,0 +1,249 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">warehouse</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Armazéns visíveis" "Visible warehouses" %}</p>
+              <h4 class="mb-0">{{ total_warehouses }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">medication</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Unidades de medicamentos" "Medication units" %}</p>
+              <h4 class="mb-0">{{ total_medication_units }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">inventory</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Unidades de consumíveis" "Consumable units" %}</p>
+              <h4 class="mb-0">{{ total_consumable_units }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">warning</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Alertas de stock" "Low-stock alerts" %}</p>
+              <h4 class="mb-0">{{ low_stock_alerts }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-xl-8">
+        <div class="card clinic-page-card h-100">
+          <div class="card-header p-4 border-0">
+            <div class="clinic-list-toolbar">
+              <div>
+                <h4 class="mb-1">{% ui "Resumo dos armazéns" "Warehouse summary" %}</h4>
+                <p class="text-secondary mb-0">{% ui "Cobertura rápida dos armazéns activos, linhas de stock e alertas." "Quick view of active warehouses, stock lines, and alerts." %}</p>
+              </div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="{% url 'clinic:warehouse_list' %}" class="btn btn-outline-dark mb-0">
+                  <i class="material-symbols-rounded text-sm me-1">warehouse</i>
+                  {% ui "Gerir armazéns" "Manage warehouses" %}
+                </a>
+                <a href="{% url 'clinic:inventory_movement_list' %}" class="btn bg-gradient-dark mb-0">
+                  <i class="material-symbols-rounded text-sm me-1">sync_alt</i>
+                  {% ui "Ver movimentos" "See movements" %}
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="card-body px-0 pt-0 pb-0">
+            {% if warehouses %}
+              <div class="table-responsive">
+                <table class="table align-items-center mb-0">
+                  <thead>
+                    <tr>
+                      <th class="ps-4">{% ui "Armazém" "Warehouse" %}</th>
+                      <th>{% ui "Sucursal" "Branch" %}</th>
+                      <th>{% ui "Linhas de stock" "Stock lines" %}</th>
+                      <th>{% ui "Alertas" "Alerts" %}</th>
+                      <th class="pe-4">{% ui "Movimentos" "Movements" %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for warehouse in warehouses %}
+                      <tr>
+                        <td class="ps-4">
+                          <h6 class="mb-0 text-sm">{{ warehouse.display_name }}</h6>
+                          <p class="text-xs text-secondary mb-0">{{ warehouse.location|default:"-" }}</p>
+                        </td>
+                        <td><span class="text-sm">{{ warehouse.branch.name }}</span></td>
+                        <td><span class="text-sm">{{ warehouse.medication_lines|add:warehouse.consumable_lines }}</span></td>
+                        <td>
+                          {% if warehouse.low_stock_total > 0 %}
+                            <span class="clinic-status clinic-status-warning">{{ warehouse.low_stock_total }}</span>
+                          {% else %}
+                            <span class="clinic-status clinic-status-success">{% ui "Sem alertas" "No alerts" %}</span>
+                          {% endif %}
+                        </td>
+                        <td class="pe-4"><span class="text-sm">{{ warehouse.movement_count }}</span></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="px-4 py-5 text-center text-secondary">
+                {% ui "Ainda não existem armazéns disponíveis para este perfil." "There are no available warehouses for this profile yet." %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-4">
+        <div class="card clinic-page-card h-100">
+          <div class="card-header p-4 border-0">
+            <h4 class="mb-1">{% ui "Catálogo activo" "Active catalog" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Base actual de itens disponíveis para stock." "Current base of items available for stock." %}</p>
+          </div>
+          <div class="card-body pt-0">
+            <div class="d-flex justify-content-between align-items-center border-bottom py-3">
+              <div>
+                <h6 class="mb-0">{% ui "Medicamentos" "Medications" %}</h6>
+                <small class="text-secondary">{% ui "Itens do catálogo" "Catalog items" %}</small>
+              </div>
+              <span class="clinic-status clinic-status-info">{{ medication_catalog_size }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-3">
+              <div>
+                <h6 class="mb-0">{% ui "Consumíveis" "Consumables" %}</h6>
+                <small class="text-secondary">{% ui "Itens do catálogo" "Catalog items" %}</small>
+              </div>
+              <span class="clinic-status clinic-status-info">{{ consumable_catalog_size }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-xl-6">
+        <div class="card clinic-page-card h-100">
+          <div class="card-header p-4 border-0">
+            <h4 class="mb-1">{% ui "Alertas de medicamentos" "Medication alerts" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Itens abaixo do stock mínimo ou sem unidades suficientes." "Items below minimum stock or without enough units." %}</p>
+          </div>
+          <div class="card-body px-0 pt-0 pb-0">
+            {% if medication_alerts %}
+              <div class="table-responsive">
+                <table class="table align-items-center mb-0">
+                  <thead>
+                    <tr>
+                      <th class="ps-4">{% ui "Medicamento" "Medication" %}</th>
+                      <th>{% ui "Armazém" "Warehouse" %}</th>
+                      <th class="pe-4">{% ui "Stock" "Stock" %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for entry in medication_alerts %}
+                      <tr>
+                        <td class="ps-4">
+                          <h6 class="mb-0 text-sm">{{ entry.medicamento.display_name }}</h6>
+                          <p class="text-xs text-secondary mb-0">{{ entry.medicamento.dosagem }}</p>
+                        </td>
+                        <td><span class="text-sm">{{ entry.armazem.display_name }}</span></td>
+                        <td class="pe-4"><span class="clinic-status clinic-status-warning">{{ entry.quantidade }} / {{ entry.stock_minimo }}</span></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="px-4 py-5 text-center text-secondary">
+                {% ui "Nenhum alerta de medicamentos neste momento." "No medication alerts right now." %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-6">
+        <div class="card clinic-page-card h-100">
+          <div class="card-header p-4 border-0">
+            <h4 class="mb-1">{% ui "Movimentos recentes" "Recent movements" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Últimos lançamentos feitos no inventário." "Latest entries recorded in the inventory." %}</p>
+          </div>
+          <div class="card-body px-0 pt-0 pb-0">
+            {% if recent_movements %}
+              <div class="table-responsive">
+                <table class="table align-items-center mb-0">
+                  <thead>
+                    <tr>
+                      <th class="ps-4">{% ui "Item" "Item" %}</th>
+                      <th>{% ui "Tipo" "Type" %}</th>
+                      <th>{% ui "Quantidade" "Quantity" %}</th>
+                      <th class="pe-4">{% ui "Data" "Date" %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for movement in recent_movements %}
+                      <tr>
+                        <td class="ps-4">
+                          <h6 class="mb-0 text-sm">{{ movement.item_label }}</h6>
+                          <p class="text-xs text-secondary mb-0">{{ movement.armazem.display_name }} · {{ movement.armazem.branch.name }}</p>
+                        </td>
+                        <td>
+                          {% if movement.movement_type == "entrada" %}
+                            <span class="clinic-status clinic-status-success">{{ movement.get_movement_type_display }}</span>
+                          {% elif movement.movement_type == "saida" %}
+                            <span class="clinic-status clinic-status-warning">{{ movement.get_movement_type_display }}</span>
+                          {% else %}
+                            <span class="clinic-status clinic-status-info">{{ movement.get_movement_type_display }}</span>
+                          {% endif %}
+                        </td>
+                        <td><span class="text-sm">{{ movement.quantity }}</span></td>
+                        <td class="pe-4"><span class="text-sm">{{ movement.created_at|date:"d/m/Y H:i" }}</span></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="px-4 py-5 text-center text-secondary">
+                {% ui "Ainda não existem movimentos registados." "There are no recorded movements yet." %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

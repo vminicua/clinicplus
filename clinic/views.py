@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import DatabaseError, transaction
-from django.db.models import Count, Exists, Max, OuterRef, Prefetch, Q, Sum
+from django.db.models import Count, Exists, F, Max, OuterRef, Prefetch, Q, Sum
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -28,15 +28,34 @@ from accounts.ui import (
 from accounts.views.base_view import AppPermissionMixin, ClinicPageMixin, ModalDetailMixin, ModalFormMixin
 from clinic.forms import (
     AppointmentForm,
+    ConsumableForm,
+    ConsumableStockForm,
     ConsultationForm,
+    InventoryMovementForm,
     MedicationForm,
+    MedicationStockForm,
     DepartmentForm,
     PatientForm,
     SpecialtyForm,
+    WarehouseForm,
     WorkScheduleBatchCreateForm,
     WorkScheduleForm,
 )
-from clinic.models import Agendamento, Consulta, Departamento, Especialidade, HorarioTrabalho, Medicamento, Medico, Paciente
+from clinic.models import (
+    Agendamento,
+    Armazem,
+    Consulta,
+    Consumivel,
+    Departamento,
+    Especialidade,
+    EstoqueConsumivel,
+    EstoqueMedicamento,
+    HorarioTrabalho,
+    Medicamento,
+    Medico,
+    MovimentoInventario,
+    Paciente,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -152,6 +171,77 @@ def default_structure_branch_id(request, filter_branches):
     if current_branch and any(branch.pk == current_branch.pk for branch in filter_branches):
         return current_branch.pk
     return filter_branches[0].pk if filter_branches else None
+
+
+def inventory_filter_branches_for_request(request):
+    if request is not None and getattr(request, "user", None) and request.user.is_authenticated:
+        scoped_queryset = available_branches_for_user(request.user)
+        if scoped_queryset.exists():
+            return list(scoped_queryset.order_by("name"))
+    return list(Branch.objects.filter(is_active=True).order_by("name"))
+
+
+def inventory_visible_warehouses_for_request(request):
+    return (
+        Armazem.objects.select_related("branch")
+        .filter(branch__in=inventory_filter_branches_for_request(request))
+        .order_by("branch__name", "name")
+    )
+
+
+def medication_stock_queryset(request=None):
+    return (
+        EstoqueMedicamento.objects.select_related("armazem__branch", "medicamento")
+        .filter(armazem__in=inventory_visible_warehouses_for_request(request))
+        .order_by("medicamento__name", "armazem__branch__name", "armazem__name")
+    )
+
+
+def consumable_stock_queryset(request=None):
+    return (
+        EstoqueConsumivel.objects.select_related("armazem__branch", "consumivel")
+        .filter(armazem__in=inventory_visible_warehouses_for_request(request))
+        .order_by("consumivel__name", "armazem__branch__name", "armazem__name")
+    )
+
+
+def inventory_movement_queryset(request=None):
+    return (
+        MovimentoInventario.objects.select_related(
+            "armazem__branch",
+            "medicamento",
+            "consumivel",
+            "created_by",
+        )
+        .filter(armazem__in=inventory_visible_warehouses_for_request(request))
+        .order_by("-created_at", "-id")
+    )
+
+
+class AnyPermissionRequiredMixin(AppPermissionMixin):
+    permission_options = ()
+
+    def has_permission(self):
+        if self.permission_options:
+            return self.request.user.is_authenticated and any(
+                self.request.user.has_perm(codename) for codename in self.permission_options
+            )
+        return super().has_permission()
+
+
+class InventoryFormRequestMixin:
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
+
+
+def inventory_branch_filter_context(request):
+    filter_branches = inventory_filter_branches_for_request(request)
+    return {
+        "filter_branches": filter_branches,
+        "active_branch_filter_id": default_structure_branch_id(request, filter_branches),
+    }
 
 
 def build_appointment_professionals(schedule_list, reference_date):
@@ -1351,53 +1441,366 @@ class DepartmentUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, 
         return ui_text(self.request, "Departamento actualizado com sucesso.", "Department updated successfully.")
 
 
-class MedicationListView(AppPermissionMixin, ClinicPageMixin, ListView):
-    model = Medicamento
-    template_name = "clinic/structure/medications/list.html"
-    context_object_name = "medications"
-    permission_required = "clinic.view_medicamento"
-    segment = "medications"
+class InventoryOverviewView(AnyPermissionRequiredMixin, ClinicPageMixin, TemplateView):
+    template_name = "clinic/inventory/overview.html"
+    permission_options = (
+        "clinic.view_armazem",
+        "clinic.view_medicamento",
+        "clinic.view_estoquemedicamento",
+        "clinic.view_consumivel",
+        "clinic.view_estoqueconsumivel",
+        "clinic.view_movimentoinventario",
+    )
+    segment = "inventory"
 
     def get_page_title(self) -> str:
-        return ui_text(self.request, "Medicamentos", "Medications")
+        return ui_text(self.request, "Inventário", "Inventory")
 
     def get_page_subtitle(self) -> str:
         return ui_text(
             self.request,
-            "Catálogo de medicamentos e stock de referência usado pela operação clínica e farmácia.",
-            "Medication catalog and reference stock used by clinical operations and pharmacy.",
+            "Central de stock clínico com armazéns, níveis mínimos, consumíveis e movimentos.",
+            "Clinical stock hub with warehouses, minimum levels, consumables, and movements.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        warehouses = inventory_visible_warehouses_for_request(self.request).annotate(
+            medication_lines=Count("estoque_medicamentos", distinct=True),
+            consumable_lines=Count("estoque_consumiveis", distinct=True),
+            movement_count=Count("movimentos", distinct=True),
+            low_medication_lines=Count(
+                "estoque_medicamentos",
+                filter=Q(
+                    estoque_medicamentos__stock_minimo__gt=0,
+                    estoque_medicamentos__quantidade__lte=F("estoque_medicamentos__stock_minimo"),
+                ),
+                distinct=True,
+            ),
+            low_consumable_lines=Count(
+                "estoque_consumiveis",
+                filter=Q(
+                    estoque_consumiveis__stock_minimo__gt=0,
+                    estoque_consumiveis__quantidade__lte=F("estoque_consumiveis__stock_minimo"),
+                ),
+                distinct=True,
+            ),
+        )
+        medication_stock = medication_stock_queryset(self.request)
+        consumable_stock = consumable_stock_queryset(self.request)
+        recent_movements = inventory_movement_queryset(self.request)
+
+        warehouse_list = list(warehouses)
+        for warehouse in warehouse_list:
+            warehouse.low_stock_total = warehouse.low_medication_lines + warehouse.low_consumable_lines
+
+        context["total_warehouses"] = len(warehouse_list)
+        context["medication_catalog_size"] = Medicamento.objects.filter(is_active=True).count()
+        context["consumable_catalog_size"] = Consumivel.objects.filter(is_active=True).count()
+        context["total_medication_units"] = medication_stock.aggregate(total=Sum("quantidade")).get("total") or 0
+        context["total_consumable_units"] = consumable_stock.aggregate(total=Sum("quantidade")).get("total") or 0
+        context["low_stock_alerts"] = (
+            medication_stock.filter(stock_minimo__gt=0, quantidade__lte=F("stock_minimo")).count()
+            + consumable_stock.filter(stock_minimo__gt=0, quantidade__lte=F("stock_minimo")).count()
+        )
+        context["warehouses"] = warehouse_list[:6]
+        context["medication_alerts"] = medication_stock.filter(
+            stock_minimo__gt=0,
+            quantidade__lte=F("stock_minimo"),
+        )[:8]
+        context["consumable_alerts"] = consumable_stock.filter(
+            stock_minimo__gt=0,
+            quantidade__lte=F("stock_minimo"),
+        )[:8]
+        context["recent_movements"] = recent_movements[:8]
+        return context
+
+
+class WarehouseListView(AnyPermissionRequiredMixin, ClinicPageMixin, ListView):
+    template_name = "clinic/inventory/warehouses/list.html"
+    context_object_name = "warehouses"
+    permission_options = ("clinic.view_armazem", "clinic.add_armazem", "clinic.change_armazem")
+    segment = "inventory_warehouses"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Armazéns", "Warehouses")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Organize os pontos de armazenamento por sucursal e acompanhe cobertura e responsável.",
+            "Organize storage points by branch and track coverage and manager.",
         )
 
     def get_queryset(self):
-        return Medicamento.objects.order_by("name", "dosagem")
+        return inventory_visible_warehouses_for_request(self.request).annotate(
+            medication_lines=Count("estoque_medicamentos", distinct=True),
+            consumable_lines=Count("estoque_consumiveis", distinct=True),
+            movement_count=Count("movimentos", distinct=True),
+            low_medication_lines=Count(
+                "estoque_medicamentos",
+                filter=Q(
+                    estoque_medicamentos__stock_minimo__gt=0,
+                    estoque_medicamentos__quantidade__lte=F("estoque_medicamentos__stock_minimo"),
+                ),
+                distinct=True,
+            ),
+            low_consumable_lines=Count(
+                "estoque_consumiveis",
+                filter=Q(
+                    estoque_consumiveis__stock_minimo__gt=0,
+                    estoque_consumiveis__quantidade__lte=F("estoque_consumiveis__stock_minimo"),
+                ),
+                distinct=True,
+            ),
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        warehouses = list(context["warehouses"])
+        for warehouse in warehouses:
+            warehouse.low_stock_total = warehouse.low_medication_lines + warehouse.low_consumable_lines
+        context["warehouses"] = warehouses
+        context["total_warehouses"] = len(warehouses)
+        context["active_warehouses"] = sum(1 for warehouse in warehouses if warehouse.is_active)
+        context["warehouses_with_alerts"] = sum(1 for warehouse in warehouses if warehouse.low_stock_total > 0)
+        context["total_stock_lines"] = sum(
+            warehouse.medication_lines + warehouse.consumable_lines for warehouse in warehouses
+        )
+        context.update(inventory_branch_filter_context(self.request))
+        return context
+
+
+class WarehouseCreateView(
+    AnyPermissionRequiredMixin,
+    InventoryFormRequestMixin,
+    ModalFormMixin,
+    ClinicPageMixin,
+    CreateView,
+):
+    model = Armazem
+    form_class = WarehouseForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:warehouse_list")
+    permission_options = ("clinic.add_armazem",)
+    segment = "inventory_warehouses"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo armazém", "New warehouse")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Crie um ponto de armazenamento operacional para controlar o stock da sucursal.",
+            "Create an operational storage point to control branch stock.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar armazém", "Create warehouse")
+        context["form_description"] = ui_text(
+            self.request,
+            "Armazéns podem representar farmácia, economato, laboratório ou apoio clínico.",
+            "Warehouses can represent pharmacy, storeroom, laboratory, or clinical support.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar armazém", "Save warehouse")
+        context["cancel_url"] = reverse("clinic:warehouse_list")
+        context["wide_fields"] = ("description",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Armazém criado com sucesso.", "Warehouse created successfully.")
+
+
+class WarehouseUpdateView(
+    AnyPermissionRequiredMixin,
+    InventoryFormRequestMixin,
+    ModalFormMixin,
+    ClinicPageMixin,
+    UpdateView,
+):
+    form_class = WarehouseForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:warehouse_list")
+    permission_options = ("clinic.change_armazem",)
+    segment = "inventory_warehouses"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar armazém", "Edit warehouse")
+
+    def get_queryset(self):
+        return inventory_visible_warehouses_for_request(self.request)
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize a localização, sucursal e responsabilidade operacional deste armazém.",
+            "Update the location, branch, and operational ownership of this warehouse.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar armazém", "Edit warehouse")
+        context["form_description"] = ui_text(
+            self.request,
+            "As alterações reflectem-se nas listas de stock e movimentos ligados a este armazém.",
+            "Changes are reflected in stock and movement lists linked to this warehouse.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar armazém", "Update warehouse")
+        context["cancel_url"] = reverse("clinic:warehouse_list")
+        context["wide_fields"] = ("description",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Armazém actualizado com sucesso.", "Warehouse updated successfully.")
+
+
+class MedicationListView(AnyPermissionRequiredMixin, ClinicPageMixin, ListView):
+    template_name = "clinic/inventory/medications/list.html"
+    context_object_name = "stock_entries"
+    permission_options = (
+        "clinic.view_estoquemedicamento",
+        "clinic.view_medicamento",
+        "clinic.add_estoquemedicamento",
+        "clinic.change_estoquemedicamento",
+    )
+    segment = "inventory_medications"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Stock de medicamentos", "Medication stock")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Controle níveis de stock, mínimos e reposição por armazém sem misturar com o catálogo.",
+            "Track stock levels, minimums, and replenishment by warehouse without mixing with the catalog.",
+        )
+
+    def get_queryset(self):
+        return medication_stock_queryset(self.request)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         base_queryset = self.get_queryset()
-        context["total_medications"] = base_queryset.count()
-        context["in_stock_medications"] = base_queryset.filter(quantidade__gt=0).count()
-        context["low_stock_medications"] = base_queryset.filter(quantidade__gt=0, quantidade__lte=10).count()
+        catalog_queryset = Medicamento.objects.order_by("name", "dosagem")
+        context["total_stock_lines"] = base_queryset.count()
+        context["catalog_medications"] = catalog_queryset.count()
+        context["catalog_without_stock"] = catalog_queryset.filter(estoques__isnull=True).distinct().count()
+        context["low_stock_lines"] = base_queryset.filter(
+            stock_minimo__gt=0,
+            quantidade__lte=F("stock_minimo"),
+        ).count()
+        context["out_of_stock_lines"] = base_queryset.filter(quantidade=0).count()
         context["total_units"] = base_queryset.aggregate(total=Sum("quantidade")).get("total") or 0
+        context.update(inventory_branch_filter_context(self.request))
         return context
 
 
-class MedicationCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
+class MedicationCreateView(
+    AnyPermissionRequiredMixin,
+    InventoryFormRequestMixin,
+    ModalFormMixin,
+    ClinicPageMixin,
+    CreateView,
+):
+    model = EstoqueMedicamento
+    form_class = MedicationStockForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:medication_list")
+    permission_options = ("clinic.add_estoquemedicamento",)
+    segment = "inventory_medications"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo stock de medicamento", "New medication stock line")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Associe um medicamento a um armazém com níveis operacionais de stock.",
+            "Link a medication to a warehouse with operational stock levels.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar stock de medicamento", "Create medication stock line")
+        context["form_description"] = ui_text(
+            self.request,
+            "Use esta ficha para definir stock actual, mínimo, reposição e máximo por armazém.",
+            "Use this form to define current, minimum, reorder, and maximum stock per warehouse.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar stock", "Save stock line")
+        context["cancel_url"] = reverse("clinic:medication_list")
+        context["wide_fields"] = ("observacoes",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Stock de medicamento criado com sucesso.", "Medication stock line created successfully.")
+
+
+class MedicationUpdateView(
+    AnyPermissionRequiredMixin,
+    InventoryFormRequestMixin,
+    ModalFormMixin,
+    ClinicPageMixin,
+    UpdateView,
+):
+    form_class = MedicationStockForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:medication_list")
+    permission_options = ("clinic.change_estoquemedicamento",)
+    segment = "inventory_medications"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar stock de medicamento", "Edit medication stock line")
+
+    def get_queryset(self):
+        return medication_stock_queryset(self.request)
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize quantidades e níveis operacionais para este medicamento neste armazém.",
+            "Update quantities and operating levels for this medication in this warehouse.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar stock de medicamento", "Edit medication stock line")
+        context["form_description"] = ui_text(
+            self.request,
+            "As alterações reflectem-se imediatamente no resumo do inventário e nos alertas de stock mínimo.",
+            "Changes are immediately reflected in the inventory summary and low stock alerts.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar stock", "Update stock line")
+        context["cancel_url"] = reverse("clinic:medication_list")
+        context["wide_fields"] = ("observacoes",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Stock de medicamento actualizado com sucesso.", "Medication stock line updated successfully.")
+
+
+class MedicationCatalogCreateView(AnyPermissionRequiredMixin, ModalFormMixin, ClinicPageMixin, CreateView):
     model = Medicamento
     form_class = MedicationForm
     template_name = "accounts/shared/form.html"
     modal_template_name = "accounts/shared/modal_form.html"
     success_url = reverse_lazy("clinic:medication_list")
-    permission_required = "clinic.add_medicamento"
-    segment = "medications"
+    permission_options = ("clinic.add_medicamento",)
+    segment = "inventory_medications"
 
     def get_page_title(self) -> str:
-        return ui_text(self.request, "Novo medicamento", "New medication")
+        return ui_text(self.request, "Novo item do catálogo", "New catalog item")
 
     def get_page_subtitle(self) -> str:
         return ui_text(
             self.request,
-            "Registe um medicamento para catálogo clínico e controlo de stock.",
-            "Register a medication for the clinical catalog and stock control.",
+            "Crie a ficha base do medicamento para depois usá-lo nos armazéns e movimentos.",
+            "Create the base medication record before using it in warehouses and movements.",
         )
 
     def get_context_data(self, **kwargs):
@@ -1405,8 +1808,8 @@ class MedicationCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, 
         context["form_title"] = ui_text(self.request, "Criar medicamento", "Create medication")
         context["form_description"] = ui_text(
             self.request,
-            "Use esta ficha para manter o catálogo farmacêutico organizado.",
-            "Use this record to keep the pharmacy catalog organized.",
+            "O catálogo guarda nome, composição, dosagem, unidade e preço de referência.",
+            "The catalog stores the name, composition, dosage, unit, and reference price.",
         )
         context["submit_label"] = ui_text(self.request, "Guardar medicamento", "Save medication")
         context["cancel_url"] = reverse("clinic:medication_list")
@@ -1417,23 +1820,23 @@ class MedicationCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, 
         return ui_text(self.request, "Medicamento criado com sucesso.", "Medication created successfully.")
 
 
-class MedicationUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
+class MedicationCatalogUpdateView(AnyPermissionRequiredMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
     queryset = Medicamento.objects.all()
     form_class = MedicationForm
     template_name = "accounts/shared/form.html"
     modal_template_name = "accounts/shared/modal_form.html"
     success_url = reverse_lazy("clinic:medication_list")
-    permission_required = "clinic.change_medicamento"
-    segment = "medications"
+    permission_options = ("clinic.change_medicamento",)
+    segment = "inventory_medications"
 
     def get_page_title(self) -> str:
-        return ui_text(self.request, "Editar medicamento", "Edit medication")
+        return ui_text(self.request, "Editar catálogo do medicamento", "Edit medication catalog")
 
     def get_page_subtitle(self) -> str:
         return ui_text(
             self.request,
-            "Actualize princípio activo, stock e preço de referência.",
-            "Update the active ingredient, stock, and reference price.",
+            "Actualize a ficha base do medicamento sem mexer nos níveis de stock por armazém.",
+            "Update the base medication record without changing warehouse stock levels.",
         )
 
     def get_context_data(self, **kwargs):
@@ -1441,8 +1844,8 @@ class MedicationUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, 
         context["form_title"] = ui_text(self.request, "Editar medicamento", "Edit medication")
         context["form_description"] = ui_text(
             self.request,
-            "As alterações reflectem-se imediatamente nas listagens operacionais.",
-            "Changes are immediately reflected in operational listings.",
+            "Use esta edição quando precisar corrigir o catálogo e não apenas um armazém específico.",
+            "Use this edit when you need to correct the catalog, not just one specific warehouse.",
         )
         context["submit_label"] = ui_text(self.request, "Actualizar medicamento", "Update medication")
         context["cancel_url"] = reverse("clinic:medication_list")
@@ -1451,6 +1854,304 @@ class MedicationUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, 
 
     def get_success_message(self) -> str:
         return ui_text(self.request, "Medicamento actualizado com sucesso.", "Medication updated successfully.")
+
+
+class ConsumableListView(AnyPermissionRequiredMixin, ClinicPageMixin, ListView):
+    template_name = "clinic/inventory/consumables/list.html"
+    context_object_name = "stock_entries"
+    permission_options = (
+        "clinic.view_estoqueconsumivel",
+        "clinic.view_consumivel",
+        "clinic.add_estoqueconsumivel",
+        "clinic.change_estoqueconsumivel",
+    )
+    segment = "inventory_consumables"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Consumíveis", "Consumables")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Controle consumíveis clínicos e laboratoriais por armazém, mínimos e reposição.",
+            "Track clinical and laboratory consumables by warehouse, minimums, and replenishment.",
+        )
+
+    def get_queryset(self):
+        return consumable_stock_queryset(self.request)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_queryset = self.get_queryset()
+        catalog_queryset = Consumivel.objects.order_by("name")
+        context["total_stock_lines"] = base_queryset.count()
+        context["catalog_consumables"] = catalog_queryset.count()
+        context["catalog_without_stock"] = catalog_queryset.filter(estoques__isnull=True).distinct().count()
+        context["low_stock_lines"] = base_queryset.filter(
+            stock_minimo__gt=0,
+            quantidade__lte=F("stock_minimo"),
+        ).count()
+        context["out_of_stock_lines"] = base_queryset.filter(quantidade=0).count()
+        context["total_units"] = base_queryset.aggregate(total=Sum("quantidade")).get("total") or 0
+        context.update(inventory_branch_filter_context(self.request))
+        return context
+
+
+class ConsumableCreateView(
+    AnyPermissionRequiredMixin,
+    InventoryFormRequestMixin,
+    ModalFormMixin,
+    ClinicPageMixin,
+    CreateView,
+):
+    model = EstoqueConsumivel
+    form_class = ConsumableStockForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:consumable_list")
+    permission_options = ("clinic.add_estoqueconsumivel",)
+    segment = "inventory_consumables"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo stock de consumível", "New consumable stock line")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Associe um consumível a um armazém com níveis mínimos e ponto de reposição.",
+            "Link a consumable to a warehouse with minimum levels and reorder point.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar stock de consumível", "Create consumable stock line")
+        context["form_description"] = ui_text(
+            self.request,
+            "Use esta ficha para materiais como luvas, seringas, pensos, máscaras ou kits.",
+            "Use this form for items such as gloves, syringes, dressings, masks, or kits.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar stock", "Save stock line")
+        context["cancel_url"] = reverse("clinic:consumable_list")
+        context["wide_fields"] = ("observacoes",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Stock de consumível criado com sucesso.", "Consumable stock line created successfully.")
+
+
+class ConsumableUpdateView(
+    AnyPermissionRequiredMixin,
+    InventoryFormRequestMixin,
+    ModalFormMixin,
+    ClinicPageMixin,
+    UpdateView,
+):
+    form_class = ConsumableStockForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:consumable_list")
+    permission_options = ("clinic.change_estoqueconsumivel",)
+    segment = "inventory_consumables"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar stock de consumível", "Edit consumable stock line")
+
+    def get_queryset(self):
+        return consumable_stock_queryset(self.request)
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize níveis operacionais e observações deste consumível por armazém.",
+            "Update operating levels and notes for this consumable per warehouse.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar stock de consumível", "Edit consumable stock line")
+        context["form_description"] = ui_text(
+            self.request,
+            "As alterações entram imediatamente nos alertas e relatórios operacionais do inventário.",
+            "Changes are immediately reflected in inventory alerts and operating reports.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar stock", "Update stock line")
+        context["cancel_url"] = reverse("clinic:consumable_list")
+        context["wide_fields"] = ("observacoes",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Stock de consumível actualizado com sucesso.", "Consumable stock line updated successfully.")
+
+
+class ConsumableCatalogCreateView(AnyPermissionRequiredMixin, ModalFormMixin, ClinicPageMixin, CreateView):
+    model = Consumivel
+    form_class = ConsumableForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:consumable_list")
+    permission_options = ("clinic.add_consumivel",)
+    segment = "inventory_consumables"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo consumível", "New consumable")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Crie um item de catálogo para materiais usados nas consultas, enfermagem e apoio.",
+            "Create a catalog item for materials used in consultations, nursing, and support.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar consumível", "Create consumable")
+        context["form_description"] = ui_text(
+            self.request,
+            "O catálogo de consumíveis guarda o item base antes de o distribuir por armazéns.",
+            "The consumable catalog stores the base item before distributing it across warehouses.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar consumível", "Save consumable")
+        context["cancel_url"] = reverse("clinic:consumable_list")
+        context["wide_fields"] = ("descricao",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Consumível criado com sucesso.", "Consumable created successfully.")
+
+
+class ConsumableCatalogUpdateView(AnyPermissionRequiredMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
+    queryset = Consumivel.objects.all()
+    form_class = ConsumableForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:consumable_list")
+    permission_options = ("clinic.change_consumivel",)
+    segment = "inventory_consumables"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar consumível", "Edit consumable")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize a ficha base do consumível sem mexer nos níveis de stock dos armazéns.",
+            "Update the base consumable record without changing warehouse stock levels.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar consumível", "Edit consumable")
+        context["form_description"] = ui_text(
+            self.request,
+            "Use esta edição para corrigir nome, unidade, preço de referência ou descrição do catálogo.",
+            "Use this edit to correct the catalog name, unit, reference price, or description.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar consumível", "Update consumable")
+        context["cancel_url"] = reverse("clinic:consumable_list")
+        context["wide_fields"] = ("descricao",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Consumível actualizado com sucesso.", "Consumable updated successfully.")
+
+
+class InventoryMovementListView(AnyPermissionRequiredMixin, ClinicPageMixin, ListView):
+    template_name = "clinic/inventory/movements/list.html"
+    context_object_name = "movements"
+    permission_options = (
+        "clinic.view_movimentoinventario",
+        "clinic.add_movimentoinventario",
+        "clinic.change_movimentoinventario",
+    )
+    segment = "inventory_movements"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Movimentos", "Movements")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Registe entradas, saídas e ajustes para manter rastreabilidade completa do inventário.",
+            "Record entries, exits, and adjustments to keep a complete inventory trace.",
+        )
+
+    def get_queryset(self):
+        return inventory_movement_queryset(self.request)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_queryset = self.get_queryset()
+        context["total_movements"] = base_queryset.count()
+        context["entry_movements"] = base_queryset.filter(
+            movement_type=MovimentoInventario.MovementTypeChoices.ENTRADA
+        ).count()
+        context["exit_movements"] = base_queryset.filter(
+            movement_type=MovimentoInventario.MovementTypeChoices.SAIDA
+        ).count()
+        context["adjustment_movements"] = base_queryset.filter(
+            movement_type=MovimentoInventario.MovementTypeChoices.AJUSTE
+        ).count()
+        context.update(inventory_branch_filter_context(self.request))
+        return context
+
+
+class InventoryMovementCreateView(
+    AnyPermissionRequiredMixin,
+    InventoryFormRequestMixin,
+    ModalFormMixin,
+    ClinicPageMixin,
+    CreateView,
+):
+    model = MovimentoInventario
+    form_class = InventoryMovementForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("clinic:inventory_movement_list")
+    permission_options = ("clinic.add_movimentoinventario",)
+    segment = "inventory_movements"
+    modal_size = "modal-xl"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo movimento", "New movement")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Lance entrada, saída ou ajuste e actualize o stock automaticamente.",
+            "Register an entry, exit, or adjustment and update stock automatically.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar movimento de inventário", "Create inventory movement")
+        context["form_description"] = ui_text(
+            self.request,
+            "Cada movimento grava o stock anterior, o stock resultante e a referência operacional.",
+            "Each movement stores the previous stock, resulting stock, and operational reference.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar movimento", "Save movement")
+        context["cancel_url"] = reverse("clinic:inventory_movement_list")
+        context["wide_fields"] = ("notes",)
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Movimento registado com sucesso.", "Movement recorded successfully.")
+
+    def form_valid(self, form):
+        self.object = form.save(user=self.request.user)
+        if self.is_modal():
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": self.get_success_message(),
+                    "reload": True,
+                }
+            )
+
+        messages.success(self.request, self.get_success_message())
+        return redirect(self.get_success_url())
+
+
 
 
 class WorkScheduleListView(AppPermissionMixin, ClinicPageMixin, ListView):

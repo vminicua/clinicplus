@@ -139,12 +139,52 @@
           </div>
         </li>
       {% endif %}
-      {% if perms.clinic.view_medicamento or perms.clinic.add_medicamento or perms.clinic.change_medicamento %}
+      {% if perms.clinic.view_armazem or perms.clinic.add_armazem or perms.clinic.change_armazem or perms.clinic.view_medicamento or perms.clinic.add_medicamento or perms.clinic.change_medicamento or perms.clinic.view_estoquemedicamento or perms.clinic.add_estoquemedicamento or perms.clinic.change_estoquemedicamento or perms.clinic.view_consumivel or perms.clinic.add_consumivel or perms.clinic.change_consumivel or perms.clinic.view_estoqueconsumivel or perms.clinic.add_estoqueconsumivel or perms.clinic.change_estoqueconsumivel or perms.clinic.view_movimentoinventario or perms.clinic.add_movimentoinventario or perms.clinic.change_movimentoinventario %}
         <li class="nav-item">
-          <a class="nav-link {% if segment == 'medications' %}active{% endif %}" href="{% url 'clinic:medication_list' %}">
-            <i class="material-symbols-rounded opacity-10">medication</i>
-            <span class="nav-link-text ms-2">{% ui "Medicamentos" "Medications" %}</span>
+          <a class="nav-link clinic-nav-parent {% if segment == 'inventory' or segment == 'inventory_warehouses' or segment == 'inventory_medications' or segment == 'inventory_consumables' or segment == 'inventory_movements' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-inventory" role="button" aria-expanded="{% if segment == 'inventory' or segment == 'inventory_warehouses' or segment == 'inventory_medications' or segment == 'inventory_consumables' or segment == 'inventory_movements' %}true{% else %}false{% endif %}" aria-controls="sidebar-inventory">
+            <span class="d-flex align-items-center">
+              <i class="material-symbols-rounded opacity-10">inventory_2</i>
+              <span class="nav-link-text ms-2">{% ui "Inventário" "Inventory" %}</span>
+            </span>
+            <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
           </a>
+          <div class="collapse {% if segment == 'inventory' or segment == 'inventory_warehouses' or segment == 'inventory_medications' or segment == 'inventory_consumables' or segment == 'inventory_movements' %}show{% endif %}" id="sidebar-inventory">
+            <ul class="nav flex-column clinic-submenu">
+              <li class="nav-item">
+                <a class="nav-link {% if segment == 'inventory' %}active{% endif %}" href="{% url 'clinic:inventory_overview' %}">
+                  <span class="nav-link-text">{% ui "Visão geral" "Overview" %}</span>
+                </a>
+              </li>
+              {% if perms.clinic.view_armazem or perms.clinic.add_armazem or perms.clinic.change_armazem %}
+                <li class="nav-item">
+                  <a class="nav-link {% if segment == 'inventory_warehouses' %}active{% endif %}" href="{% url 'clinic:warehouse_list' %}">
+                    <span class="nav-link-text">{% ui "Armazéns" "Warehouses" %}</span>
+                  </a>
+                </li>
+              {% endif %}
+              {% if perms.clinic.view_medicamento or perms.clinic.add_medicamento or perms.clinic.change_medicamento or perms.clinic.view_estoquemedicamento or perms.clinic.add_estoquemedicamento or perms.clinic.change_estoquemedicamento %}
+                <li class="nav-item">
+                  <a class="nav-link {% if segment == 'inventory_medications' %}active{% endif %}" href="{% url 'clinic:medication_list' %}">
+                    <span class="nav-link-text">{% ui "Stock medicamentos" "Medication stock" %}</span>
+                  </a>
+                </li>
+              {% endif %}
+              {% if perms.clinic.view_consumivel or perms.clinic.add_consumivel or perms.clinic.change_consumivel or perms.clinic.view_estoqueconsumivel or perms.clinic.add_estoqueconsumivel or perms.clinic.change_estoqueconsumivel %}
+                <li class="nav-item">
+                  <a class="nav-link {% if segment == 'inventory_consumables' %}active{% endif %}" href="{% url 'clinic:consumable_list' %}">
+                    <span class="nav-link-text">{% ui "Consumíveis" "Consumables" %}</span>
+                  </a>
+                </li>
+              {% endif %}
+              {% if perms.clinic.view_movimentoinventario or perms.clinic.add_movimentoinventario or perms.clinic.change_movimentoinventario %}
+                <li class="nav-item">
+                  <a class="nav-link {% if segment == 'inventory_movements' %}active{% endif %}" href="{% url 'clinic:inventory_movement_list' %}">
+                    <span class="nav-link-text">{% ui "Movimentos" "Movements" %}</span>
+                  </a>
+                </li>
+              {% endif %}
+            </ul>
+          </div>
         </li>
       {% endif %}
       <li class="nav-item">

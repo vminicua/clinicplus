@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Sum
 from django.contrib.auth.models import User
 from django.utils import timezone
 
@@ -472,20 +473,72 @@ class Consulta(models.Model):
         return f"Consulta de {self.agendamento.paciente.user.get_full_name()}"
 
 
-# Medicamentos Model
+class Armazem(models.Model):
+    branch = models.ForeignKey(
+        Branch,
+        on_delete=models.CASCADE,
+        related_name="armazens",
+    )
+    name = models.CharField(max_length=150)
+    code = models.CharField(max_length=30, unique=True)
+    location = models.CharField(max_length=255, blank=True)
+    manager_name = models.CharField(max_length=150, blank=True)
+    manager_phone = models.CharField(max_length=30, blank=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Armazém"
+        verbose_name_plural = "Armazéns"
+        ordering = ("branch__name", "name")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("branch", "name"),
+                name="unique_warehouse_per_branch",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.display_name} · {self.branch.name}"
+
+    @property
+    def display_name(self):
+        return normalize_mojibake_text(self.name)
+
+    @property
+    def display_description(self):
+        return normalize_mojibake_text(self.description)
+
+    def save(self, *args, **kwargs):
+        self.name = normalize_mojibake_text(self.name)
+        self.code = (normalize_mojibake_text(self.code) or "").upper()
+        self.location = normalize_mojibake_text(self.location)
+        self.manager_name = normalize_mojibake_text(self.manager_name)
+        self.manager_phone = normalize_mojibake_text(self.manager_phone)
+        self.description = normalize_mojibake_text(self.description)
+        super().save(*args, **kwargs)
+
+
 class Medicamento(models.Model):
     name = models.CharField(max_length=255)
+    sku = models.CharField(max_length=40, blank=True, null=True, unique=True)
     principio_ativo = models.CharField(max_length=255)
     dosagem = models.CharField(max_length=100)
-    quantidade = models.IntegerField()
+    unidade_medida = models.CharField(max_length=30, blank=True, default="un")
+    quantidade = models.PositiveIntegerField(default=0)
     preco = models.DecimalField(max_digits=10, decimal_places=2)
     descricao = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         verbose_name = "Medicamento"
         verbose_name_plural = "Medicamentos"
-    
+        ordering = ("name", "dosagem")
+
     def __str__(self):
         return self.display_name
 
@@ -497,11 +550,250 @@ class Medicamento(models.Model):
     def display_description(self):
         return normalize_mojibake_text(self.descricao)
 
+    @property
+    def total_stock(self):
+        return self.estoques.aggregate(total=Sum("quantidade")).get("total") or 0
+
+    @property
+    def low_stock_entries(self):
+        return self.estoques.filter(quantidade__lte=models.F("stock_minimo"), stock_minimo__gt=0).count()
+
+    def sync_legacy_quantity(self):
+        total_quantity = self.total_stock
+        if self.quantidade != total_quantity:
+            self.quantidade = total_quantity
+            self.save(update_fields=["quantidade", "updated_at"])
+
     def save(self, *args, **kwargs):
         self.name = normalize_mojibake_text(self.name)
+        self.sku = normalize_mojibake_text(self.sku) or None
         self.principio_ativo = normalize_mojibake_text(self.principio_ativo)
         self.dosagem = normalize_mojibake_text(self.dosagem)
+        self.unidade_medida = normalize_mojibake_text(self.unidade_medida)
         self.descricao = normalize_mojibake_text(self.descricao)
+        super().save(*args, **kwargs)
+
+
+class Consumivel(models.Model):
+    name = models.CharField(max_length=255)
+    sku = models.CharField(max_length=40, blank=True, null=True, unique=True)
+    unidade_medida = models.CharField(max_length=30, blank=True, default="un")
+    preco_referencia = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    descricao = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Consumível"
+        verbose_name_plural = "Consumíveis"
+        ordering = ("name",)
+
+    def __str__(self):
+        return self.display_name
+
+    @property
+    def display_name(self):
+        return normalize_mojibake_text(self.name)
+
+    @property
+    def display_description(self):
+        return normalize_mojibake_text(self.descricao)
+
+    @property
+    def total_stock(self):
+        return self.estoques.aggregate(total=Sum("quantidade")).get("total") or 0
+
+    @property
+    def low_stock_entries(self):
+        return self.estoques.filter(quantidade__lte=models.F("stock_minimo"), stock_minimo__gt=0).count()
+
+    def save(self, *args, **kwargs):
+        self.name = normalize_mojibake_text(self.name)
+        self.sku = normalize_mojibake_text(self.sku) or None
+        self.unidade_medida = normalize_mojibake_text(self.unidade_medida)
+        self.descricao = normalize_mojibake_text(self.descricao)
+        super().save(*args, **kwargs)
+
+
+class EstoqueMedicamento(models.Model):
+    armazem = models.ForeignKey(
+        Armazem,
+        on_delete=models.CASCADE,
+        related_name="estoque_medicamentos",
+    )
+    medicamento = models.ForeignKey(
+        Medicamento,
+        on_delete=models.CASCADE,
+        related_name="estoques",
+    )
+    quantidade = models.PositiveIntegerField(default=0)
+    stock_minimo = models.PositiveIntegerField(default=0)
+    ponto_reposicao = models.PositiveIntegerField(default=0)
+    stock_maximo = models.PositiveIntegerField(blank=True, null=True)
+    observacoes = models.TextField(blank=True)
+    last_counted_at = models.DateField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Stock de medicamento"
+        verbose_name_plural = "Stock de medicamentos"
+        ordering = ("medicamento__name", "armazem__name")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("armazem", "medicamento"),
+                name="unique_medication_stock_per_warehouse",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.medicamento.display_name} · {self.armazem.display_name}"
+
+    @property
+    def is_below_minimum(self):
+        return self.stock_minimo > 0 and self.quantidade <= self.stock_minimo
+
+    def save(self, *args, **kwargs):
+        self.observacoes = normalize_mojibake_text(self.observacoes)
+        super().save(*args, **kwargs)
+        self.medicamento.sync_legacy_quantity()
+
+    def delete(self, *args, **kwargs):
+        medication = self.medicamento
+        super().delete(*args, **kwargs)
+        medication.sync_legacy_quantity()
+
+
+class EstoqueConsumivel(models.Model):
+    armazem = models.ForeignKey(
+        Armazem,
+        on_delete=models.CASCADE,
+        related_name="estoque_consumiveis",
+    )
+    consumivel = models.ForeignKey(
+        Consumivel,
+        on_delete=models.CASCADE,
+        related_name="estoques",
+    )
+    quantidade = models.PositiveIntegerField(default=0)
+    stock_minimo = models.PositiveIntegerField(default=0)
+    ponto_reposicao = models.PositiveIntegerField(default=0)
+    stock_maximo = models.PositiveIntegerField(blank=True, null=True)
+    observacoes = models.TextField(blank=True)
+    last_counted_at = models.DateField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Stock de consumível"
+        verbose_name_plural = "Stock de consumíveis"
+        ordering = ("consumivel__name", "armazem__name")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("armazem", "consumivel"),
+                name="unique_consumable_stock_per_warehouse",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.consumivel.display_name} · {self.armazem.display_name}"
+
+    @property
+    def is_below_minimum(self):
+        return self.stock_minimo > 0 and self.quantidade <= self.stock_minimo
+
+    def save(self, *args, **kwargs):
+        self.observacoes = normalize_mojibake_text(self.observacoes)
+        super().save(*args, **kwargs)
+
+
+class MovimentoInventario(models.Model):
+    class ItemTypeChoices(models.TextChoices):
+        MEDICAMENTO = "medicamento", "Medicamento"
+        CONSUMIVEL = "consumivel", "Consumível"
+
+    class MovementTypeChoices(models.TextChoices):
+        ENTRADA = "entrada", "Entrada"
+        SAIDA = "saida", "Saída"
+        AJUSTE = "ajuste", "Ajuste"
+
+    armazem = models.ForeignKey(
+        Armazem,
+        on_delete=models.CASCADE,
+        related_name="movimentos",
+    )
+    item_type = models.CharField(max_length=20, choices=ItemTypeChoices.choices)
+    medicamento = models.ForeignKey(
+        Medicamento,
+        on_delete=models.CASCADE,
+        related_name="movimentos_inventario",
+        null=True,
+        blank=True,
+    )
+    consumivel = models.ForeignKey(
+        Consumivel,
+        on_delete=models.CASCADE,
+        related_name="movimentos_inventario",
+        null=True,
+        blank=True,
+    )
+    movement_type = models.CharField(max_length=20, choices=MovementTypeChoices.choices)
+    quantity = models.PositiveIntegerField()
+    stock_before = models.PositiveIntegerField(default=0)
+    stock_after = models.PositiveIntegerField(default=0)
+    unit_cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    reference = models.CharField(max_length=120, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="inventory_movements",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Movimento de inventário"
+        verbose_name_plural = "Movimentos de inventário"
+        ordering = ("-created_at", "-id")
+
+    def __str__(self):
+        return f"{self.get_movement_type_display()} · {self.item_label}"
+
+    @property
+    def item_label(self):
+        if self.item_type == self.ItemTypeChoices.MEDICAMENTO and self.medicamento_id:
+            return self.medicamento.display_name
+        if self.item_type == self.ItemTypeChoices.CONSUMIVEL and self.consumivel_id:
+            return self.consumivel.display_name
+        return ""
+
+    def clean(self):
+        errors = {}
+        if self.quantity is None:
+            errors["quantity"] = "Informe a quantidade do movimento."
+        elif self.movement_type != self.MovementTypeChoices.AJUSTE and self.quantity <= 0:
+            errors["quantity"] = "A quantidade deve ser maior que zero."
+
+        if self.item_type == self.ItemTypeChoices.MEDICAMENTO:
+            if not self.medicamento_id:
+                errors["medicamento"] = "Seleccione um medicamento para este movimento."
+            if self.consumivel_id:
+                errors["consumivel"] = "Limpe o consumível quando o item for um medicamento."
+        elif self.item_type == self.ItemTypeChoices.CONSUMIVEL:
+            if not self.consumivel_id:
+                errors["consumivel"] = "Seleccione um consumível para este movimento."
+            if self.medicamento_id:
+                errors["medicamento"] = "Limpe o medicamento quando o item for um consumível."
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.reference = normalize_mojibake_text(self.reference)
+        self.notes = normalize_mojibake_text(self.notes)
         super().save(*args, **kwargs)
 
 

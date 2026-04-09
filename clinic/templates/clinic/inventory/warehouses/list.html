@@ -1,0 +1,161 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">warehouse</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Total de armazéns" "Total warehouses" %}</p>
+              <h4 class="mb-0">{{ total_warehouses }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">task_alt</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Activos" "Active" %}</p>
+              <h4 class="mb-0">{{ active_warehouses }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">inventory</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Linhas de stock" "Stock lines" %}</p>
+              <h4 class="mb-0">{{ total_stock_lines }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">warning</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Com alertas" "With alerts" %}</p>
+              <h4 class="mb-0">{{ warehouses_with_alerts }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{% ui "Armazéns operacionais" "Operational warehouses" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Cada armazém pertence a uma sucursal e centraliza linhas de stock e movimentos." "Each warehouse belongs to a branch and centralizes stock lines and movements." %}</p>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if filter_branches %}
+              <div class="clinic-pill-group">
+                {% for branch in filter_branches %}
+                  <a href="#" class="clinic-pill {% if branch.pk == active_branch_filter_id %}active{% endif %}" data-table-pill="warehouses-table" data-column="1" data-value="{{ branch.name }}">{{ branch.name }}</a>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if perms.clinic.add_armazem %}
+              <a href="{% url 'clinic:warehouse_create' %}" data-modal-url="{% url 'clinic:warehouse_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">add</i>
+                {% ui "Novo armazém" "New warehouse" %}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        {% if warehouses %}
+          <div class="clinic-datatable-shell">
+            <table id="warehouses-table" data-page-length="10" data-export-title="{% ui 'Armazéns Clinic Plus' 'Clinic Plus Warehouses' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+              <thead>
+                <tr>
+                  <th class="ps-4">{% ui "Armazém" "Warehouse" %}</th>
+                  <th>{% ui "Sucursal" "Branch" %}</th>
+                  <th>{% ui "Responsável" "Manager" %}</th>
+                  <th>{% ui "Linhas de stock" "Stock lines" %}</th>
+                  <th>{% ui "Alertas" "Alerts" %}</th>
+                  <th>{% ui "Estado" "Status" %}</th>
+                  <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for warehouse in warehouses %}
+                  <tr>
+                    <td class="ps-4">
+                      <h6 class="mb-0 text-sm">{{ warehouse.display_name }}</h6>
+                      <p class="text-xs text-secondary mb-0">{{ warehouse.location|default:"-" }}</p>
+                    </td>
+                    <td><span class="text-sm">{{ warehouse.branch.name }}</span></td>
+                    <td>
+                      {% if warehouse.manager_name %}
+                        <span class="text-sm d-block">{{ warehouse.manager_name }}</span>
+                        <span class="text-xs text-secondary">{{ warehouse.manager_phone|default:"-" }}</span>
+                      {% else %}
+                        <span class="text-sm text-secondary">{% ui "Sem responsável" "No manager" %}</span>
+                      {% endif %}
+                    </td>
+                    <td><span class="text-sm">{{ warehouse.medication_lines|add:warehouse.consumable_lines }}</span></td>
+                    <td>
+                      {% if warehouse.low_stock_total > 0 %}
+                        <span class="clinic-status clinic-status-warning">{{ warehouse.low_stock_total }}</span>
+                      {% else %}
+                        <span class="clinic-status clinic-status-success">{% ui "Sem alertas" "No alerts" %}</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if warehouse.is_active %}
+                        <span class="clinic-status clinic-status-success">{% ui "Activo" "Active" %}</span>
+                      {% else %}
+                        <span class="clinic-status clinic-status-muted">{% ui "Inactivo" "Inactive" %}</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                      {% if perms.clinic.change_armazem %}
+                        <a href="{% url 'clinic:warehouse_update' warehouse.pk %}" data-modal-url="{% url 'clinic:warehouse_update' warehouse.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="{% ui 'Editar armazém' 'Edit warehouse' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                        </a>
+                      {% else %}
+                        <span class="text-xs text-secondary">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="px-4 py-5 text-center text-secondary">
+            {% ui "Ainda não existem armazéns registados." "There are no warehouses registered yet." %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

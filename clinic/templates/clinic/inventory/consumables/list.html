@@ -1,0 +1,177 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">inventory</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Linhas de stock" "Stock lines" %}</p>
+              <h4 class="mb-0">{{ total_stock_lines }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">category</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Catálogo" "Catalog" %}</p>
+              <h4 class="mb-0">{{ catalog_consumables }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">warning</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Stock baixo" "Low stock" %}</p>
+              <h4 class="mb-0">{{ low_stock_lines }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">summarize</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Unidades totais" "Total units" %}</p>
+              <h4 class="mb-0">{{ total_units }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{% ui "Stock de consumíveis" "Consumable stock" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Materiais clínicos, laboratoriais e de apoio controlados por armazém." "Clinical, laboratory, and support materials controlled by warehouse." %}</p>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if filter_branches %}
+              <div class="clinic-pill-group">
+                {% for branch in filter_branches %}
+                  <a href="#" class="clinic-pill {% if branch.pk == active_branch_filter_id %}active{% endif %}" data-table-pill="consumable-stock-table" data-column="2" data-value="{{ branch.name }}">{{ branch.name }}</a>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if perms.clinic.add_movimentoinventario %}
+              <a href="{% url 'clinic:inventory_movement_create' %}" data-modal-url="{% url 'clinic:inventory_movement_create' %}" data-modal-size="modal-xl" class="btn btn-outline-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">sync_alt</i>
+                {% ui "Novo movimento" "New movement" %}
+              </a>
+            {% endif %}
+            {% if perms.clinic.add_consumivel %}
+              <a href="{% url 'clinic:consumable_catalog_create' %}" data-modal-url="{% url 'clinic:consumable_catalog_create' %}" data-modal-size="modal-lg" class="btn btn-outline-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">category</i>
+                {% ui "Novo item" "New catalog item" %}
+              </a>
+            {% endif %}
+            {% if perms.clinic.add_estoqueconsumivel %}
+              <a href="{% url 'clinic:consumable_create' %}" data-modal-url="{% url 'clinic:consumable_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">add</i>
+                {% ui "Nova linha de stock" "New stock line" %}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        {% if stock_entries %}
+          <div class="clinic-datatable-shell">
+            <table id="consumable-stock-table" data-page-length="10" data-export-title="{% ui 'Stock de consumíveis Clinic Plus' 'Clinic Plus Consumable Stock' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+              <thead>
+                <tr>
+                  <th class="ps-4">{% ui "Consumível" "Consumable" %}</th>
+                  <th>{% ui "Armazém" "Warehouse" %}</th>
+                  <th>{% ui "Sucursal" "Branch" %}</th>
+                  <th>{% ui "Stock" "Stock" %}</th>
+                  <th>{% ui "Mínimo" "Minimum" %}</th>
+                  <th>{% ui "Reposição" "Reorder" %}</th>
+                  <th>{% ui "Estado" "Status" %}</th>
+                  <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for entry in stock_entries %}
+                  <tr>
+                    <td class="ps-4">
+                      <h6 class="mb-0 text-sm">{{ entry.consumivel.display_name }}</h6>
+                      <p class="text-xs text-secondary mb-0">
+                        {{ entry.consumivel.unidade_medida|default:"un" }}
+                        {% if entry.consumivel.sku %}· {{ entry.consumivel.sku }}{% endif %}
+                      </p>
+                    </td>
+                    <td><span class="text-sm">{{ entry.armazem.display_name }}</span></td>
+                    <td><span class="text-sm">{{ entry.armazem.branch.name }}</span></td>
+                    <td><span class="text-sm">{{ entry.quantidade }} {{ entry.consumivel.unidade_medida|default:"un" }}</span></td>
+                    <td><span class="text-sm">{{ entry.stock_minimo }}</span></td>
+                    <td><span class="text-sm">{{ entry.ponto_reposicao }}</span></td>
+                    <td>
+                      {% if entry.quantidade == 0 %}
+                        <span class="clinic-status clinic-status-warning">{% ui "Sem stock" "Out of stock" %}</span>
+                      {% elif entry.is_below_minimum %}
+                        <span class="clinic-status clinic-status-warning">{% ui "Abaixo do mínimo" "Below minimum" %}</span>
+                      {% elif entry.ponto_reposicao and entry.quantidade <= entry.ponto_reposicao %}
+                        <span class="clinic-status clinic-status-info">{% ui "Repor em breve" "Reorder soon" %}</span>
+                      {% else %}
+                        <span class="clinic-status clinic-status-success">{% ui "Saudável" "Healthy" %}</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                      <div class="clinic-action-stack">
+                        {% if perms.clinic.change_estoqueconsumivel %}
+                          <a href="{% url 'clinic:consumable_update' entry.pk %}" data-modal-url="{% url 'clinic:consumable_update' entry.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="{% ui 'Editar stock' 'Edit stock' %}">
+                            <i class="material-symbols-rounded" style="font-size: 1rem;">inventory_2</i>
+                          </a>
+                        {% endif %}
+                        {% if perms.clinic.change_consumivel %}
+                          <a href="{% url 'clinic:consumable_catalog_update' entry.consumivel.pk %}" data-modal-url="{% url 'clinic:consumable_catalog_update' entry.consumivel.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-muted" title="{% ui 'Editar catálogo' 'Edit catalog' %}">
+                            <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                          </a>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="px-4 py-5 text-center text-secondary">
+            {% ui "Ainda não existem linhas de stock para consumíveis. Pode começar pelo catálogo ou criar logo uma linha ligada a um armazém." "There are no consumable stock lines yet. You can start with the catalog or create a warehouse stock line right away." %}
+            {% if catalog_without_stock %}
+              <div class="text-xs mt-2">{% ui "Itens de catálogo ainda sem stock" "Catalog items still without stock" %}: {{ catalog_without_stock }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

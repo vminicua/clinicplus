@@ -16,7 +16,22 @@ from accounts.i18n import translate_pair
 from accounts.ui import available_branches_for_user
 from accounts.utils import visible_users_queryset
 
-from .models import Agendamento, Consulta, Departamento, Especialidade, HorarioTrabalho, Hospital, Medicamento, Medico, Paciente
+from .models import (
+    Agendamento,
+    Armazem,
+    Consulta,
+    Consumivel,
+    Departamento,
+    Especialidade,
+    EstoqueConsumivel,
+    EstoqueMedicamento,
+    HorarioTrabalho,
+    Hospital,
+    Medicamento,
+    Medico,
+    MovimentoInventario,
+    Paciente,
+)
 
 
 User = get_user_model()
@@ -253,6 +268,23 @@ class DepartmentChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         unit_name = obj.unit_name or tr("Sem unidade", "No unit")
         return f"{obj.name} · {unit_name}"
+
+
+class WarehouseChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return f"{obj.display_name} · {obj.branch.name}"
+
+
+class MedicationChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        dosage = f" · {obj.dosagem}" if obj.dosagem else ""
+        return f"{obj.display_name}{dosage}"
+
+
+class ConsumableChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        unit = f" · {obj.unidade_medida}" if obj.unidade_medida else ""
+        return f"{obj.display_name}{unit}"
 
 
 def appointment_doctor_user_queryset():
@@ -821,19 +853,25 @@ class DepartmentForm(StyledFormMixin, forms.ModelForm):
 class MedicationForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Medicamento
-        fields = ["name", "principio_ativo", "dosagem", "quantidade", "preco", "descricao"]
+        fields = ["name", "sku", "principio_ativo", "dosagem", "unidade_medida", "preco", "descricao", "is_active"]
         labels = {
             "name": tr("Medicamento", "Medication"),
+            "sku": tr("SKU / Código", "SKU / Code"),
             "principio_ativo": tr("Princípio activo", "Active ingredient"),
             "dosagem": tr("Dosagem", "Dosage"),
-            "quantidade": tr("Quantidade", "Quantity"),
+            "unidade_medida": tr("Unidade de medida", "Unit of measure"),
             "preco": tr("Preço", "Price"),
             "descricao": tr("Descrição", "Description"),
+            "is_active": tr("Activo", "Active"),
         }
         help_texts = {
             "name": tr(
                 "Nome comercial ou interno do medicamento.",
                 "Commercial or internal medication name.",
+            ),
+            "sku": tr(
+                "Opcional. Código interno usado pelo inventário e compras.",
+                "Optional. Internal code used by inventory and purchasing.",
             ),
             "principio_ativo": tr(
                 "Substância principal usada para catalogar e pesquisar o medicamento.",
@@ -843,16 +881,16 @@ class MedicationForm(StyledFormMixin, forms.ModelForm):
                 "Ex.: 500 mg, 10 ml, 1 g/5 ml.",
                 "Example: 500 mg, 10 ml, 1 g/5 ml.",
             ),
-            "quantidade": tr(
-                "Quantidade actual disponível em stock.",
-                "Current quantity available in stock.",
+            "unidade_medida": tr(
+                "Ex.: un, caixa, frasco, ampola.",
+                "Example: unit, box, bottle, ampoule.",
             ),
             "preco": tr(
-                "Preço unitário de referência.",
+                "Preço unitário de referência do catálogo.",
                 "Reference unit price.",
             ),
             "descricao": tr(
-                "Observações adicionais para uso clínico, apresentação ou stock.",
+                "Observações adicionais para uso clínico, apresentação ou compras.",
                 "Additional notes for clinical use, presentation, or stock.",
             ),
         }
@@ -863,10 +901,318 @@ class MedicationForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_widget_classes()
-        for field_name in ("name", "principio_ativo", "dosagem", "descricao"):
+        for field_name in ("name", "sku", "principio_ativo", "dosagem", "unidade_medida", "descricao"):
             self.fields[field_name].widget.attrs["autocomplete"] = "off"
             self.fields[field_name].widget.attrs["data-lpignore"] = "true"
             self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"
+
+
+class ConsumableForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = Consumivel
+        fields = ["name", "sku", "unidade_medida", "preco_referencia", "descricao", "is_active"]
+        labels = {
+            "name": tr("Consumível", "Consumable"),
+            "sku": tr("SKU / Código", "SKU / Code"),
+            "unidade_medida": tr("Unidade de medida", "Unit of measure"),
+            "preco_referencia": tr("Preço de referência", "Reference price"),
+            "descricao": tr("Descrição", "Description"),
+            "is_active": tr("Activo", "Active"),
+        }
+        help_texts = {
+            "name": tr(
+                "Nome do consumível usado em clínica, enfermagem ou laboratório.",
+                "Consumable name used in clinic, nursing, or laboratory.",
+            ),
+            "sku": tr(
+                "Opcional. Código interno de inventário ou compras.",
+                "Optional. Internal inventory or purchasing code.",
+            ),
+            "unidade_medida": tr(
+                "Ex.: un, caixa, rolo, par.",
+                "Example: unit, box, roll, pair.",
+            ),
+            "preco_referencia": tr(
+                "Preço unitário de referência para reposição.",
+                "Reference unit price for replenishment.",
+            ),
+            "descricao": tr(
+                "Observações adicionais sobre o uso ou apresentação do consumível.",
+                "Additional notes about the use or presentation of the consumable.",
+            ),
+        }
+        widgets = {
+            "descricao": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        for field_name in ("name", "sku", "unidade_medida", "descricao"):
+            self.fields[field_name].widget.attrs["autocomplete"] = "off"
+            self.fields[field_name].widget.attrs["data-lpignore"] = "true"
+            self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"
+
+
+class WarehouseForm(StyledFormMixin, forms.ModelForm):
+    branch = forms.ModelChoiceField(
+        queryset=Branch.objects.none(),
+        label=tr("Sucursal", "Branch"),
+    )
+
+    class Meta:
+        model = Armazem
+        fields = ["branch", "name", "code", "location", "manager_name", "manager_phone", "description", "is_active"]
+        labels = {
+            "name": tr("Armazém", "Warehouse"),
+            "code": tr("Código", "Code"),
+            "location": tr("Localização", "Location"),
+            "manager_name": tr("Responsável", "Manager"),
+            "manager_phone": tr("Telefone do responsável", "Manager phone"),
+            "description": tr("Descrição", "Description"),
+            "is_active": tr("Activo", "Active"),
+        }
+        help_texts = {
+            "branch": tr("Sucursal onde este armazém opera.", "Branch where this warehouse operates."),
+            "name": tr("Nome operacional do armazém.", "Operational warehouse name."),
+            "code": tr("Código curto único para o armazém.", "Unique short code for the warehouse."),
+            "location": tr("Sala, edifício ou referência interna.", "Room, building, or internal location."),
+            "description": tr("Observações sobre cobertura, regras ou uso do armazém.", "Notes about warehouse coverage, rules, or usage."),
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        self.fields["branch"].queryset = appointment_branch_queryset(self.request)
+        current_branch = getattr(self.request, "clinic_current_branch", None) if self.request else None
+        if current_branch and not self.instance.pk and not self.initial.get("branch"):
+            self.fields["branch"].initial = current_branch
+
+
+class MedicationStockForm(StyledFormMixin, forms.ModelForm):
+    armazem = WarehouseChoiceField(
+        queryset=Armazem.objects.none(),
+        label=tr("Armazém", "Warehouse"),
+    )
+    medicamento = MedicationChoiceField(
+        queryset=Medicamento.objects.none(),
+        label=tr("Medicamento", "Medication"),
+    )
+
+    class Meta:
+        model = EstoqueMedicamento
+        fields = [
+            "armazem",
+            "medicamento",
+            "quantidade",
+            "stock_minimo",
+            "ponto_reposicao",
+            "stock_maximo",
+            "last_counted_at",
+            "observacoes",
+        ]
+        labels = {
+            "quantidade": tr("Stock actual", "Current stock"),
+            "stock_minimo": tr("Stock mínimo", "Minimum stock"),
+            "ponto_reposicao": tr("Ponto de reposição", "Reorder point"),
+            "stock_maximo": tr("Stock máximo", "Maximum stock"),
+            "last_counted_at": tr("Última contagem", "Last count"),
+            "observacoes": tr("Observações", "Notes"),
+        }
+        widgets = {
+            "last_counted_at": forms.DateInput(attrs={"type": "date"}),
+            "observacoes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        self.fields["armazem"].queryset = (
+            Armazem.objects.select_related("branch")
+            .filter(branch__in=appointment_branch_queryset(self.request), is_active=True)
+            .order_by("branch__name", "name")
+        )
+        self.fields["medicamento"].queryset = Medicamento.objects.filter(is_active=True).order_by("name", "dosagem")
+
+
+class ConsumableStockForm(StyledFormMixin, forms.ModelForm):
+    armazem = WarehouseChoiceField(
+        queryset=Armazem.objects.none(),
+        label=tr("Armazém", "Warehouse"),
+    )
+    consumivel = ConsumableChoiceField(
+        queryset=Consumivel.objects.none(),
+        label=tr("Consumível", "Consumable"),
+    )
+
+    class Meta:
+        model = EstoqueConsumivel
+        fields = [
+            "armazem",
+            "consumivel",
+            "quantidade",
+            "stock_minimo",
+            "ponto_reposicao",
+            "stock_maximo",
+            "last_counted_at",
+            "observacoes",
+        ]
+        labels = {
+            "quantidade": tr("Stock actual", "Current stock"),
+            "stock_minimo": tr("Stock mínimo", "Minimum stock"),
+            "ponto_reposicao": tr("Ponto de reposição", "Reorder point"),
+            "stock_maximo": tr("Stock máximo", "Maximum stock"),
+            "last_counted_at": tr("Última contagem", "Last count"),
+            "observacoes": tr("Observações", "Notes"),
+        }
+        widgets = {
+            "last_counted_at": forms.DateInput(attrs={"type": "date"}),
+            "observacoes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        self.fields["armazem"].queryset = (
+            Armazem.objects.select_related("branch")
+            .filter(branch__in=appointment_branch_queryset(self.request), is_active=True)
+            .order_by("branch__name", "name")
+        )
+        self.fields["consumivel"].queryset = Consumivel.objects.filter(is_active=True).order_by("name")
+
+
+class InventoryMovementForm(StyledFormMixin, forms.ModelForm):
+    armazem = WarehouseChoiceField(
+        queryset=Armazem.objects.none(),
+        label=tr("Armazém", "Warehouse"),
+    )
+    medicamento = MedicationChoiceField(
+        queryset=Medicamento.objects.none(),
+        required=False,
+        label=tr("Medicamento", "Medication"),
+    )
+    consumivel = ConsumableChoiceField(
+        queryset=Consumivel.objects.none(),
+        required=False,
+        label=tr("Consumível", "Consumable"),
+    )
+
+    class Meta:
+        model = MovimentoInventario
+        fields = [
+            "armazem",
+            "item_type",
+            "medicamento",
+            "consumivel",
+            "movement_type",
+            "quantity",
+            "unit_cost",
+            "reference",
+            "notes",
+        ]
+        labels = {
+            "item_type": tr("Tipo de item", "Item type"),
+            "movement_type": tr("Tipo de movimento", "Movement type"),
+            "quantity": tr("Quantidade", "Quantity"),
+            "unit_cost": tr("Custo unitário", "Unit cost"),
+            "reference": tr("Referência", "Reference"),
+            "notes": tr("Notas", "Notes"),
+        }
+        help_texts = {
+            "movement_type": tr(
+                "Em Ajuste, a quantidade passa a ser o valor contado no stock.",
+                "In Adjustment, quantity becomes the counted stock value.",
+            ),
+            "reference": tr(
+                "Ex.: compra, requisição, ajuste físico, devolução.",
+                "Example: purchase, requisition, stock count, return.",
+            ),
+        }
+        widgets = {
+            "notes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        warehouse_queryset = (
+            Armazem.objects.select_related("branch")
+            .filter(branch__in=appointment_branch_queryset(self.request), is_active=True)
+            .order_by("branch__name", "name")
+        )
+        self.fields["armazem"].queryset = warehouse_queryset
+        self.fields["medicamento"].queryset = Medicamento.objects.filter(is_active=True).order_by("name", "dosagem")
+        self.fields["consumivel"].queryset = Consumivel.objects.filter(is_active=True).order_by("name")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        item_type = cleaned_data.get("item_type")
+        warehouse = cleaned_data.get("armazem")
+        medication = cleaned_data.get("medicamento")
+        consumable = cleaned_data.get("consumivel")
+        movement_type = cleaned_data.get("movement_type")
+        quantity = cleaned_data.get("quantity")
+
+        if item_type == MovimentoInventario.ItemTypeChoices.MEDICAMENTO and medication is None:
+            self.add_error("medicamento", tr("Seleccione o medicamento deste movimento.", "Select the medication for this movement."))
+        if item_type == MovimentoInventario.ItemTypeChoices.CONSUMIVEL and consumable is None:
+            self.add_error("consumivel", tr("Seleccione o consumível deste movimento.", "Select the consumable for this movement."))
+
+        if movement_type == MovimentoInventario.MovementTypeChoices.SAIDA and warehouse and quantity:
+            if item_type == MovimentoInventario.ItemTypeChoices.MEDICAMENTO and medication is not None:
+                current_stock = EstoqueMedicamento.objects.filter(armazem=warehouse, medicamento=medication).first()
+                if current_stock is None or quantity > current_stock.quantidade:
+                    self.add_error("quantity", tr("A saída não pode ser superior ao stock disponível.", "The exit cannot exceed available stock."))
+            if item_type == MovimentoInventario.ItemTypeChoices.CONSUMIVEL and consumable is not None:
+                current_stock = EstoqueConsumivel.objects.filter(armazem=warehouse, consumivel=consumable).first()
+                if current_stock is None or quantity > current_stock.quantidade:
+                    self.add_error("quantity", tr("A saída não pode ser superior ao stock disponível.", "The exit cannot exceed available stock."))
+
+        return cleaned_data
+
+    @transaction.atomic
+    def save(self, *, user=None, commit=True):
+        movement = super().save(commit=False)
+        movement.created_by = user
+
+        if movement.item_type == MovimentoInventario.ItemTypeChoices.MEDICAMENTO:
+            stock_entry, _ = EstoqueMedicamento.objects.get_or_create(
+                armazem=movement.armazem,
+                medicamento=movement.medicamento,
+            )
+        else:
+            stock_entry, _ = EstoqueConsumivel.objects.get_or_create(
+                armazem=movement.armazem,
+                consumivel=movement.consumivel,
+            )
+
+        stock_before = stock_entry.quantidade
+        if movement.movement_type == MovimentoInventario.MovementTypeChoices.ENTRADA:
+            stock_after = stock_before + movement.quantity
+        elif movement.movement_type == MovimentoInventario.MovementTypeChoices.SAIDA:
+            stock_after = stock_before - movement.quantity
+        else:
+            stock_after = movement.quantity
+
+        stock_entry.quantidade = stock_after
+        stock_entry.last_counted_at = timezone.localdate()
+        stock_entry.save(update_fields=["quantidade", "last_counted_at", "updated_at"])
+
+        movement.stock_before = stock_before
+        movement.stock_after = stock_after
+
+        if commit:
+            movement.save()
+            self.save_m2m()
+
+        return movement
 
 
 WORK_SCHEDULE_WEEKDAY_OPTIONS = [

@@ -1,7 +1,19 @@
 from django.contrib import admin
 from .models import (
-    Hospital, Especialidade, Medico, Paciente, 
-    Agendamento, Consulta, Medicamento, Departamento, HorarioTrabalho
+    Agendamento,
+    Armazem,
+    Consumivel,
+    Consulta,
+    Departamento,
+    Especialidade,
+    EstoqueConsumivel,
+    EstoqueMedicamento,
+    HorarioTrabalho,
+    Hospital,
+    Medicamento,
+    Medico,
+    MovimentoInventario,
+    Paciente,
 )
 
 @admin.register(Hospital)
@@ -68,9 +80,9 @@ class ConsultaAdmin(admin.ModelAdmin):
 
 @admin.register(Medicamento)
 class MedicamentoAdmin(admin.ModelAdmin):
-    list_display = ('name', 'principio_ativo', 'dosagem', 'quantidade', 'preco')
-    search_fields = ('name', 'principio_ativo')
-    list_filter = ('created_at',)
+    list_display = ('name', 'principio_ativo', 'dosagem', 'quantidade', 'preco', 'is_active')
+    search_fields = ('name', 'principio_ativo', 'sku')
+    list_filter = ('is_active', 'created_at')
 
 @admin.register(Departamento)
 class DepartamentoAdmin(admin.ModelAdmin):
@@ -94,4 +106,39 @@ class HorarioTrabalhoAdmin(admin.ModelAdmin):
     def get_profissional(self, obj):
         return obj.professional_name
     get_profissional.short_description = 'Profissional'
+
+
+@admin.register(Armazem)
+class ArmazemAdmin(admin.ModelAdmin):
+    list_display = ('name', 'branch', 'code', 'manager_name', 'is_active')
+    search_fields = ('name', 'code', 'branch__name', 'manager_name')
+    list_filter = ('branch', 'is_active')
+
+
+@admin.register(Consumivel)
+class ConsumivelAdmin(admin.ModelAdmin):
+    list_display = ('name', 'sku', 'unidade_medida', 'preco_referencia', 'is_active')
+    search_fields = ('name', 'sku')
+    list_filter = ('is_active', 'created_at')
+
+
+@admin.register(EstoqueMedicamento)
+class EstoqueMedicamentoAdmin(admin.ModelAdmin):
+    list_display = ('medicamento', 'armazem', 'quantidade', 'stock_minimo', 'ponto_reposicao', 'last_counted_at')
+    search_fields = ('medicamento__name', 'armazem__name', 'armazem__branch__name')
+    list_filter = ('armazem__branch', 'armazem')
+
+
+@admin.register(EstoqueConsumivel)
+class EstoqueConsumivelAdmin(admin.ModelAdmin):
+    list_display = ('consumivel', 'armazem', 'quantidade', 'stock_minimo', 'ponto_reposicao', 'last_counted_at')
+    search_fields = ('consumivel__name', 'armazem__name', 'armazem__branch__name')
+    list_filter = ('armazem__branch', 'armazem')
+
+
+@admin.register(MovimentoInventario)
+class MovimentoInventarioAdmin(admin.ModelAdmin):
+    list_display = ('item_label', 'armazem', 'movement_type', 'quantity', 'stock_before', 'stock_after', 'created_at')
+    search_fields = ('reference', 'notes', 'armazem__name', 'medicamento__name', 'consumivel__name')
+    list_filter = ('item_type', 'movement_type', 'armazem__branch', 'armazem')
 

@@ -6,8 +6,35 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import Branch, SystemPreference
-from clinic.forms import AppointmentForm, DepartmentForm, MedicationForm, PatientForm, SpecialtyForm, WorkScheduleBatchCreateForm, WorkScheduleForm
-from clinic.models import Agendamento, Consulta, Departamento, Especialidade, HorarioTrabalho, Hospital, Medicamento, Medico, Paciente, normalize_mojibake_text
+from clinic.forms import (
+    AppointmentForm,
+    ConsumableForm,
+    DepartmentForm,
+    InventoryMovementForm,
+    MedicationForm,
+    PatientForm,
+    SpecialtyForm,
+    WarehouseForm,
+    WorkScheduleBatchCreateForm,
+    WorkScheduleForm,
+)
+from clinic.models import (
+    Agendamento,
+    Armazem,
+    Consumivel,
+    Consulta,
+    Departamento,
+    Especialidade,
+    EstoqueConsumivel,
+    EstoqueMedicamento,
+    HorarioTrabalho,
+    Hospital,
+    Medicamento,
+    Medico,
+    MovimentoInventario,
+    Paciente,
+    normalize_mojibake_text,
+)
 
 
 class PatientFormTests(TestCase):
@@ -666,6 +693,12 @@ class ClinicalStructureTests(TestCase):
         self.client = Client()
         self.branch = Branch.objects.create(name="Clinic Plus Estrutura", code="CPE", city="Maputo")
         self.branch_two = Branch.objects.create(name="Clinic Plus Norte", code="CPN", city="Matola")
+        self.warehouse = Armazem.objects.create(
+            branch=self.branch,
+            name="Armazém Principal",
+            code="ARM-CPE",
+            location="Piso 1",
+        )
         self.user = User.objects.create_user(username="estrutura", password="123456")
         self.user.user_permissions.add(
             Permission.objects.get(codename="view_especialidade"),
@@ -674,9 +707,23 @@ class ClinicalStructureTests(TestCase):
             Permission.objects.get(codename="view_departamento"),
             Permission.objects.get(codename="add_departamento"),
             Permission.objects.get(codename="change_departamento"),
+            Permission.objects.get(codename="view_armazem"),
+            Permission.objects.get(codename="add_armazem"),
+            Permission.objects.get(codename="change_armazem"),
             Permission.objects.get(codename="view_medicamento"),
             Permission.objects.get(codename="add_medicamento"),
             Permission.objects.get(codename="change_medicamento"),
+            Permission.objects.get(codename="view_estoquemedicamento"),
+            Permission.objects.get(codename="add_estoquemedicamento"),
+            Permission.objects.get(codename="change_estoquemedicamento"),
+            Permission.objects.get(codename="view_consumivel"),
+            Permission.objects.get(codename="add_consumivel"),
+            Permission.objects.get(codename="change_consumivel"),
+            Permission.objects.get(codename="view_estoqueconsumivel"),
+            Permission.objects.get(codename="add_estoqueconsumivel"),
+            Permission.objects.get(codename="change_estoqueconsumivel"),
+            Permission.objects.get(codename="view_movimentoinventario"),
+            Permission.objects.get(codename="add_movimentoinventario"),
         )
         self.client.force_login(self.user)
 
@@ -757,31 +804,150 @@ class ClinicalStructureTests(TestCase):
         form = MedicationForm(
             data={
                 "name": "Paracetamol",
+                "sku": "MED-PARA-500",
                 "principio_ativo": "Paracetamol",
                 "dosagem": "500 mg",
-                "quantidade": 24,
+                "unidade_medida": "caixa",
                 "preco": "12.50",
                 "descricao": "Analgésico de referência.",
+                "is_active": True,
             }
         )
 
         self.assertTrue(form.is_valid(), form.errors)
         medication = form.save()
         self.assertEqual(medication.name, "Paracetamol")
+        self.assertEqual(medication.sku, "MED-PARA-500")
 
-    def test_medication_list_renders(self):
+    def test_consumable_form_creates_consumable(self):
+        form = ConsumableForm(
+            data={
+                "name": "Luvas descartáveis",
+                "sku": "CON-LUV-001",
+                "unidade_medida": "caixa",
+                "preco_referencia": "9.50",
+                "descricao": "Luvas nitrílicas sem pó.",
+                "is_active": True,
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        consumable = form.save()
+        self.assertEqual(consumable.name, "Luvas descartáveis")
+        self.assertEqual(consumable.sku, "CON-LUV-001")
+
+    def test_warehouse_form_creates_warehouse(self):
+        form = WarehouseForm(
+            data={
+                "branch": self.branch_two.pk,
+                "name": "Farmácia Satélite",
+                "code": "ARM-SAT",
+                "location": "Piso 2",
+                "manager_name": "Teresa",
+                "manager_phone": "840222333",
+                "description": "Apoio ambulatório.",
+                "is_active": True,
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        warehouse = form.save()
+        self.assertEqual(warehouse.branch, self.branch_two)
+        self.assertEqual(warehouse.code, "ARM-SAT")
+
+    def test_inventory_movement_form_updates_medication_stock(self):
         medication = Medicamento.objects.create(
             name="Ibuprofeno",
             principio_ativo="Ibuprofeno",
             dosagem="400 mg",
-            quantidade=12,
             preco="15.00",
         )
+        stock_entry = EstoqueMedicamento.objects.create(
+            armazem=self.warehouse,
+            medicamento=medication,
+            quantidade=12,
+            stock_minimo=4,
+            ponto_reposicao=6,
+        )
 
-        response = self.client.get(reverse("clinic:medication_list"))
+        form = InventoryMovementForm(
+            data={
+                "armazem": self.warehouse.pk,
+                "item_type": MovimentoInventario.ItemTypeChoices.MEDICAMENTO,
+                "medicamento": medication.pk,
+                "movement_type": MovimentoInventario.MovementTypeChoices.SAIDA,
+                "quantity": 3,
+                "unit_cost": "15.00",
+                "reference": "Consumo em consulta",
+                "notes": "Baixa de stock",
+            }
+        )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, medication.name)
+        self.assertTrue(form.is_valid(), form.errors)
+        movement = form.save(user=self.user)
+        stock_entry.refresh_from_db()
+        medication.refresh_from_db()
+
+        self.assertEqual(movement.stock_before, 12)
+        self.assertEqual(movement.stock_after, 9)
+        self.assertEqual(stock_entry.quantidade, 9)
+        self.assertEqual(medication.quantidade, 9)
+
+    def test_inventory_pages_render(self):
+        medication = Medicamento.objects.create(
+            name="Ibuprofeno",
+            principio_ativo="Ibuprofeno",
+            dosagem="400 mg",
+            preco="15.00",
+        )
+        consumable = Consumivel.objects.create(
+            name="Máscara cirúrgica",
+            unidade_medida="caixa",
+            preco_referencia="5.00",
+        )
+        EstoqueMedicamento.objects.create(
+            armazem=self.warehouse,
+            medicamento=medication,
+            quantidade=12,
+            stock_minimo=4,
+            ponto_reposicao=6,
+        )
+        EstoqueConsumivel.objects.create(
+            armazem=self.warehouse,
+            consumivel=consumable,
+            quantidade=10,
+            stock_minimo=3,
+            ponto_reposicao=5,
+        )
+        movement = MovimentoInventario.objects.create(
+            armazem=self.warehouse,
+            item_type=MovimentoInventario.ItemTypeChoices.CONSUMIVEL,
+            consumivel=consumable,
+            movement_type=MovimentoInventario.MovementTypeChoices.ENTRADA,
+            quantity=10,
+            stock_before=0,
+            stock_after=10,
+            reference="Recepção inicial",
+            created_by=self.user,
+        )
+
+        overview_response = self.client.get(reverse("clinic:inventory_overview"))
+        warehouse_response = self.client.get(reverse("clinic:warehouse_list"))
+        medication_response = self.client.get(reverse("clinic:medication_list"))
+        consumable_response = self.client.get(reverse("clinic:consumable_list"))
+        movement_response = self.client.get(reverse("clinic:inventory_movement_list"))
+
+        self.assertEqual(overview_response.status_code, 200)
+        self.assertContains(overview_response, "Inventário")
+        self.assertEqual(warehouse_response.status_code, 200)
+        self.assertContains(warehouse_response, self.warehouse.name)
+        self.assertEqual(medication_response.status_code, 200)
+        self.assertContains(medication_response, medication.name)
+        self.assertContains(medication_response, 'data-table-pill="medication-stock-table"')
+        self.assertEqual(consumable_response.status_code, 200)
+        self.assertContains(consumable_response, consumable.name)
+        self.assertEqual(movement_response.status_code, 200)
+        self.assertContains(movement_response, movement.reference)
 
     def test_specialty_and_department_display_descriptions_are_normalized(self):
         specialty = Especialidade.objects.create(

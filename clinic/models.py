@@ -45,7 +45,13 @@ class Especialidade(models.Model):
 # Médicos Model
 class Medico(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE, related_name='medicos')
+    hospital = models.ForeignKey(
+        Hospital,
+        on_delete=models.SET_NULL,
+        related_name='medicos',
+        null=True,
+        blank=True,
+    )
     especialidade = models.ForeignKey(Especialidade, on_delete=models.SET_NULL, null=True)
     crm = models.CharField(max_length=20, unique=True)
     phone = models.CharField(max_length=20)
@@ -313,7 +319,7 @@ class Paciente(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     hospital = models.ForeignKey(
         Hospital,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name='pacientes',
         null=True,
         blank=True,
@@ -384,7 +390,20 @@ class Agendamento(models.Model):
     
     paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='agendamentos')
     medico = models.ForeignKey(Medico, on_delete=models.CASCADE, related_name='agendamentos')
-    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE, related_name='agendamentos')
+    branch = models.ForeignKey(
+        Branch,
+        on_delete=models.SET_NULL,
+        related_name='agendamentos',
+        null=True,
+        blank=True,
+    )
+    hospital = models.ForeignKey(
+        Hospital,
+        on_delete=models.SET_NULL,
+        related_name='agendamentos',
+        null=True,
+        blank=True,
+    )
     data = models.DateField()
     hora = models.TimeField()
     motivo = models.TextField()
@@ -400,6 +419,14 @@ class Agendamento(models.Model):
     
     def __str__(self):
         return f"{self.paciente.user.get_full_name()} - {self.data} às {self.hora}"
+
+    @property
+    def unit_name(self):
+        if self.branch_id:
+            return self.branch.name
+        if self.hospital_id:
+            return self.hospital.name
+        return ""
 
 
 # Consultas Model

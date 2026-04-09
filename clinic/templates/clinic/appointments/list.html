@@ -1,0 +1,215 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">event_note</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Total de marcações" "Total bookings" %}</p>
+              <h4 class="mb-0">{{ total_appointments }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">today</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Hoje" "Today" %}</p>
+              <h4 class="mb-0">{{ appointments_today }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">date_range</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Esta semana" "This week" %}</p>
+              <h4 class="mb-0">{{ appointments_this_week }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">task_alt</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Concluídas" "Completed" %}</p>
+              <h4 class="mb-0">{{ completed_appointments }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{{ workspace_heading }}</h4>
+            <p class="text-secondary mb-0">{{ workspace_description }}</p>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="clinic-pill-group">
+              <span class="clinic-pill active">{% ui "Pendentes" "Pending" %}: {{ pending_appointments }}</span>
+              <span class="clinic-pill">{% ui "Com consulta" "With consultation" %}: {{ appointments_with_consultation }}</span>
+            </div>
+            {% if perms.clinic.add_agendamento %}
+              <a href="{% url 'clinic:appointment_create' %}" data-modal-url="{% url 'clinic:appointment_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">add</i>
+                {% ui "Nova marcação" "New booking" %}
+              </a>
+            {% endif %}
+            {% if show_primary_action %}
+              <a href="{{ primary_action_url }}" class="btn btn-outline-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">calendar_month</i>
+                {{ primary_action_label }}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        {% if appointments %}
+          <div class="clinic-datatable-shell">
+            <table id="appointments-table" data-page-length="10" data-export-title="{% ui 'Marcações Clinic Plus' 'Clinic Plus bookings' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+              <thead>
+                <tr>
+                  <th class="ps-4">{% ui "Paciente" "Patient" %}</th>
+                  <th>{% ui "Profissional" "Professional" %}</th>
+                  <th>{% ui "Unidade" "Unit" %}</th>
+                  <th>{% ui "Data & hora" "Date & time" %}</th>
+                  <th>{% ui "Estado" "Status" %}</th>
+                  <th>{% ui "Acompanhamento" "Follow-up" %}</th>
+                  <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appointment in appointments %}
+                  <tr>
+                    <td class="ps-4">
+                      <div>
+                        <h6 class="mb-0 text-sm">{{ appointment.paciente.full_name }}</h6>
+                        <p class="text-xs text-secondary mb-0">
+                          {{ appointment.motivo|truncatechars:56 }}
+                        </p>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="text-sm d-block">{{ appointment.medico.user.get_full_name|default:appointment.medico.user.username }}</span>
+                      <span class="text-xs text-secondary">
+                        {% if appointment.medico.especialidade_id %}
+                          {{ appointment.medico.especialidade.name }}
+                        {% else %}
+                          {% ui "Sem especialidade" "No specialty" %}
+                        {% endif %}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="text-sm d-block">
+                        {% if appointment.branch_id %}
+                          {{ appointment.branch.name }}
+                        {% elif appointment.hospital_id %}
+                          {{ appointment.hospital.name }}
+                        {% else %}
+                          {% ui "Sem sucursal" "No branch" %}
+                        {% endif %}
+                      </span>
+                      <span class="text-xs text-secondary">
+                        {% if appointment.hospital_id and appointment.branch_id and appointment.hospital.name != appointment.branch.name %}
+                          {{ appointment.hospital.name }}
+                        {% elif appointment.paciente.branch_id and appointment.paciente.branch_id != appointment.branch_id %}
+                          {% ui "Paciente ligado a" "Patient linked to" %} {{ appointment.paciente.branch.name }}
+                        {% else %}
+                          {% ui "Operação clínica" "Clinical operation" %}
+                        {% endif %}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="text-sm d-block">{{ appointment.data|date:"d/m/Y" }}</span>
+                      <span class="text-xs text-secondary">{{ appointment.hora|time:"H:i" }}</span>
+                    </td>
+                    <td>
+                      {% if appointment.status == "concluido" %}
+                        <span class="clinic-status clinic-status-success">{{ appointment.get_status_display }}</span>
+                      {% elif appointment.status == "cancelado" or appointment.status == "nao_compareceu" %}
+                        <span class="clinic-status clinic-status-warning">{{ appointment.get_status_display }}</span>
+                      {% else %}
+                        <span class="clinic-status clinic-status-info">{{ appointment.get_status_display }}</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if appointment.has_consultation %}
+                        <span class="clinic-status clinic-status-success">{% ui "Consulta registada" "Visit recorded" %}</span>
+                      {% elif appointment.data < current_date %}
+                        <span class="clinic-status clinic-status-warning">{% ui "Sem desfecho" "Outcome pending" %}</span>
+                      {% else %}
+                        <span class="clinic-status clinic-status-muted">{% ui "Aguarda consulta" "Awaiting visit" %}</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                      {% if perms.clinic.add_consulta or perms.clinic.change_consulta or perms.clinic.view_consulta or perms.clinic.view_paciente %}
+                        <div class="clinic-action-stack">
+                          {% if appointment.status != "cancelado" and appointment.status != "nao_compareceu" %}
+                            {% if appointment.has_consultation and perms.clinic.change_consulta %}
+                              <a href="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-url="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-success" title="{% ui 'Editar consulta' 'Edit consultation' %}">
+                                <i class="material-symbols-rounded" style="font-size: 1rem;">edit_note</i>
+                              </a>
+                            {% elif not appointment.has_consultation and perms.clinic.add_consulta %}
+                              <a href="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-url="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-success" title="{% ui 'Registar consulta' 'Register consultation' %}">
+                                <i class="material-symbols-rounded" style="font-size: 1rem;">clinical_notes</i>
+                              </a>
+                            {% endif %}
+                          {% endif %}
+                          {% if perms.clinic.view_consulta %}
+                            <a href="{% url 'clinic:patient_history_detail' appointment.paciente.pk %}" class="clinic-action-btn is-info" title="{% ui 'Abrir histórico' 'Open history' %}">
+                              <i class="material-symbols-rounded" style="font-size: 1rem;">history</i>
+                            </a>
+                          {% endif %}
+                          {% if perms.clinic.view_paciente %}
+                            <a href="{% url 'clinic:patient_detail' appointment.paciente.pk %}" data-modal-url="{% url 'clinic:patient_detail' appointment.paciente.pk %}" data-modal-size="modal-xl" class="clinic-action-btn is-muted" title="{% ui 'Ver ficha' 'View record' %}">
+                              <i class="material-symbols-rounded" style="font-size: 1rem;">badge</i>
+                            </a>
+                          {% endif %}
+                        </div>
+                      {% else %}
+                        <span class="text-xs text-secondary">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="px-4 py-5 text-center text-secondary">
+            {% ui "Ainda não existem marcações registadas." "There are no bookings registered yet." %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

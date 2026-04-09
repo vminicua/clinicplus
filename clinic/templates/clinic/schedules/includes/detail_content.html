@@ -106,12 +106,12 @@
           </div>
 
           <div class="clinic-detail-item">
-            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Hospital" "Hospital" %}</p>
+            <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Hospital legado" "Legacy hospital" %}</p>
             <h6 class="mb-0">
               {% if linked_medico and linked_medico.hospital %}
                 {{ linked_medico.hospital.name }}
               {% else %}
-                {% ui "Sem hospital associado" "No associated hospital" %}
+                {% ui "Sem hospital legado associado" "No associated legacy hospital" %}
               {% endif %}
             </h6>
           </div>

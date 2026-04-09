@@ -1,6 +1,7 @@
 {% load ui_extras %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
@@ -380,6 +381,41 @@
       });
     }
 
+    function initSearchableSelects(root) {
+      if (!window.jQuery || !jQuery.fn.select2) {
+        return;
+      }
+
+      root.querySelectorAll('select[data-searchable-select="1"]').forEach((selectElement) => {
+        const $select = jQuery(selectElement);
+        if ($select.hasClass('select2-hidden-accessible')) {
+          return;
+        }
+
+        const modalParent = selectElement.closest('.modal');
+        const isMultiple = selectElement.multiple;
+        const isRequired = selectElement.required;
+
+        $select.select2({
+          theme: 'bootstrap-5',
+          width: '100%',
+          dropdownAutoWidth: false,
+          closeOnSelect: !isMultiple,
+          dropdownParent: modalParent ? jQuery(modalParent) : jQuery(document.body),
+          placeholder: selectElement.dataset.placeholder || '',
+          allowClear: !isRequired && !isMultiple,
+          language: {
+            noResults: function() {
+              return '{% ui "Sem resultados" "No results" %}';
+            },
+            searching: function() {
+              return '{% ui "A pesquisar..." "Searching..." %}';
+            },
+          },
+        });
+      });
+    }
+
     function initDataTables(root) {
       if (!window.jQuery || !jQuery.fn.DataTable) {
         return;
@@ -552,6 +588,7 @@
     function initClinicShell(root) {
       initModalTriggers(root);
       initFormSubmits(root);
+      initSearchableSelects(root);
       initWizards(root);
       initScheduleBuilders(root);
       initPermissionTables(root);

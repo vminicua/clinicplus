@@ -1,0 +1,458 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    .appointment-agenda-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+
+    .appointment-directory-card,
+    .appointment-board-card,
+    .appointment-day-card {
+      border-radius: 1.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+    }
+
+    .appointment-directory-card {
+      padding: 1.25rem;
+      position: sticky;
+      top: 1.5rem;
+    }
+
+    .appointment-professional-list {
+      display: grid;
+      gap: 0.85rem;
+      margin-top: 1rem;
+      max-height: 68vh;
+      overflow-y: auto;
+    }
+
+    .appointment-professional-link {
+      display: block;
+      padding: 1rem;
+      border-radius: 1.1rem;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: rgba(248, 250, 252, 0.78);
+      color: inherit;
+      text-decoration: none;
+      transition: 0.18s ease;
+    }
+
+    .appointment-professional-link:hover,
+    .appointment-professional-link.is-active {
+      border-color: rgba(15, 118, 110, 0.28);
+      background: linear-gradient(180deg, rgba(20, 184, 166, 0.12) 0%, rgba(255, 255, 255, 0.96) 100%);
+      box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.08);
+      color: inherit;
+    }
+
+    .appointment-board-card {
+      padding: 1.35rem;
+    }
+
+    .appointment-board-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+
+    .appointment-board-actions,
+    .appointment-board-nav,
+    .appointment-stat-grid,
+    .appointment-day-meta,
+    .appointment-inline-stack {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .appointment-stat-grid {
+      margin-bottom: 1rem;
+    }
+
+    .appointment-stat-chip {
+      min-width: 180px;
+      padding: 0.95rem 1rem;
+      border-radius: 1.1rem;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(248, 250, 252, 0.74);
+    }
+
+    .appointment-week-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .appointment-day-card {
+      padding: 1rem;
+    }
+
+    .appointment-day-card.is-today {
+      border-color: rgba(20, 184, 166, 0.28);
+      box-shadow: 0 24px 48px rgba(20, 184, 166, 0.12);
+    }
+
+    .appointment-day-card.is-anchor {
+      outline: 2px solid rgba(15, 118, 110, 0.16);
+      outline-offset: 0;
+    }
+
+    .appointment-day-section + .appointment-day-section {
+      margin-top: 1rem;
+    }
+
+    .appointment-mini-list {
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .appointment-mini-item {
+      padding: 0.85rem 0.95rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(248, 250, 252, 0.72);
+    }
+
+    .appointment-upcoming-table td,
+    .appointment-upcoming-table th {
+      vertical-align: middle;
+    }
+
+    @media (max-width: 1199.98px) {
+      .appointment-agenda-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .appointment-directory-card {
+        position: static;
+      }
+    }
+
+    @media (max-width: 767.98px) {
+      .appointment-week-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="appointment-agenda-layout">
+      <aside class="appointment-directory-card">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+          <div>
+            <p class="text-sm text-secondary mb-1">{% ui "Agenda" "Agenda" %}</p>
+            <h4 class="mb-1">{% ui "Profissionais com agenda" "Professionals with agenda" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Escolha quem vai abrir no painel semanal." "Choose who to open in the weekly panel." %}</p>
+          </div>
+          {% if perms.clinic.add_agendamento %}
+            <a href="{{ create_url }}" data-modal-url="{{ create_url }}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">add</i>
+              {% ui "Nova" "New" %}
+            </a>
+          {% endif %}
+        </div>
+
+        {% if professionals %}
+          <div class="appointment-professional-list">
+            {% for professional in professionals %}
+              <a href="{% url 'clinic:appointment_agenda' %}?professional={{ professional.user_id }}&date={{ selected_date }}" class="appointment-professional-link {% if selected_professional and selected_professional.user_id == professional.user_id %}is-active{% endif %}">
+                <div class="d-flex justify-content-between gap-2">
+                  <div>
+                    <h6 class="mb-1">{{ professional.professional_name }}</h6>
+                    <p class="text-xs text-secondary mb-1">{{ professional.role_labels|join:", " }}</p>
+                    <p class="text-xs text-secondary mb-0">{{ professional.branch_names|join:", " }}</p>
+                  </div>
+                  <div class="text-end">
+                    <strong class="d-block text-sm">{{ professional.appointments_today }}</strong>
+                    <span class="text-xs text-secondary">{% ui "hoje" "today" %}</span>
+                  </div>
+                </div>
+                <div class="appointment-inline-stack mt-2">
+                  <span class="clinic-status {% if professional.linked_medico %}clinic-status-success{% else %}clinic-status-muted{% endif %}">
+                    {% if professional.linked_medico %}
+                      {% ui "Agenda clínica activa" "Clinical agenda active" %}
+                    {% else %}
+                      {% ui "Sem perfil médico ligado" "No linked doctor profile" %}
+                    {% endif %}
+                  </span>
+                  {% if professional.is_on_duty_today %}
+                    <span class="clinic-status clinic-status-info">{% ui "Em turno hoje" "On duty today" %}</span>
+                  {% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="clinic-empty-state">
+            {% ui "Ainda não existem profissionais com horário configurado para agenda." "There are no professionals with schedule configured for booking yet." %}
+          </div>
+        {% endif %}
+      </aside>
+
+      <section class="appointment-board-card">
+        {% if selected_professional %}
+          <div class="appointment-board-toolbar">
+            <div>
+              <p class="text-sm text-secondary mb-1">{% ui "Agenda semanal" "Weekly agenda" %}</p>
+              <h3 class="mb-1">{{ selected_professional.professional_name }}</h3>
+              <p class="text-secondary mb-0">
+                {{ selected_professional.role_labels|join:", " }}
+                {% if selected_professional.doctor_badge %} · {{ selected_professional.doctor_badge }}{% endif %}
+              </p>
+            </div>
+
+            <div class="appointment-board-actions">
+              <a href="{{ list_url }}" class="btn btn-outline-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">event_note</i>
+                {% ui "Ver marcações" "View bookings" %}
+              </a>
+              {% if perms.clinic.add_agendamento %}
+                <a href="{{ create_url }}" data-modal-url="{{ create_url }}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+                  <i class="material-symbols-rounded text-sm me-1">add</i>
+                  {% ui "Nova marcação" "New booking" %}
+                </a>
+              {% endif %}
+            </div>
+          </div>
+
+          <form method="get" class="card clinic-detail-card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <div class="clinic-form-grid">
+                <div>
+                  <label for="agenda-professional" class="form-label fw-semibold">{% ui "Profissional" "Professional" %}</label>
+                  <select id="agenda-professional" name="professional" class="form-select" data-searchable-select="1">
+                    {% for professional in professionals %}
+                      <option value="{{ professional.user_id }}"{% if selected_professional.user_id == professional.user_id %} selected{% endif %}>{{ professional.professional_name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div>
+                  <label for="agenda-date" class="form-label fw-semibold">{% ui "Semana de referência" "Reference week" %}</label>
+                  <input id="agenda-date" type="date" name="date" value="{{ selected_date }}" class="form-control">
+                </div>
+              </div>
+              <div class="d-flex justify-content-end gap-2 mt-3 flex-wrap">
+                <a href="{{ prev_week_url }}" class="btn btn-outline-dark mb-0">
+                  <i class="material-symbols-rounded text-sm me-1">chevron_left</i>
+                  {% ui "Semana anterior" "Previous week" %}
+                </a>
+                <a href="{{ today_week_url }}" class="btn btn-outline-dark mb-0">
+                  <i class="material-symbols-rounded text-sm me-1">today</i>
+                  {% ui "Esta semana" "This week" %}
+                </a>
+                <a href="{{ next_week_url }}" class="btn btn-outline-dark mb-0">
+                  {% ui "Próxima semana" "Next week" %}
+                  <i class="material-symbols-rounded text-sm ms-1">chevron_right</i>
+                </a>
+                <button type="submit" class="btn bg-gradient-dark mb-0">{% ui "Aplicar" "Apply" %}</button>
+              </div>
+            </div>
+          </form>
+
+          <div class="appointment-stat-grid">
+            <div class="appointment-stat-chip">
+              <small class="text-secondary d-block mb-1">{% ui "Intervalo activo" "Active range" %}</small>
+              <strong>{{ week_start|date:"d/m/Y" }} - {{ week_end|date:"d/m/Y" }}</strong>
+            </div>
+            <div class="appointment-stat-chip">
+              <small class="text-secondary d-block mb-1">{% ui "Marcações na semana" "Bookings this week" %}</small>
+              <strong>{{ weekly_appointment_count }}</strong>
+            </div>
+            <div class="appointment-stat-chip">
+              <small class="text-secondary d-block mb-1">{% ui "Blocos de horário" "Schedule blocks" %}</small>
+              <strong>{{ selected_professional.schedule_blocks }}</strong>
+            </div>
+            <div class="appointment-stat-chip">
+              <small class="text-secondary d-block mb-1">{% ui "Marcações futuras" "Future bookings" %}</small>
+              <strong>{{ selected_professional.future_appointments }}</strong>
+            </div>
+          </div>
+
+          <div class="appointment-week-grid">
+            {% for day in week_days %}
+              <article class="appointment-day-card {% if day.is_today %}is-today{% endif %} {% if day.is_anchor %}is-anchor{% endif %}">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                  <div>
+                    <h6 class="mb-1">{{ day.date|date:"l" }}</h6>
+                    <p class="text-secondary mb-0">{{ day.date|date:"d/m/Y" }}</p>
+                  </div>
+                  <div class="appointment-day-meta">
+                    {% if day.is_today %}
+                      <span class="clinic-status clinic-status-info">{% ui "Hoje" "Today" %}</span>
+                    {% endif %}
+                    {% if day.is_anchor and not day.is_today %}
+                      <span class="clinic-status clinic-status-muted">{% ui "Âncora" "Anchor" %}</span>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="appointment-day-section">
+                  <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Turnos activos" "Active shifts" %}</p>
+                  {% if day.schedule_blocks %}
+                    <div class="appointment-mini-list">
+                      {% for schedule in day.schedule_blocks %}
+                        <div class="appointment-mini-item">
+                          <div class="d-flex justify-content-between gap-2">
+                            <strong>{{ schedule.time_range_label }}</strong>
+                            <span class="text-xs text-secondary">{{ schedule.branch.name }}</span>
+                          </div>
+                          <div class="text-xs text-secondary mt-1">
+                            {{ schedule.get_role_display }}
+                            {% if schedule.display_shift_name %} · {{ schedule.display_shift_name }}{% endif %}
+                            {% if schedule.break_label %} · {% ui "Pausa" "Break" %}: {{ schedule.break_label }}{% endif %}
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <p class="text-sm text-secondary mb-0">{% ui "Sem bloco activo neste dia." "No active block for this day." %}</p>
+                  {% endif %}
+                </div>
+
+                <div class="appointment-day-section">
+                  <p class="text-xs text-secondary text-uppercase mb-2">{% ui "Marcações do dia" "Day bookings" %}</p>
+                  {% if day.appointments %}
+                    <div class="appointment-mini-list">
+                      {% for appointment in day.appointments %}
+                        <div class="appointment-mini-item">
+                          <div class="d-flex justify-content-between gap-2">
+                            <strong>{{ appointment.hora|time:"H:i" }} · {{ appointment.paciente.full_name }}</strong>
+                            {% if appointment.status == "concluido" %}
+                              <span class="clinic-status clinic-status-success">{{ appointment.get_status_display }}</span>
+                            {% elif appointment.status == "cancelado" or appointment.status == "nao_compareceu" %}
+                              <span class="clinic-status clinic-status-warning">{{ appointment.get_status_display }}</span>
+                            {% else %}
+                              <span class="clinic-status clinic-status-info">{{ appointment.get_status_display }}</span>
+                            {% endif %}
+                          </div>
+                          <div class="text-xs text-secondary mt-1">
+                            {{ appointment.motivo|truncatechars:72 }}
+                          </div>
+                          <div class="d-flex justify-content-between align-items-center gap-2 mt-2">
+                            <span class="text-xs text-secondary">
+                              {% if appointment.branch_id %}
+                                {{ appointment.branch.name }}
+                              {% elif appointment.hospital_id %}
+                                {{ appointment.hospital.name }}
+                              {% else %}
+                                {% ui "Sem sucursal" "No branch" %}
+                              {% endif %}
+                            </span>
+                            {% if appointment.status != "cancelado" and appointment.status != "nao_compareceu" %}
+                              {% if appointment.has_consultation and perms.clinic.change_consulta %}
+                                <a href="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-url="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-size="modal-xl" class="btn btn-sm btn-outline-success mb-0">
+                                  {% ui "Consulta" "Consultation" %}
+                                </a>
+                              {% elif not appointment.has_consultation and perms.clinic.add_consulta %}
+                                <a href="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-url="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-size="modal-xl" class="btn btn-sm btn-outline-dark mb-0">
+                                  {% ui "Abrir consulta" "Open consultation" %}
+                                </a>
+                              {% endif %}
+                            {% endif %}
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% elif selected_medico %}
+                    <p class="text-sm text-secondary mb-0">{% ui "Sem marcações neste dia." "No bookings for this day." %}</p>
+                  {% else %}
+                    <p class="text-sm text-secondary mb-0">{% ui "Este profissional ainda não tem perfil médico ligado para carregar marcações." "This professional does not yet have a linked doctor profile to load bookings." %}</p>
+                  {% endif %}
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+
+          <div class="card clinic-page-card border-0 shadow-sm mt-4">
+            <div class="card-header p-4 border-0">
+              <h5 class="mb-1">{% ui "Próximas marcações do profissional" "Upcoming professional bookings" %}</h5>
+              <p class="text-secondary mb-0">{% ui "Leitura rápida das próximas entradas ligadas ao profissional seleccionado." "Quick read of the next entries linked to the selected professional." %}</p>
+            </div>
+            <div class="card-body px-0 pt-0">
+              {% if upcoming_appointments %}
+                <div class="table-responsive">
+                  <table class="table align-items-center mb-0 appointment-upcoming-table">
+                    <thead>
+                      <tr>
+                        <th class="ps-4">{% ui "Data" "Date" %}</th>
+                        <th>{% ui "Hora" "Time" %}</th>
+                        <th>{% ui "Paciente" "Patient" %}</th>
+                        <th>{% ui "Sucursal" "Branch" %}</th>
+                        <th>{% ui "Motivo" "Reason" %}</th>
+                        <th>{% ui "Estado" "Status" %}</th>
+                        <th class="pe-4">{% ui "Consulta" "Consultation" %}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for appointment in upcoming_appointments %}
+                        <tr>
+                          <td class="ps-4">{{ appointment.data|date:"d/m/Y" }}</td>
+                          <td>{{ appointment.hora|time:"H:i" }}</td>
+                          <td>{{ appointment.paciente.full_name }}</td>
+                          <td>
+                            {% if appointment.branch_id %}
+                              {{ appointment.branch.name }}
+                            {% elif appointment.hospital_id %}
+                              {{ appointment.hospital.name }}
+                            {% else %}
+                              {% ui "Sem sucursal" "No branch" %}
+                            {% endif %}
+                          </td>
+                          <td>{{ appointment.motivo|truncatechars:64 }}</td>
+                          <td>{{ appointment.get_status_display }}</td>
+                          <td class="pe-4">
+                            {% if appointment.status != "cancelado" and appointment.status != "nao_compareceu" %}
+                              {% if appointment.has_consultation and perms.clinic.change_consulta %}
+                                <a href="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-url="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-size="modal-xl" class="btn btn-sm btn-outline-success mb-0">
+                                  {% ui "Editar" "Edit" %}
+                                </a>
+                              {% elif not appointment.has_consultation and perms.clinic.add_consulta %}
+                                <a href="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-url="{% url 'clinic:appointment_consultation' appointment.pk %}" data-modal-size="modal-xl" class="btn btn-sm btn-outline-dark mb-0">
+                                  {% ui "Abrir" "Open" %}
+                                </a>
+                              {% else %}
+                                <span class="text-sm text-secondary">-</span>
+                              {% endif %}
+                            {% else %}
+                              <span class="text-sm text-secondary">-</span>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="px-4 pb-4 text-secondary">
+                  {% if selected_medico %}
+                    {% ui "Ainda não existem marcações futuras para este profissional." "There are no future bookings for this professional yet." %}
+                  {% else %}
+                    {% ui "Sem marcações porque este profissional ainda não está ligado a um perfil médico." "No bookings because this professional is not yet linked to a doctor profile." %}
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% else %}
+          <div class="clinic-empty-state">
+            {% ui "Seleccione um profissional à esquerda para abrir a agenda semanal." "Select a professional on the left to open the weekly agenda." %}
+          </div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,49 @@
+{% load ui_extras %}
+<div class="modal-content clinic-modal-card">
+  <div class="modal-header">
+    <div>
+      <p class="text-sm text-secondary mb-1">{{ page_title }}</p>
+      <h4 class="mb-1">{{ form_title }}</h4>
+      <p class="text-secondary mb-0">{{ form_description }}</p>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% ui 'Fechar' 'Close' %}"></button>
+  </div>
+  <div class="modal-body">
+    <div class="card clinic-detail-card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <div class="clinic-form-grid">
+          <div>
+            <label class="form-label fw-semibold">{% ui "Paciente" "Patient" %}</label>
+            <div class="form-control">{{ appointment.paciente.full_name }}</div>
+          </div>
+          <div>
+            <label class="form-label fw-semibold">{% ui "Profissional" "Professional" %}</label>
+            <div class="form-control">{{ appointment.medico.user.get_full_name|default:appointment.medico.user.username }}</div>
+          </div>
+          <div>
+            <label class="form-label fw-semibold">{% ui "Sucursal" "Branch" %}</label>
+            <div class="form-control">
+              {% if appointment.branch_id %}
+                {{ appointment.branch.name }}
+              {% elif appointment.hospital_id %}
+                {{ appointment.hospital.name }}
+              {% else %}
+                {% ui "Sem unidade definida" "No unit defined" %}
+              {% endif %}
+            </div>
+          </div>
+          <div>
+            <label class="form-label fw-semibold">{% ui "Data e hora" "Date and time" %}</label>
+            <div class="form-control">{{ appointment.data|date:"d/m/Y" }} · {{ appointment.hora|time:"H:i" }}</div>
+          </div>
+          <div class="full-width">
+            <label class="form-label fw-semibold">{% ui "Motivo da marcação" "Booking reason" %}</label>
+            <div class="form-control" style="min-height: 92px;">{{ appointment.motivo|default:"-" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% include "accounts/shared/includes/form_content.html" %}
+  </div>
+</div>

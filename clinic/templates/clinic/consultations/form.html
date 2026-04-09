@@ -1,0 +1,68 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row justify-content-center">
+      <div class="col-xl-10">
+        <div class="card clinic-form-card mb-4">
+          <div class="card-header p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+              <div>
+                <p class="text-sm text-secondary mb-1">{{ page_title }}</p>
+                <h3 class="mb-1">{{ form_title }}</h3>
+                <p class="text-secondary mb-0">{{ form_description }}</p>
+              </div>
+
+              <a href="{{ cancel_url }}" class="btn btn-outline-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">arrow_back</i>
+                {% ui "Voltar" "Back" %}
+              </a>
+            </div>
+          </div>
+
+          <div class="card-body p-4 pt-0">
+            <div class="card clinic-detail-card border-0 shadow-sm mb-4">
+              <div class="card-body">
+                <div class="clinic-form-grid">
+                  <div>
+                    <label class="form-label fw-semibold">{% ui "Paciente" "Patient" %}</label>
+                    <div class="form-control">{{ appointment.paciente.full_name }}</div>
+                  </div>
+                  <div>
+                    <label class="form-label fw-semibold">{% ui "Profissional" "Professional" %}</label>
+                    <div class="form-control">{{ appointment.medico.user.get_full_name|default:appointment.medico.user.username }}</div>
+                  </div>
+                  <div>
+                    <label class="form-label fw-semibold">{% ui "Sucursal" "Branch" %}</label>
+                    <div class="form-control">
+                      {% if appointment.branch_id %}
+                        {{ appointment.branch.name }}
+                      {% elif appointment.hospital_id %}
+                        {{ appointment.hospital.name }}
+                      {% else %}
+                        {% ui "Sem unidade definida" "No unit defined" %}
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div>
+                    <label class="form-label fw-semibold">{% ui "Data e hora" "Date and time" %}</label>
+                    <div class="form-control">{{ appointment.data|date:"d/m/Y" }} · {{ appointment.hora|time:"H:i" }}</div>
+                  </div>
+                  <div class="full-width">
+                    <label class="form-label fw-semibold">{% ui "Motivo da marcação" "Booking reason" %}</label>
+                    <div class="form-control" style="min-height: 92px;">{{ appointment.motivo|default:"-" }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {% include "accounts/shared/includes/form_content.html" %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

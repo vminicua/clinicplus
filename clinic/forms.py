@@ -1,17 +1,22 @@
 import re
+from collections import defaultdict
+from datetime import datetime, timedelta
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from accounts.models import Branch
 from accounts.forms import StyledFormMixin
 from accounts.i18n import translate_pair
+from accounts.ui import available_branches_for_user
 from accounts.utils import visible_users_queryset
 
-from .models import HorarioTrabalho, Paciente
+from .models import Agendamento, Consulta, HorarioTrabalho, Hospital, Medico, Paciente
 
 
 User = get_user_model()
@@ -230,6 +235,451 @@ class StaffUserChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         full_name = obj.get_full_name() or obj.username
         return f"{full_name} ({obj.username})"
+
+
+class PatientChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        document = obj.cpf or tr("Sem documento", "No document")
+        return f"{obj.full_name} · {document}"
+
+
+class DoctorChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        full_name = obj.get_full_name() or obj.username
+        return full_name
+
+
+def appointment_doctor_user_queryset():
+    doctor_group = Group.objects.filter(name="Médico").first() or Group.objects.filter(pk=4).first()
+    queryset = visible_users_queryset().filter(is_active=True)
+    filters = Q(medico__isnull=False)
+    if doctor_group is not None:
+        filters |= Q(groups=doctor_group)
+    filters |= Q(
+        horarios_trabalho__role=HorarioTrabalho.RoleChoices.MEDICO,
+        horarios_trabalho__is_active=True,
+    )
+    return queryset.filter(filters).distinct().order_by("first_name", "last_name", "username")
+
+
+def appointment_branch_queryset(request=None):
+    queryset = Branch.objects.filter(is_active=True).order_by("name")
+    if request is None or not getattr(request, "user", None) or not request.user.is_authenticated:
+        return queryset
+
+    scoped_queryset = available_branches_for_user(request.user)
+    return scoped_queryset if scoped_queryset.exists() else queryset
+
+
+def generate_doctor_crm(user):
+    base_value = f"AUTOCRM{user.pk}"
+    candidate = base_value
+    counter = 1
+    while Medico.objects.filter(crm=candidate).exclude(user=user).exists():
+        candidate = f"{base_value}_{counter}"
+        counter += 1
+    return candidate
+
+
+def get_doctor_profile(user):
+    return Medico.objects.filter(user=user).select_related("hospital").first()
+
+
+def resolve_legacy_hospital(branch=None, patient=None, doctor_user=None):
+    if doctor_user is not None:
+        current_medico = get_doctor_profile(doctor_user)
+        if current_medico and current_medico.hospital_id:
+            return current_medico.hospital
+
+    candidate_branches = []
+    if branch is not None:
+        candidate_branches.append(branch)
+    if patient is not None and getattr(patient, "branch_id", None):
+        candidate_branches.append(patient.branch)
+
+    for candidate_branch in candidate_branches:
+        matched_hospital = Hospital.objects.filter(name__iexact=candidate_branch.name).first()
+        if matched_hospital:
+            return matched_hospital
+
+    if patient is not None and getattr(patient, "hospital_id", None):
+        return patient.hospital
+
+    if Hospital.objects.count() == 1:
+        return Hospital.objects.order_by("id").first()
+
+    return None
+
+
+def appointment_time_matches_schedule(schedule, appointment_time):
+    if appointment_time < schedule.start_time or appointment_time >= schedule.end_time:
+        return False
+
+    if schedule.break_start and schedule.break_end and schedule.break_start <= appointment_time < schedule.break_end:
+        return False
+
+    if not schedule.slot_minutes:
+        return True
+
+    base_dt = datetime.combine(datetime.today(), schedule.start_time)
+    appointment_dt = datetime.combine(datetime.today(), appointment_time)
+    end_dt = datetime.combine(datetime.today(), schedule.end_time)
+    delta_minutes = int((appointment_dt - base_dt).total_seconds() // 60)
+
+    if delta_minutes < 0 or delta_minutes % schedule.slot_minutes != 0:
+        return False
+
+    return appointment_dt + timedelta(minutes=schedule.slot_minutes) <= end_dt
+
+
+def appointment_schedule_queryset(user, branch):
+    return (
+        HorarioTrabalho.objects.filter(
+            user=user,
+            branch=branch,
+            is_active=True,
+            accepts_appointments=True,
+        )
+        .select_related("branch")
+        .order_by("weekday", "start_time")
+    )
+
+
+def iter_schedule_slot_times(schedule):
+    slot_minutes = schedule.slot_minutes or 30
+    if slot_minutes <= 0:
+        slot_minutes = 30
+
+    current_dt = datetime.combine(datetime.today(), schedule.start_time)
+    end_dt = datetime.combine(datetime.today(), schedule.end_time)
+    slot_delta = timedelta(minutes=slot_minutes)
+
+    while current_dt + slot_delta <= end_dt:
+        slot_time = current_dt.time()
+        if appointment_time_matches_schedule(schedule, slot_time):
+            yield slot_time
+        current_dt += slot_delta
+
+
+def find_next_available_appointment_slot(
+    user,
+    branch,
+    *,
+    reference_date=None,
+    reference_time=None,
+    exclude_appointment=None,
+    search_days=120,
+):
+    schedules = list(appointment_schedule_queryset(user, branch))
+    if not schedules:
+        return None
+
+    today = timezone.localdate()
+    start_date = max(reference_date or today, today)
+    current_local_time = timezone.localtime().replace(second=0, microsecond=0).time()
+    occupied_until = start_date + timedelta(days=search_days)
+
+    occupied_queryset = Agendamento.objects.filter(
+        medico__user=user,
+        data__range=(start_date, occupied_until),
+    )
+    if exclude_appointment and getattr(exclude_appointment, "pk", None):
+        occupied_queryset = occupied_queryset.exclude(pk=exclude_appointment.pk)
+
+    occupied_slots = defaultdict(set)
+    for booked_date, booked_time in occupied_queryset.values_list("data", "hora"):
+        occupied_slots[booked_date].add(booked_time)
+
+    for offset in range(search_days + 1):
+        target_date = start_date + timedelta(days=offset)
+        day_schedules = [
+            schedule
+            for schedule in schedules
+            if schedule.applies_to_date(target_date)
+        ]
+        if not day_schedules:
+            continue
+
+        minimum_time = None
+        if target_date == start_date:
+            time_candidates = []
+            if reference_time is not None:
+                time_candidates.append(reference_time)
+            if target_date == today:
+                time_candidates.append(current_local_time)
+            if time_candidates:
+                minimum_time = max(time_candidates)
+
+        for schedule in sorted(day_schedules, key=lambda item: (item.start_time, item.end_time)):
+            for slot_time in iter_schedule_slot_times(schedule):
+                if minimum_time is not None and slot_time <= minimum_time:
+                    continue
+                if slot_time in occupied_slots[target_date]:
+                    continue
+                return {
+                    "date": target_date,
+                    "time": slot_time,
+                    "schedule": schedule,
+                }
+
+    return None
+
+
+def next_availability_message(slot):
+    if not slot:
+        return ""
+    return tr(
+        " Próxima disponibilidade: %(date)s às %(time)s.",
+        " Next availability: %(date)s at %(time)s.",
+    ) % {
+        "date": slot["date"].strftime("%d/%m/%Y"),
+        "time": slot["time"].strftime("%H:%M"),
+    }
+
+
+def has_valid_appointment_schedule(user, branch, appointment_date, appointment_time):
+    schedules = [
+        schedule
+        for schedule in appointment_schedule_queryset(user, branch)
+        if schedule.applies_to_date(appointment_date)
+    ]
+    if not schedules:
+        return False
+    return any(appointment_time_matches_schedule(schedule, appointment_time) for schedule in schedules)
+
+
+def ensure_doctor_profile(user, branch=None, patient=None):
+    doctor_profile = Medico.objects.filter(user=user).select_related("hospital").first()
+    if doctor_profile:
+        if doctor_profile.hospital_id is None:
+            legacy_hospital = resolve_legacy_hospital(branch=branch, patient=patient, doctor_user=user)
+            if legacy_hospital is not None:
+                doctor_profile.hospital = legacy_hospital
+                doctor_profile.save(update_fields=["hospital"])
+        return doctor_profile
+
+    return Medico.objects.create(
+        user=user,
+        hospital=resolve_legacy_hospital(branch=branch, patient=patient, doctor_user=user),
+        especialidade=None,
+        crm=generate_doctor_crm(user),
+        phone="",
+        bio="",
+    )
+
+
+class AppointmentForm(StyledFormMixin, forms.ModelForm):
+    paciente = PatientChoiceField(
+        queryset=Paciente.objects.none(),
+        label=tr("Paciente", "Patient"),
+    )
+    doctor_user = DoctorChoiceField(
+        queryset=User.objects.none(),
+        label=tr("Profissional clínico", "Clinical professional"),
+    )
+    branch = forms.ModelChoiceField(
+        queryset=Branch.objects.none(),
+        label=tr("Sucursal da consulta", "Consultation branch"),
+    )
+
+    class Meta:
+        model = Agendamento
+        fields = [
+            "paciente",
+            "doctor_user",
+            "branch",
+            "data",
+            "hora",
+            "motivo",
+            "status",
+            "notas",
+        ]
+        labels = {
+            "data": tr("Data", "Date"),
+            "hora": tr("Hora", "Time"),
+            "motivo": tr("Motivo da marcação", "Booking reason"),
+            "status": tr("Estado", "Status"),
+            "notas": tr("Notas internas", "Internal notes"),
+        }
+        help_texts = {
+            "data": tr(
+                "Data pretendida para a marcação.",
+                "Requested booking date.",
+            ),
+            "branch": tr(
+                "Sucursal onde esta consulta será atendida.",
+                "Branch where this consultation will take place.",
+            ),
+            "hora": tr(
+                "Hora exacta reservada para este paciente.",
+                "Exact time reserved for this patient.",
+            ),
+            "motivo": tr(
+                "Resumo curto do motivo da consulta ou procedimento.",
+                "Short summary of the reason for the visit or procedure.",
+            ),
+            "status": tr(
+                "Estado operacional actual da marcação.",
+                "Current operational status of the booking.",
+            ),
+            "notas": tr(
+                "Observações internas para recepção, enfermagem ou clínico.",
+                "Internal notes for reception, nursing, or clinician.",
+            ),
+        }
+        widgets = {
+            "data": forms.DateInput(attrs={"type": "date"}),
+            "hora": forms.TimeInput(attrs={"type": "time"}),
+            "motivo": forms.Textarea(attrs={"rows": 3}),
+            "notas": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        self.fields["paciente"].queryset = (
+            Paciente.objects.select_related("user", "branch")
+            .filter(is_active=True)
+            .order_by("user__first_name", "user__last_name", "cpf")
+        )
+        self.fields["doctor_user"].queryset = appointment_doctor_user_queryset()
+        self.fields["branch"].queryset = appointment_branch_queryset(self.request)
+        self.fields["doctor_user"].help_text = tr(
+            "Utilizadores do perfil Médico com agenda activa ou horário clínico configurado.",
+            "Users in the Doctor role with an active agenda or configured clinical schedule.",
+        )
+        self.fields["notas"].required = False
+        self.fields["status"].initial = self.initial.get("status") or Agendamento.STATUS_CHOICES[0][0]
+
+        if not self.instance.pk and not self.initial.get("branch"):
+            current_branch = getattr(self.request, "clinic_current_branch", None) if self.request else None
+            if current_branch and self.fields["branch"].queryset.filter(pk=current_branch.pk).exists():
+                self.fields["branch"].initial = current_branch
+
+        if self.instance.pk and self.instance.branch_id:
+            self.fields["branch"].initial = self.instance.branch
+
+        for field_name in ("paciente", "doctor_user", "branch", "motivo", "notas"):
+            self.fields[field_name].widget.attrs["autocomplete"] = "off"
+            self.fields[field_name].widget.attrs["data-lpignore"] = "true"
+            self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        doctor_user = cleaned_data.get("doctor_user")
+        branch = cleaned_data.get("branch")
+        appointment_date = cleaned_data.get("data")
+        appointment_time = cleaned_data.get("hora")
+        patient = cleaned_data.get("paciente")
+
+        if doctor_user and branch and not appointment_schedule_queryset(doctor_user, branch).exists():
+            self.add_error(
+                "branch",
+                tr(
+                    "Este profissional não tem agenda activa para marcações nesta sucursal.",
+                    "This professional does not have an active appointment schedule in this branch.",
+                ),
+            )
+
+        if doctor_user and branch and appointment_date and appointment_time:
+            suggested_slot = find_next_available_appointment_slot(
+                doctor_user,
+                branch,
+                reference_date=appointment_date,
+                reference_time=appointment_time,
+                exclude_appointment=self.instance,
+            )
+            if not has_valid_appointment_schedule(doctor_user, branch, appointment_date, appointment_time):
+                self.add_error(
+                    "hora",
+                    tr(
+                        "A hora escolhida está fora dos blocos activos deste profissional nesta sucursal.",
+                        "The selected time is outside this professional's active schedule blocks in this branch.",
+                    )
+                    + next_availability_message(suggested_slot),
+                )
+
+            doctor = get_doctor_profile(doctor_user)
+            if doctor is not None:
+                cleaned_data["resolved_doctor_profile"] = doctor
+                duplicate_queryset = Agendamento.objects.filter(
+                    medico=doctor,
+                    data=appointment_date,
+                    hora=appointment_time,
+                )
+                if self.instance and self.instance.pk:
+                    duplicate_queryset = duplicate_queryset.exclude(pk=self.instance.pk)
+                if duplicate_queryset.exists():
+                    self.add_error(
+                        "hora",
+                        tr(
+                            "Já existe uma marcação para este profissional nesta data e hora.",
+                            "There is already a booking for this professional at this date and time.",
+                        )
+                        + next_availability_message(suggested_slot),
+                    )
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        appointment = super().save(commit=False)
+        doctor = self.cleaned_data.get("resolved_doctor_profile") or ensure_doctor_profile(
+            self.cleaned_data["doctor_user"],
+            branch=self.cleaned_data.get("branch"),
+            patient=self.cleaned_data.get("paciente"),
+        )
+        appointment.medico = doctor
+        appointment.branch = self.cleaned_data.get("branch")
+        appointment.hospital = resolve_legacy_hospital(
+            branch=appointment.branch,
+            patient=self.cleaned_data.get("paciente"),
+            doctor_user=self.cleaned_data["doctor_user"],
+        )
+
+        if commit:
+            appointment.save()
+            self.save_m2m()
+
+        return appointment
+
+
+class ConsultationForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = Consulta
+        fields = [
+            "diagnostico",
+            "prescricao",
+            "notas_medico",
+        ]
+        labels = {
+            "diagnostico": tr("Diagnóstico", "Diagnosis"),
+            "prescricao": tr("Prescrição", "Prescription"),
+            "notas_medico": tr("Notas clínicas", "Clinical notes"),
+        }
+        help_texts = {
+            "diagnostico": tr(
+                "Registe a avaliação clínica principal desta consulta.",
+                "Record the main clinical assessment for this consultation.",
+            ),
+            "prescricao": tr(
+                "Indique medicação, exames, orientações ou plano terapêutico.",
+                "Document medication, exams, guidance, or therapeutic plan.",
+            ),
+            "notas_medico": tr(
+                "Campo opcional para observações adicionais do profissional.",
+                "Optional field for additional clinician notes.",
+            ),
+        }
+        widgets = {
+            "diagnostico": forms.Textarea(attrs={"rows": 4}),
+            "prescricao": forms.Textarea(attrs={"rows": 4}),
+            "notas_medico": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
 
 
 WORK_SCHEDULE_WEEKDAY_OPTIONS = [

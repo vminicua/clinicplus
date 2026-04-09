@@ -1,9 +1,12 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import Permission, User
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import Branch, SystemPreference
+from clinic.forms import AppointmentForm
 from clinic.forms import PatientForm
 from clinic.forms import WorkScheduleBatchCreateForm, WorkScheduleForm
 from clinic.models import Agendamento, Consulta, HorarioTrabalho, Hospital, Medico, Paciente
@@ -70,6 +73,10 @@ class PatientViewsTests(TestCase):
         self.user.user_permissions.add(
             Permission.objects.get(codename="view_paciente"),
             Permission.objects.get(codename="view_consulta"),
+            Permission.objects.get(codename="add_consulta"),
+            Permission.objects.get(codename="change_consulta"),
+            Permission.objects.get(codename="view_agendamento"),
+            Permission.objects.get(codename="add_agendamento"),
             Permission.objects.get(codename="change_paciente"),
             Permission.objects.get(codename="view_horariotrabalho"),
             Permission.objects.get(codename="add_horariotrabalho"),
@@ -139,6 +146,7 @@ class PatientViewsTests(TestCase):
         appointment = Agendamento.objects.create(
             paciente=patient,
             medico=doctor,
+            branch=self.branch,
             hospital=self.hospital,
             data="2026-04-02",
             hora="10:00",
@@ -203,6 +211,7 @@ class PatientViewsTests(TestCase):
         Agendamento.objects.create(
             paciente=patient,
             medico=doctor,
+            branch=self.branch,
             hospital=self.hospital,
             data=today,
             hora="08:30",
@@ -215,6 +224,164 @@ class PatientViewsTests(TestCase):
         self.assertContains(response, schedule.professional_name)
         self.assertContains(response, "CRM100")
         self.assertContains(response, self.branch.name)
+
+    def test_appointment_list_view_renders_bookings_and_appointments_menu(self):
+        today = timezone.localdate()
+        patient = self.create_patient("BOOK1234")
+        doctor_user = User.objects.create(username="doctor_booking", first_name="Lina", last_name="Matola")
+        doctor = Medico.objects.create(
+            user=doctor_user,
+            hospital=self.hospital,
+            especialidade=None,
+            crm="CRM200",
+            phone="840888888",
+        )
+        appointment = Agendamento.objects.create(
+            paciente=patient,
+            medico=doctor,
+            branch=self.branch,
+            hospital=self.hospital,
+            data=today,
+            hora="09:00",
+            motivo="Consulta de rotina",
+            status="agendado",
+        )
+
+        response = self.client.get(reverse("clinic:appointment_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Consultas")
+        self.assertContains(response, reverse("clinic:appointment_list"))
+        self.assertContains(response, reverse("clinic:appointment_agenda"))
+        self.assertContains(response, reverse("clinic:work_schedule_list"))
+        self.assertContains(response, reverse("clinic:appointment_create"))
+        self.assertContains(response, appointment.paciente.full_name)
+        self.assertContains(response, "Consulta de rotina")
+
+    def test_appointment_create_view_creates_booking_with_doctor_hospital(self):
+        today = timezone.localdate()
+        patient = self.create_patient("NEWB1234")
+        doctor_user = User.objects.create(username="doctor_new_booking", first_name="Tânia", last_name="Mussa")
+        doctor = Medico.objects.create(
+            user=doctor_user,
+            hospital=self.hospital,
+            especialidade=None,
+            crm="CRM210",
+            phone="840121212",
+        )
+        HorarioTrabalho.objects.create(
+            user=doctor_user,
+            branch=self.branch,
+            role=HorarioTrabalho.RoleChoices.MEDICO,
+            weekday=today.weekday(),
+            start_time="08:00",
+            end_time="17:00",
+            slot_minutes=30,
+            valid_from=today.replace(day=1),
+            accepts_appointments=True,
+        )
+
+        response = self.client.post(
+            reverse("clinic:appointment_create"),
+            data={
+                "paciente": patient.pk,
+                "doctor_user": doctor_user.pk,
+                "branch": self.branch.pk,
+                "data": today.isoformat(),
+                "hora": "13:00",
+                "motivo": "Exame de controlo",
+                "status": "agendado",
+                "notas": "Trazer resultados anteriores.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        appointment = Agendamento.objects.get(medico=doctor, paciente=patient, data=today, hora="13:00")
+        self.assertEqual(appointment.branch, self.branch)
+        self.assertEqual(appointment.hospital, self.hospital)
+        self.assertEqual(appointment.motivo, "Exame de controlo")
+
+    def test_appointment_agenda_view_renders_selected_professional_week(self):
+        today = timezone.localdate()
+        patient = self.create_patient("AGEN1234")
+        doctor_user = User.objects.create(username="doctor_agenda", first_name="Joel", last_name="Muianga")
+        doctor = Medico.objects.create(
+            user=doctor_user,
+            hospital=self.hospital,
+            especialidade=None,
+            crm="CRM201",
+            phone="840999999",
+        )
+        HorarioTrabalho.objects.create(
+            user=doctor_user,
+            branch=self.branch,
+            role=HorarioTrabalho.RoleChoices.MEDICO,
+            weekday=today.weekday(),
+            start_time="08:00",
+            end_time="12:00",
+            slot_minutes=30,
+            valid_from=today.replace(day=1),
+            accepts_appointments=True,
+        )
+        appointment = Agendamento.objects.create(
+            paciente=patient,
+            medico=doctor,
+            branch=self.branch,
+            hospital=self.hospital,
+            data=today,
+            hora="11:00",
+            motivo="Retorno clínico",
+            status="agendado",
+        )
+
+        response = self.client.get(
+            reverse("clinic:appointment_agenda"),
+            {"professional": doctor_user.pk, "date": today.isoformat()},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Agenda semanal")
+        self.assertContains(response, doctor_user.get_full_name())
+        self.assertContains(response, appointment.paciente.full_name)
+        self.assertContains(response, "Retorno clínico")
+        self.assertContains(response, "08:00 - 12:00")
+
+    def test_appointment_consultation_view_creates_consultation_and_closes_booking(self):
+        today = timezone.localdate()
+        patient = self.create_patient("CONS5678")
+        doctor_user = User.objects.create(username="doctor_consult", first_name="Berta", last_name="Maloa")
+        doctor = Medico.objects.create(
+            user=doctor_user,
+            hospital=self.hospital,
+            especialidade=None,
+            crm="CRM230",
+            phone="840232323",
+        )
+        appointment = Agendamento.objects.create(
+            paciente=patient,
+            medico=doctor,
+            branch=self.branch,
+            hospital=self.hospital,
+            data=today,
+            hora="14:00",
+            motivo="Consulta clínica",
+            status="agendado",
+        )
+
+        response = self.client.post(
+            reverse("clinic:appointment_consultation", args=[appointment.pk]),
+            data={
+                "diagnostico": "Gripe simples",
+                "prescricao": "Repouso e hidratação",
+                "notas_medico": "Rever em 3 dias se persistir.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        appointment.refresh_from_db()
+        consultation = Consulta.objects.get(agendamento=appointment)
+        self.assertEqual(appointment.status, "concluido")
+        self.assertEqual(consultation.diagnostico, "Gripe simples")
 
     def test_toggle_work_schedule_to_inactive(self):
         staff_user = User.objects.create(username="staff_schedule", first_name="Rui", last_name="Mabunda")
@@ -345,3 +512,152 @@ class WorkScheduleFormTests(TestCase):
         self.assertEqual(created[0].start_time.strftime("%H:%M"), "08:00")
         self.assertEqual(created[1].weekday, HorarioTrabalho.WeekdayChoices.THURSDAY)
         self.assertEqual(created[1].start_time.strftime("%H:%M"), "12:00")
+
+
+class AppointmentFormTests(TestCase):
+    def setUp(self):
+        self.branch = Branch.objects.create(name="Clinic Plus App", code="CPA", city="Maputo")
+        self.hospital = Hospital.objects.create(
+            name="Clinic Plus Appointments",
+            email="appointments@clinic.test",
+            phone="840101010",
+            address="Av. Agenda",
+            city="Maputo",
+            state="Maputo",
+            zip_code="1100",
+        )
+        patient_user = User.objects.create(username="patient_form", first_name="Lídia", last_name="Mabjaia")
+        self.patient = Paciente.objects.create(
+            user=patient_user,
+            branch=self.branch,
+            cpf="FORM1234",
+            phone="840202020",
+            date_of_birth="1992-05-10",
+            gender="F",
+            address="Rua 3",
+            city="Maputo",
+            country="Moçambique",
+            state="Maputo",
+            zip_code="",
+            emergency_contact="Contacto",
+            emergency_phone="",
+            medical_history="",
+            allergies="",
+        )
+        doctor_user = User.objects.create(username="doctor_form", first_name="Arnaldo", last_name="Tembe")
+        self.doctor_user = doctor_user
+        self.doctor = Medico.objects.create(
+            user=doctor_user,
+            hospital=self.hospital,
+            especialidade=None,
+            crm="CRM300",
+            phone="840303030",
+        )
+        HorarioTrabalho.objects.create(
+            user=doctor_user,
+            branch=self.branch,
+            role=HorarioTrabalho.RoleChoices.MEDICO,
+            weekday=2,
+            start_time="09:00",
+            end_time="12:00",
+            slot_minutes=30,
+            valid_from="2026-04-01",
+            accepts_appointments=True,
+        )
+
+    def test_appointment_form_medico_field_lists_active_doctors(self):
+        form = AppointmentForm()
+
+        self.assertIn(self.doctor.user, form.fields["doctor_user"].queryset)
+
+    def test_appointment_form_assigns_hospital_from_doctor(self):
+        form = AppointmentForm(
+            data={
+                "paciente": self.patient.pk,
+                "doctor_user": self.doctor.user.pk,
+                "branch": self.branch.pk,
+                "data": "2026-04-15",
+                "hora": "09:30",
+                "motivo": "Consulta geral",
+                "status": "agendado",
+                "notas": "",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        appointment = form.save()
+
+        self.assertEqual(appointment.branch, self.branch)
+        self.assertEqual(appointment.hospital, self.hospital)
+
+    def test_appointment_form_rejects_duplicate_doctor_slot(self):
+        Agendamento.objects.create(
+            paciente=self.patient,
+            medico=self.doctor,
+            branch=self.branch,
+            hospital=self.hospital,
+            data="2026-04-15",
+            hora="10:00",
+            motivo="Primeira consulta",
+        )
+
+        form = AppointmentForm(
+            data={
+                "paciente": self.patient.pk,
+                "doctor_user": self.doctor.user.pk,
+                "branch": self.branch.pk,
+                "data": "2026-04-15",
+                "hora": "10:00",
+                "motivo": "Consulta duplicada",
+                "status": "agendado",
+                "notas": "",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("hora", form.errors)
+
+    def test_appointment_form_rejects_branch_without_active_schedule(self):
+        other_branch = Branch.objects.create(name="Clinic Plus Sul", code="CPS", city="Matola")
+        form = AppointmentForm(
+            data={
+                "paciente": self.patient.pk,
+                "doctor_user": self.doctor_user.pk,
+                "branch": other_branch.pk,
+                "data": "2026-04-15",
+                "hora": "09:30",
+                "motivo": "Consulta sem agenda",
+                "status": "agendado",
+                "notas": "",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("branch", form.errors)
+
+    def test_appointment_form_outside_schedule_reports_next_availability(self):
+        today = timezone.localdate()
+        days_until_schedule = (HorarioTrabalho.WeekdayChoices.WEDNESDAY - today.weekday()) % 7
+        if days_until_schedule == 0:
+            days_until_schedule = 7
+        requested_date = today + timedelta(days=days_until_schedule)
+        next_available_date = requested_date + timedelta(days=7)
+
+        form = AppointmentForm(
+            data={
+                "paciente": self.patient.pk,
+                "doctor_user": self.doctor_user.pk,
+                "branch": self.branch.pk,
+                "data": requested_date.isoformat(),
+                "hora": "13:00",
+                "motivo": "Consulta fora do horário",
+                "status": "agendado",
+                "notas": "",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("hora", form.errors)
+        self.assertIn("Próxima disponibilidade", form.errors["hora"][0])
+        self.assertIn(next_available_date.strftime("%d/%m/%Y"), form.errors["hora"][0])
+        self.assertIn("09:00", form.errors["hora"][0])

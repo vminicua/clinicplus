@@ -34,11 +34,13 @@ class StyledFormMixin:
 
             if isinstance(widget, forms.SelectMultiple):
                 widget.attrs["class"] = self.multi_select_class
+                widget.attrs["data-searchable-select"] = "1"
                 widget.attrs.setdefault("size", 12)
                 continue
 
             if isinstance(widget, forms.Select):
                 widget.attrs["class"] = self.select_class
+                widget.attrs["data-searchable-select"] = "1"
                 continue
 
             if isinstance(widget, forms.Textarea):

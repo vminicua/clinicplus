@@ -420,6 +420,91 @@
     height: 1.1rem;
   }
 
+  .select2-container {
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .select2-container .selection {
+    display: block;
+    max-width: 100%;
+  }
+
+  .select2-container--bootstrap-5 .select2-selection {
+    min-height: calc(3.1rem + 2px);
+    max-width: 100%;
+    border-radius: 1.1rem;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: #fff;
+    box-shadow: none;
+    padding: 0.45rem 0.95rem;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+    display: block;
+    max-width: 100%;
+    color: #0f172a;
+    line-height: 1.9rem;
+    padding-left: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+    height: calc(100% - 2px);
+    right: 0.85rem;
+  }
+
+  .select2-container--bootstrap-5 .select2-selection--multiple .select2-search {
+    width: 100%;
+  }
+
+  .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 100%;
+  }
+
+  .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+    max-width: 100%;
+  }
+
+  .select2-container--bootstrap-5 .select2-selection--multiple .select2-search__field {
+    width: 100% !important;
+    margin-top: 0.2rem;
+  }
+
+  .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+  .select2-container--bootstrap-5.select2-container--open .select2-selection {
+    border-color: rgba(15, 118, 110, 0.34);
+    box-shadow: 0 0 0 0.22rem rgba(20, 184, 166, 0.12);
+  }
+
+  .select2-dropdown {
+    max-width: min(100vw - 2rem, 720px);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
+    box-sizing: border-box;
+  }
+
+  .select2-container--bootstrap-5 .select2-dropdown .select2-search {
+    padding: 0.75rem;
+  }
+
+  .select2-container--bootstrap-5 .select2-search__field {
+    border-radius: 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+  }
+
   .clinic-modal-card .form-label,
   .clinic-form-card .form-label {
     margin-bottom: 0.55rem;

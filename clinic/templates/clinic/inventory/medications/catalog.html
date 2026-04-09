@@ -1,0 +1,184 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">library_add</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Itens de catálogo" "Catalog items" %}</p>
+              <h4 class="mb-0">{{ total_items }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">verified</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Activos" "Active" %}</p>
+              <h4 class="mb-0">{{ active_items }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">inventory_2</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Sem stock" "Without stock" %}</p>
+              <h4 class="mb-0">{{ items_without_stock }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">warning</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Com alertas" "With alerts" %}</p>
+              <h4 class="mb-0">{{ items_with_alerts }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{% ui "Catálogo de medicamentos" "Medication catalog" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Cada item representa a ficha base do produto; o stock fica distribuído por armazém numa área separada." "Each row represents the base product record; stock stays distributed by warehouse in a separate area." %}</p>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if filter_branches %}
+              <div class="clinic-pill-group">
+                <a href="#" class="clinic-pill active" data-table-pill="medication-catalog-table" data-column="5" data-value="">{% ui "Todas" "All" %}</a>
+                {% for branch in filter_branches %}
+                  <a href="#" class="clinic-pill" data-table-pill="medication-catalog-table" data-column="5" data-value="{{ branch.name }}" data-search-mode="contains">{{ branch.name }}</a>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if perms.clinic.view_estoquemedicamento or perms.clinic.add_estoquemedicamento or perms.clinic.change_estoquemedicamento %}
+              <a href="{% url 'clinic:medication_list' %}" class="btn btn-outline-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">inventory_2</i>
+                {% ui "Ver stock" "View stock" %}
+              </a>
+            {% endif %}
+            {% if perms.clinic.add_medicamento %}
+              <a href="{% url 'clinic:medication_catalog_create' %}" data-modal-url="{% url 'clinic:medication_catalog_create' %}" data-modal-size="modal-lg" class="btn btn-outline-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">library_add</i>
+                {% ui "Novo item" "New catalog item" %}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        {% if catalog_items %}
+          <div class="clinic-datatable-shell">
+            <table id="medication-catalog-table" data-page-length="10" data-export-title="{% ui 'Catálogo de medicamentos Clinic Plus' 'Clinic Plus Medication Catalog' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+              <thead>
+                <tr>
+                  <th class="ps-4">{% ui "Medicamento" "Medication" %}</th>
+                  <th>{% ui "Princípio activo" "Active ingredient" %}</th>
+                  <th>{% ui "Dosagem" "Dosage" %}</th>
+                  <th>{% ui "Unidade" "Unit" %}</th>
+                  <th>{% ui "Preço" "Price" %}</th>
+                  <th>{% ui "Cobertura" "Coverage" %}</th>
+                  <th>{% ui "Stock total" "Total stock" %}</th>
+                  <th>{% ui "Estado" "Status" %}</th>
+                  <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in catalog_items %}
+                  <tr>
+                    <td class="ps-4">
+                      <h6 class="mb-0 text-sm">{{ item.display_name }}</h6>
+                      <p class="text-xs text-secondary mb-0">
+                        {% if item.sku %}{{ item.sku }}{% else %}{% ui "Sem SKU" "No SKU" %}{% endif %}
+                        {% if item.display_description %}· {{ item.display_description|truncatechars:70 }}{% endif %}
+                      </p>
+                    </td>
+                    <td><span class="text-sm">{{ item.principio_ativo }}</span></td>
+                    <td><span class="text-sm">{{ item.dosagem }}</span></td>
+                    <td><span class="text-sm">{{ item.unidade_medida|default:"un" }}</span></td>
+                    <td><span class="text-sm">{{ item.preco|floatformat:2 }}</span></td>
+                    <td>
+                      <span class="text-sm">{{ item.coverage_summary }}</span>
+                      <p class="text-xs text-secondary mb-0">
+                        {{ item.visible_stock_lines }} {% ui "linhas" "lines" %} · {{ item.visible_branch_count }} {% ui "sucursais" "branches" %}
+                      </p>
+                    </td>
+                    <td><span class="text-sm">{{ item.visible_total_stock }} {{ item.unidade_medida|default:"un" }}</span></td>
+                    <td>
+                      {% if not item.is_active %}
+                        <span class="clinic-status clinic-status-muted">{% ui "Inactivo" "Inactive" %}</span>
+                      {% elif item.visible_low_stock_lines > 0 %}
+                        <span class="clinic-status clinic-status-warning">{% ui "Com alertas" "With alerts" %}</span>
+                      {% elif item.visible_stock_lines == 0 %}
+                        <span class="clinic-status clinic-status-info">{% ui "Sem distribuição" "Not distributed" %}</span>
+                      {% else %}
+                        <span class="clinic-status clinic-status-success">{% ui "Pronto para uso" "Ready to use" %}</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                      <div class="clinic-action-stack">
+                        {% if perms.clinic.add_estoquemedicamento %}
+                          <a href="{% url 'clinic:medication_create' %}?medicamento={{ item.pk }}" data-modal-url="{% url 'clinic:medication_create' %}?medicamento={{ item.pk }}" data-modal-size="modal-lg" class="clinic-action-btn is-info" title="{% ui 'Adicionar ao stock' 'Add to stock' %}">
+                            <i class="material-symbols-rounded" style="font-size: 1rem;">inventory_2</i>
+                          </a>
+                        {% endif %}
+                        {% if perms.clinic.change_medicamento %}
+                          <a href="{% url 'clinic:medication_catalog_update' item.pk %}" data-modal-url="{% url 'clinic:medication_catalog_update' item.pk %}" data-modal-size="modal-lg" class="clinic-action-btn is-muted" title="{% ui 'Editar catálogo' 'Edit catalog' %}">
+                            <i class="material-symbols-rounded" style="font-size: 1rem;">edit</i>
+                          </a>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="px-4 py-5 text-center text-secondary">
+            {% ui "Ainda não existem medicamentos no catálogo. Crie a ficha base do produto antes de o distribuir por armazéns." "There are no medications in the catalog yet. Create the base product record before distributing it across warehouses." %}
+            {% if perms.clinic.add_medicamento %}
+              <div class="mt-3">
+                <a href="{% url 'clinic:medication_catalog_create' %}" data-modal-url="{% url 'clinic:medication_catalog_create' %}" data-modal-size="modal-lg" class="btn bg-gradient-dark mb-0">
+                  <i class="material-symbols-rounded text-sm me-1">library_add</i>
+                  {% ui "Criar primeiro item" "Create first item" %}
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -148,6 +148,16 @@
               </div>
               <span class="clinic-status clinic-status-info">{{ consumable_catalog_size }}</span>
             </div>
+            <div class="d-grid gap-2 mt-2">
+              <a href="{% url 'clinic:medication_catalog_list' %}" class="btn btn-outline-dark btn-sm mb-0">
+                <i class="material-symbols-rounded text-sm me-1">menu_book</i>
+                {% ui "Abrir catálogo de medicamentos" "Open medication catalog" %}
+              </a>
+              <a href="{% url 'clinic:consumable_catalog_list' %}" class="btn btn-outline-dark btn-sm mb-0">
+                <i class="material-symbols-rounded text-sm me-1">menu_book</i>
+                {% ui "Abrir catálogo de consumíveis" "Open consumable catalog" %}
+              </a>
+            </div>
           </div>
         </div>
       </div>

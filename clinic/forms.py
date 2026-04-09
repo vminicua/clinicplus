@@ -1085,6 +1085,10 @@ class MedicationStockForm(StyledFormMixin, forms.ModelForm):
             .order_by("branch__name", "name")
         )
         self.fields["medicamento"].queryset = Medicamento.objects.filter(is_active=True).order_by("name", "dosagem")
+        if self.request and not self.is_bound and not self.instance.pk:
+            requested_medication = self.request.GET.get("medicamento")
+            if requested_medication and self.fields["medicamento"].queryset.filter(pk=requested_medication).exists():
+                self.fields["medicamento"].initial = requested_medication
 
 
 class ConsumableStockForm(StyledFormMixin, forms.ModelForm):
@@ -1132,6 +1136,10 @@ class ConsumableStockForm(StyledFormMixin, forms.ModelForm):
             .order_by("branch__name", "name")
         )
         self.fields["consumivel"].queryset = Consumivel.objects.filter(is_active=True).order_by("name")
+        if self.request and not self.is_bound and not self.instance.pk:
+            requested_consumable = self.request.GET.get("consumivel")
+            if requested_consumable and self.fields["consumivel"].queryset.filter(pk=requested_consumable).exists():
+                self.fields["consumivel"].initial = requested_consumable
 
 
 class InventoryMovementForm(StyledFormMixin, forms.ModelForm):

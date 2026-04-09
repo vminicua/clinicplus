@@ -79,16 +79,16 @@
               </div>
             {% endif %}
 
+            {% if perms.clinic.view_consumivel or perms.clinic.add_consumivel or perms.clinic.change_consumivel %}
+              <a href="{% url 'clinic:consumable_catalog_list' %}" class="btn btn-outline-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">menu_book</i>
+                {% ui "Ver catálogo" "View catalog" %}
+              </a>
+            {% endif %}
             {% if perms.clinic.add_movimentoinventario %}
               <a href="{% url 'clinic:inventory_movement_create' %}" data-modal-url="{% url 'clinic:inventory_movement_create' %}" data-modal-size="modal-xl" class="btn btn-outline-dark mb-0">
                 <i class="material-symbols-rounded text-sm me-1">sync_alt</i>
                 {% ui "Novo movimento" "New movement" %}
-              </a>
-            {% endif %}
-            {% if perms.clinic.add_consumivel %}
-              <a href="{% url 'clinic:consumable_catalog_create' %}" data-modal-url="{% url 'clinic:consumable_catalog_create' %}" data-modal-size="modal-lg" class="btn btn-outline-dark mb-0">
-                <i class="material-symbols-rounded text-sm me-1">category</i>
-                {% ui "Novo item" "New catalog item" %}
               </a>
             {% endif %}
             {% if perms.clinic.add_estoqueconsumivel %}
@@ -167,6 +167,14 @@
             {% ui "Ainda não existem linhas de stock para consumíveis. Pode começar pelo catálogo ou criar logo uma linha ligada a um armazém." "There are no consumable stock lines yet. You can start with the catalog or create a warehouse stock line right away." %}
             {% if catalog_without_stock %}
               <div class="text-xs mt-2">{% ui "Itens de catálogo ainda sem stock" "Catalog items still without stock" %}: {{ catalog_without_stock }}</div>
+            {% endif %}
+            {% if perms.clinic.view_consumivel or perms.clinic.add_consumivel or perms.clinic.change_consumivel %}
+              <div class="mt-3">
+                <a href="{% url 'clinic:consumable_catalog_list' %}" class="btn btn-outline-dark mb-0">
+                  <i class="material-symbols-rounded text-sm me-1">menu_book</i>
+                  {% ui "Ir para o catálogo" "Go to catalog" %}
+                </a>
+              </div>
             {% endif %}
           </div>
         {% endif %}

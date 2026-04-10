@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from django.conf import settings
 from django.db.utils import OperationalError, ProgrammingError
 
@@ -9,9 +11,18 @@ LANGUAGE_SESSION_KEY = "clinic_language"
 BRANCH_SESSION_KEY = "clinic_branch_id"
 
 
+@lru_cache(maxsize=1)
+def _get_system_preferences_cached():
+    return SystemPreference.get_solo()
+
+
+def clear_system_preferences_cache():
+    _get_system_preferences_cached.cache_clear()
+
+
 def get_system_preferences():
     try:
-        return SystemPreference.get_solo()
+        return _get_system_preferences_cached()
     except (OperationalError, ProgrammingError):
         return None
 
@@ -57,11 +68,24 @@ def available_branches_for_user(user):
     return queryset.filter(user_profiles=profile).distinct()
 
 
+def cached_available_branches_for_request(request):
+    if request is None or not getattr(request, "user", None) or not request.user.is_authenticated:
+        return []
+
+    cached_branches = getattr(request, "_clinic_available_branches_cache", None)
+    if cached_branches is not None:
+        return cached_branches
+
+    branches = list(available_branches_for_user(request.user))
+    request._clinic_available_branches_cache = branches
+    return branches
+
+
 def resolve_branch_for_request(request):
     if not getattr(request, "user", None) or not request.user.is_authenticated:
         return None
 
-    available_branches = list(available_branches_for_user(request.user))
+    available_branches = cached_available_branches_for_request(request)
     if not available_branches:
         return None
 

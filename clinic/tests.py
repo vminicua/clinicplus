@@ -1116,8 +1116,12 @@ class ClinicalStructureTests(TestCase):
         session = self.client.session
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, medication.name)
-        self.assertContains(response, "Total final")
+        self.assertEqual(response["Content-Type"], "application/json")
+        payload = response.json()
+        self.assertIn("stats_html", payload)
+        self.assertIn("cart_card_html", payload)
+        self.assertIn("checkout_summary_html", payload)
+        self.assertIn(medication.name, payload["cart_card_html"])
         self.assertEqual(session["pharmacy_sale_cart"]["warehouse_id"], self.warehouse.pk)
         self.assertEqual(len(session["pharmacy_sale_cart"]["items"]), 1)
         self.assertEqual(session["pharmacy_sale_cart"]["items"][0]["quantity"], 3)

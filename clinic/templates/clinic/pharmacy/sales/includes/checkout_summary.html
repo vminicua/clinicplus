@@ -1,0 +1,9 @@
+{% load ui_extras %}
+<div class="text-secondary">
+  <strong>{% ui "Total a cobrar" "Total to charge" %}:</strong> {{ cart_total_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}
+  <div class="text-xs mt-1">{% ui "IVA incluído" "Included VAT" %}: {{ cart_tax_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</div>
+</div>
+<button type="submit" class="btn bg-gradient-dark mb-0" {% if not cart_has_items %}disabled{% endif %}>
+  <i class="material-symbols-rounded text-sm me-1">receipt_long</i>
+  {% ui "Facturar venda" "Bill sale" %}
+</button>

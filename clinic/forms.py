@@ -311,8 +311,15 @@ def appointment_branch_queryset(request=None):
     if request is None or not getattr(request, "user", None) or not request.user.is_authenticated:
         return queryset
 
-    scoped_queryset = available_branches_for_user(request.user)
-    return scoped_queryset if scoped_queryset.exists() else queryset
+    cached_ids = getattr(request, "_appointment_branch_ids_cache", None)
+    if cached_ids is not None:
+        return Branch.objects.filter(pk__in=cached_ids).order_by("name") if cached_ids else queryset
+
+    scoped_ids = list(available_branches_for_user(request.user).values_list("pk", flat=True))
+    request._appointment_branch_ids_cache = scoped_ids
+    if scoped_ids:
+        return Branch.objects.filter(pk__in=scoped_ids).order_by("name")
+    return queryset
 
 
 def measurement_unit_queryset(*codes):

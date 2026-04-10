@@ -23,6 +23,7 @@ from accounts.ui import (
     BRANCH_SESSION_KEY,
     LANGUAGE_SESSION_KEY,
     available_branches_for_user,
+    cached_available_branches_for_request,
     get_system_preferences,
     get_system_default_language,
     ui_text,
@@ -182,19 +183,38 @@ def default_structure_branch_id(request, filter_branches):
 
 
 def inventory_filter_branches_for_request(request):
+    if request is not None:
+        cached_branches = getattr(request, "_inventory_filter_branches_cache", None)
+        if cached_branches is not None:
+            return cached_branches
+
     if request is not None and getattr(request, "user", None) and request.user.is_authenticated:
-        scoped_queryset = available_branches_for_user(request.user)
-        if scoped_queryset.exists():
-            return list(scoped_queryset.order_by("name"))
-    return list(Branch.objects.filter(is_active=True).order_by("name"))
+        scoped_branches = cached_available_branches_for_request(request)
+        if scoped_branches:
+            if request is not None:
+                request._inventory_filter_branches_cache = scoped_branches
+            return scoped_branches
+
+    branches = list(Branch.objects.filter(is_active=True).order_by("name"))
+    if request is not None:
+        request._inventory_filter_branches_cache = branches
+    return branches
 
 
 def inventory_visible_warehouses_for_request(request):
-    return (
+    if request is not None:
+        cached_queryset = getattr(request, "_inventory_visible_warehouses_cache", None)
+        if cached_queryset is not None:
+            return cached_queryset
+
+    queryset = (
         Armazem.objects.select_related("branch")
         .filter(branch__in=inventory_filter_branches_for_request(request))
         .order_by("branch__name", "name")
     )
+    if request is not None:
+        request._inventory_visible_warehouses_cache = queryset
+    return queryset
 
 
 def medication_stock_queryset(request=None):
@@ -389,6 +409,10 @@ def get_pharmacy_cart(request):
                 "item_type": item_type,
                 "item_id": item_id,
                 "quantity": quantity,
+                "item_name": item.get("item_name", ""),
+                "sku": item.get("sku", ""),
+                "unit_label": item.get("unit_label", ""),
+                "unit_price": item.get("unit_price", "0.00"),
             }
         )
 
@@ -516,8 +540,9 @@ def reverse_pharmacy_sale(*, sale, performed_by, reversal_status, request, reaso
 def resolve_pharmacy_cart(request):
     cart = get_pharmacy_cart(request)
     vat_rate = pharmacy_vat_rate()
-    visible_warehouses = inventory_visible_warehouses_for_request(request)
-    warehouse = visible_warehouses.filter(pk=cart.get("warehouse_id")).first() if cart.get("warehouse_id") else None
+    visible_warehouses = list(inventory_visible_warehouses_for_request(request))
+    warehouse_map = {warehouse.pk: warehouse for warehouse in visible_warehouses}
+    warehouse = warehouse_map.get(cart.get("warehouse_id")) if cart.get("warehouse_id") else None
     resolved_items = []
     subtotal = Decimal("0.00")
     tax_amount = Decimal("0.00")
@@ -527,32 +552,15 @@ def resolve_pharmacy_cart(request):
         item_type = raw_item["item_type"]
         item_id = raw_item["item_id"]
         quantity = raw_item["quantity"]
-        if item_type == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO:
-            item = Medicamento.objects.filter(pk=item_id).first()
-            stock_entry = (
-                EstoqueMedicamento.objects.select_related("armazem__branch", "medicamento")
-                .filter(armazem=warehouse, medicamento=item)
-                .first()
-                if warehouse and item is not None
-                else None
-            )
-            item_name = item.display_name if item is not None else ui_text(request, "Medicamento removido", "Deleted medication")
-            unit_label = (item.unidade_medida if item is not None else "un") or "un"
-            unit_price = quantize_money(item.preco if item is not None else 0)
-            item_sku = item.sku if item is not None else ""
-        else:
-            item = Consumivel.objects.filter(pk=item_id).first()
-            stock_entry = (
-                EstoqueConsumivel.objects.select_related("armazem__branch", "consumivel")
-                .filter(armazem=warehouse, consumivel=item)
-                .first()
-                if warehouse and item is not None
-                else None
-            )
-            item_name = item.display_name if item is not None else ui_text(request, "Consumível removido", "Deleted consumable")
-            unit_label = (item.unidade_medida if item is not None else "un") or "un"
-            unit_price = quantize_money(item.preco_referencia if item is not None else 0)
-            item_sku = item.sku if item is not None else ""
+        item = None
+        item_name = raw_item.get("item_name") or (
+            ui_text(request, "Medicamento removido", "Deleted medication")
+            if item_type == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO
+            else ui_text(request, "Consumível removido", "Deleted consumable")
+        )
+        unit_label = raw_item.get("unit_label") or "un"
+        unit_price = quantize_money(raw_item.get("unit_price") or 0)
+        item_sku = raw_item.get("sku") or ""
 
         line_total = quantize_money(unit_price * quantity)
         if vat_rate > 0:
@@ -560,7 +568,6 @@ def resolve_pharmacy_cart(request):
         else:
             line_tax_amount = Decimal("0.00")
         line_subtotal = quantize_money(line_total - line_tax_amount)
-        available_quantity = stock_entry.quantidade if stock_entry is not None else 0
 
         subtotal += line_subtotal
         tax_amount += line_tax_amount
@@ -580,8 +587,8 @@ def resolve_pharmacy_cart(request):
                 "line_subtotal": line_subtotal,
                 "line_tax_amount": line_tax_amount,
                 "line_total": line_total,
-                "available_quantity": available_quantity,
-                "has_stock_issue": quantity > available_quantity,
+                "available_quantity": None,
+                "has_stock_issue": False,
             }
         )
 
@@ -594,12 +601,12 @@ def resolve_pharmacy_cart(request):
         "cart_tax_rate": vat_rate,
         "cart_tax_amount": quantize_money(tax_amount),
         "cart_total_amount": quantize_money(total_amount),
-        "cart_has_stock_issue": any(item["has_stock_issue"] for item in resolved_items),
+        "cart_has_stock_issue": False,
     }
 
 
 def build_pharmacy_selector_payload(request, cart):
-    visible_warehouses = inventory_visible_warehouses_for_request(request)
+    visible_warehouses = list(inventory_visible_warehouses_for_request(request))
     reserved_quantities = {}
     for line in cart.get("items", []):
         key = f"{line['item_type']}:{line['item_id']}"
@@ -681,6 +688,41 @@ def build_pharmacy_selector_payload(request, cart):
         }
 
     return payload
+
+
+def pharmacy_item_info_payload(request, *, warehouse, item_type, item_id):
+    cart = get_pharmacy_cart(request)
+    reserved_quantity = sum(
+        int(line.get("quantity", 0) or 0)
+        for line in cart.get("items", [])
+        if line.get("item_type") == item_type and str(line.get("item_id")) == str(item_id)
+    )
+
+    if item_type == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO:
+        item = get_object_or_404(Medicamento.objects.filter(is_active=True), pk=item_id)
+        stock_entry = get_object_or_404(EstoqueMedicamento, armazem=warehouse, medicamento=item)
+        item_label = f"{item.display_name} · {item.dosagem}" if item.dosagem else item.display_name
+        unit_price = quantize_money(item.preco)
+        unit_label = item.unidade_medida or "un"
+    else:
+        item = get_object_or_404(Consumivel.objects.filter(is_active=True), pk=item_id)
+        stock_entry = get_object_or_404(EstoqueConsumivel, armazem=warehouse, consumivel=item)
+        item_label = item.display_name
+        unit_price = quantize_money(item.preco_referencia)
+        unit_label = item.unidade_medida or "un"
+
+    available_quantity = int(stock_entry.quantidade)
+    remaining_quantity = max(available_quantity - reserved_quantity, 0)
+    preferences = get_system_preferences()
+    return {
+        "item_label": item_label,
+        "unit_label": unit_label,
+        "unit_price": f"{unit_price:.2f}",
+        "available_quantity": available_quantity,
+        "reserved_quantity": reserved_quantity,
+        "remaining_quantity": remaining_quantity,
+        "currency": (preferences.default_currency if preferences else "MZN") or "MZN",
+    }
 
 
 def build_appointment_professionals(schedule_list, reference_date):
@@ -2862,7 +2904,6 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
             PharmacyCheckoutForm(request=self.request),
         )
         context["cart_has_items"] = bool(cart_state["cart_items"])
-        context["pharmacy_selector_payload"] = build_pharmacy_selector_payload(self.request, cart_state["cart"])
         return context
 
     def render_cart_page(self, request, *, add_form=None, checkout_form=None, status=200):
@@ -2872,6 +2913,49 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
             checkout_form=checkout_form or PharmacyCheckoutForm(request=request),
         )
         return self.render_to_response(context, status=status)
+
+    def render_cart_ajax(
+        self,
+        request,
+        *,
+        add_form=None,
+        status=200,
+        message="",
+        refresh_add_form=False,
+    ):
+        cart_state = resolve_pharmacy_cart(request)
+        context = {
+            **cart_state,
+            "cart_has_items": bool(cart_state["cart_items"]),
+            "system_preferences": get_system_preferences(),
+        }
+        payload = {
+            "stats_html": render_to_string(
+                "clinic/pharmacy/sales/includes/stats_cards.html",
+                context,
+            ),
+            "cart_card_html": render_to_string(
+                "clinic/pharmacy/sales/includes/cart_card.html",
+                context,
+                request=request,
+            ),
+            "checkout_summary_html": render_to_string(
+                "clinic/pharmacy/sales/includes/checkout_summary.html",
+                context,
+            ),
+            "message": message,
+        }
+        if refresh_add_form:
+            context["add_form"] = add_form or PharmacyCartItemForm(
+                request=request,
+                cart_snapshot=cart_state["cart"],
+            )
+            payload["add_form_html"] = render_to_string(
+                "clinic/pharmacy/sales/includes/add_form_card.html",
+                context,
+                request=request,
+            )
+        return JsonResponse(payload, status=status)
 
     def post(self, request, *args, **kwargs):
         action = request.POST.get("cart_action") or request.POST.get("action") or "add_item"
@@ -2889,6 +2973,13 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
         cart = get_pharmacy_cart(request)
         form = PharmacyCartItemForm(request.POST, request=request, cart_snapshot=cart)
         if not form.is_valid():
+            if is_ajax_request(request):
+                return self.render_cart_ajax(
+                    request,
+                    add_form=form,
+                    status=422,
+                    refresh_add_form=True,
+                )
             return self.render_cart_page(request, add_form=form, checkout_form=PharmacyCheckoutForm(request=request), status=422)
 
         warehouse = form.cleaned_data["warehouse"]
@@ -2903,10 +2994,18 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
         if not cart.get("warehouse_id"):
             cart["warehouse_id"] = warehouse.pk
 
+        item_payload = {
+            "item_name": item.display_name,
+            "sku": item.sku or "",
+            "unit_label": (item.unidade_medida or "un") if item_type == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO else (item.unidade_medida or "un"),
+            "unit_price": f"{quantize_money(item.preco if item_type == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO else item.preco_referencia):.2f}",
+        }
+
         merged = False
         for line in cart["items"]:
             if line["item_type"] == item_type and int(line["item_id"]) == item.pk:
                 line["quantity"] += quantity
+                line.update(item_payload)
                 merged = True
                 break
         if not merged:
@@ -2915,12 +3014,20 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
                     "item_type": item_type,
                     "item_id": item.pk,
                     "quantity": quantity,
+                    **item_payload,
                 }
             )
 
         save_pharmacy_cart(request, cart)
         if is_ajax_request(request):
-            return self.render_cart_page(request)
+            return self.render_cart_ajax(
+                request,
+                message=ui_text(
+                    request,
+                    "Item adicionado ao carrinho.",
+                    "Item added to the cart.",
+                ),
+            )
         messages.success(
             request,
             ui_text(
@@ -2943,7 +3050,14 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
             cart["warehouse_id"] = None
         save_pharmacy_cart(request, cart)
         if is_ajax_request(request):
-            return self.render_cart_page(request)
+            return self.render_cart_ajax(
+                request,
+                message=ui_text(
+                    request,
+                    "Item removido do carrinho.",
+                    "Item removed from the cart.",
+                ),
+            )
         messages.success(
             request,
             ui_text(
@@ -2957,7 +3071,15 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
     def handle_clear_cart(self, request):
         clear_pharmacy_cart(request)
         if is_ajax_request(request):
-            return self.render_cart_page(request)
+            return self.render_cart_ajax(
+                request,
+                message=ui_text(
+                    request,
+                    "Carrinho limpo com sucesso.",
+                    "Cart cleared successfully.",
+                ),
+                refresh_add_form=True,
+            )
         messages.success(
             request,
             ui_text(
@@ -3066,12 +3188,17 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
                 for entry, stock_entry in stock_operations:
                     stock_before = stock_entry.quantidade
                     stock_after = stock_before - entry["quantity"]
+                    related_item = (
+                        stock_entry.medicamento
+                        if entry["item_type"] == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO
+                        else stock_entry.consumivel
+                    )
 
                     PharmacySaleItem.objects.create(
                         sale=sale,
                         item_type=entry["item_type"],
-                        medicamento=entry["item"] if entry["item_type"] == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO else None,
-                        consumivel=entry["item"] if entry["item_type"] == PharmacySaleItem.ItemTypeChoices.CONSUMIVEL else None,
+                        medicamento=related_item if entry["item_type"] == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO else None,
+                        consumivel=related_item if entry["item_type"] == PharmacySaleItem.ItemTypeChoices.CONSUMIVEL else None,
                         item_name=entry["item_name"],
                         sku=entry["sku"],
                         unit_label=entry["unit_label"],
@@ -3103,9 +3230,9 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
                         "created_by": request.user,
                     }
                     if entry["item_type"] == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO:
-                        movement_kwargs["medicamento"] = entry["item"]
+                        movement_kwargs["medicamento"] = related_item
                     else:
-                        movement_kwargs["consumivel"] = entry["item"]
+                        movement_kwargs["consumivel"] = related_item
                     MovimentoInventario.objects.create(**movement_kwargs)
         except ValidationError as error:
             checkout_form.add_error(None, error.message if hasattr(error, "message") else str(error))
@@ -3208,6 +3335,65 @@ class PharmacySaleReverseView(AppPermissionMixin, View):
                 "redirect_url": reverse("clinic:pharmacy_sale_detail", args=[sale.pk]),
             }
         )
+
+
+class PharmacyItemInfoView(AppPermissionMixin, View):
+    permission_required = "clinic.add_pharmacysale"
+    login_url = "clinic:login"
+
+    def get(self, request):
+        warehouse_id = request.GET.get("warehouse")
+        item_type = request.GET.get("item_type")
+        item_id = request.GET.get("item_id")
+
+        if item_type not in {
+            PharmacySaleItem.ItemTypeChoices.MEDICAMENTO,
+            PharmacySaleItem.ItemTypeChoices.CONSUMIVEL,
+        }:
+            return JsonResponse(
+                {
+                    "message": ui_text(
+                        request,
+                        "Tipo de item inválido.",
+                        "Invalid item type.",
+                    )
+                },
+                status=400,
+            )
+
+        if not warehouse_id or not item_id:
+            return JsonResponse(
+                {
+                    "message": ui_text(
+                        request,
+                        "Seleccione um armazém e um item válidos.",
+                        "Select a valid warehouse and item.",
+                    )
+                },
+                status=400,
+            )
+
+        warehouse = get_object_or_404(inventory_visible_warehouses_for_request(request), pk=warehouse_id)
+        try:
+            payload = pharmacy_item_info_payload(
+                request,
+                warehouse=warehouse,
+                item_type=item_type,
+                item_id=int(item_id),
+            )
+        except Exception:
+            return JsonResponse(
+                {
+                    "message": ui_text(
+                        request,
+                        "Este item não tem stock disponível neste armazém.",
+                        "This item has no available stock in this warehouse.",
+                    )
+                },
+                status=404,
+            )
+
+        return JsonResponse(payload)
 
 
 class PharmacySaleReceiptPdfView(AppPermissionMixin, View):

@@ -1,0 +1,58 @@
+{% load ui_extras %}
+<div class="row mb-4">
+  <div class="col-xl-3 col-sm-6 mb-4">
+    <div class="card clinic-stat-card h-100">
+      <div class="card-header p-3 position-relative">
+        <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+          <i class="material-symbols-rounded opacity-10">shopping_cart</i>
+        </div>
+        <div class="text-end pt-1">
+          <p class="text-sm mb-0">{% ui "Itens no carrinho" "Cart items" %}</p>
+          <h4 class="mb-0">{{ cart_item_count }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-sm-6 mb-4">
+    <div class="card clinic-stat-card h-100">
+      <div class="card-header p-3 position-relative">
+        <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+          <i class="material-symbols-rounded opacity-10">request_quote</i>
+        </div>
+        <div class="text-end pt-1">
+          <p class="text-sm mb-0">{% ui "Base sem IVA" "Net base" %}</p>
+          <h4 class="mb-0">{{ cart_subtotal|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-sm-6 mb-4">
+    <div class="card clinic-stat-card h-100">
+      <div class="card-header p-3 position-relative">
+        <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+          <i class="material-symbols-rounded opacity-10">percent</i>
+        </div>
+        <div class="text-end pt-1">
+          <p class="text-sm mb-0">{% ui "IVA incluído" "Included VAT" %}</p>
+          <h4 class="mb-0">{{ cart_tax_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-sm-6 mb-4">
+    <div class="card clinic-stat-card h-100">
+      <div class="card-header p-3 position-relative">
+        <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+          <i class="material-symbols-rounded opacity-10">payments</i>
+        </div>
+        <div class="text-end pt-1">
+          <p class="text-sm mb-0">{% ui "Total final" "Final total" %}</p>
+          <h4 class="mb-0">{{ cart_total_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

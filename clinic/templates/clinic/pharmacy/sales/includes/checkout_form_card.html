@@ -1,0 +1,29 @@
+{% load ui_extras %}
+<div class="card clinic-form-card">
+  <div class="card-header p-4 border-0">
+    <h4 class="mb-1">{% ui "Facturação da venda" "Sale checkout" %}</h4>
+    <p class="text-secondary mb-0">{% ui "Os preços já incluem IVA; aqui mostramos apenas a componente fiscal embutida no total." "Prices already include VAT; here we only show the tax portion embedded in the total." %}</p>
+  </div>
+  <div class="card-body p-4 pt-0">
+    <form method="post" data-swal-submit data-processing-title="{% ui 'Processando...' 'Processing...' %}" data-processing-text="{% ui 'Estamos a facturar a venda e a actualizar o stock.' 'We are billing the sale and updating stock.' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="finalize">
+      {% if checkout_form.non_field_errors %}
+        <div class="alert alert-danger text-white mb-4">
+          {% for error in checkout_form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <div class="clinic-form-grid">
+        {% include "accounts/shared/includes/form_field.html" with field=checkout_form.patient wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=checkout_form.customer_name wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=checkout_form.payment_method wide_fields="" %}
+        {% include "accounts/shared/includes/form_field.html" with field=checkout_form.notes wide_fields="notes" %}
+      </div>
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-4" data-pharmacy-checkout-summary>
+        {% include "clinic/pharmacy/sales/includes/checkout_summary.html" %}
+      </div>
+    </form>
+  </div>
+</div>

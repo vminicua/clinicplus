@@ -36,6 +36,7 @@ urlpatterns = [
     path('inventario/movimentos/novo/', views.InventoryMovementCreateView.as_view(), name='inventory_movement_create'),
     path('farmacia/vendas/', views.PharmacySaleListView.as_view(), name='pharmacy_sale_list'),
     path('farmacia/vendas/nova/', views.PharmacySaleCreateView.as_view(), name='pharmacy_sale_create'),
+    path('farmacia/vendas/item-info/', views.PharmacyItemInfoView.as_view(), name='pharmacy_item_info'),
     path('farmacia/vendas/<int:pk>/', views.PharmacySaleDetailView.as_view(), name='pharmacy_sale_detail'),
     path('farmacia/vendas/<int:pk>/recibo/', views.PharmacySaleReceiptPdfView.as_view(), name='pharmacy_sale_receipt_pdf'),
     path('farmacia/vendas/<int:pk>/estado/<str:action>/', views.PharmacySaleReverseView.as_view(), name='pharmacy_sale_reverse'),

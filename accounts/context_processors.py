@@ -1,9 +1,8 @@
-from accounts.ui import available_branches_for_user, branch_label, get_system_preferences
+from accounts.ui import branch_label, cached_available_branches_for_request, get_system_preferences
 
 
 def clinic_shell_context(request):
-    user = getattr(request, "user", None)
-    available_branches = available_branches_for_user(user) if user and user.is_authenticated else []
+    available_branches = cached_available_branches_for_request(request)
     current_branch = getattr(request, "clinic_current_branch", None)
 
     return {

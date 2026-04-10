@@ -355,6 +355,12 @@ class SystemPreference(models.Model):
         preferences, _ = cls.objects.get_or_create(singleton_key="system")
         return preferences
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from .ui import clear_system_preferences_cache
+
+        clear_system_preferences_cache()
+
     def format_patient_code(self, patient_id: int) -> str:
         return f"{self.patient_code_prefix}{patient_id}"
 

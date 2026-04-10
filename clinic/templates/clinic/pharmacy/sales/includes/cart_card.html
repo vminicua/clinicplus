@@ -1,0 +1,83 @@
+{% load ui_extras %}
+<div class="card clinic-page-card mb-4">
+  <div class="card-header p-4 border-0">
+    <div class="clinic-list-toolbar">
+      <div>
+        <h4 class="mb-1">{% ui "Carrinho da venda" "Sale cart" %}</h4>
+        <p class="text-secondary mb-0">
+          {% if cart_warehouse %}
+            {% ui "Armazém activo" "Active warehouse" %}: {{ cart_warehouse.display_name }} · {{ cart_warehouse.branch.name }}
+          {% else %}
+            {% ui "Ainda sem armazém definido. O primeiro item fixa o armazém desta venda." "No warehouse selected yet. The first item sets the warehouse for this sale." %}
+          {% endif %}
+        </p>
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'clinic:pharmacy_sale_list' %}" class="btn btn-outline-dark mb-0">
+          <i class="material-symbols-rounded text-sm me-1">receipt_long</i>
+          {% ui "Ver vendas" "See sales" %}
+        </a>
+        {% if cart_has_items %}
+          <form method="post" class="mb-0" data-pharmacy-async-form="1">
+            {% csrf_token %}
+            <input type="hidden" name="cart_action" value="clear_cart">
+            <button type="submit" class="btn btn-outline-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">delete_sweep</i>
+              {% ui "Limpar carrinho" "Clear cart" %}
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="card-body px-0 pb-0">
+    {% if cart_items %}
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th class="ps-4">{% ui "Item" "Item" %}</th>
+              <th>{% ui "Qtd." "Qty." %}</th>
+              <th>{% ui "Preço unitário" "Unit price" %}</th>
+              <th>{% ui "IVA incluído" "Included VAT" %}</th>
+              <th>{% ui "Total" "Total" %}</th>
+              <th class="text-end pe-4">{% ui "Acções" "Actions" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in cart_items %}
+              <tr>
+                <td class="ps-4">
+                  <h6 class="mb-0 text-sm">{{ item.item_name }}</h6>
+                  <p class="text-xs text-secondary mb-0">
+                    {% if item.sku %}{{ item.sku }} · {% endif %}{{ item.quantity }} {{ item.unit_label }}
+                    {% if item.has_stock_issue %}· {% ui "Stock insuficiente" "Insufficient stock" %}{% endif %}
+                  </p>
+                </td>
+                <td><span class="text-sm">{{ item.quantity }}</span></td>
+                <td><span class="text-sm">{{ item.unit_price|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</span></td>
+                <td><span class="text-sm">{{ item.line_tax_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</span></td>
+                <td><strong class="text-sm">{{ item.line_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</strong></td>
+                <td class="text-end pe-4">
+                  <form method="post" class="d-inline" data-pharmacy-async-form="1">
+                    {% csrf_token %}
+                    <input type="hidden" name="cart_action" value="remove_item">
+                    <input type="hidden" name="line_key" value="{{ item.key }}">
+                    <button type="submit" class="clinic-action-btn is-muted" title="{% ui 'Remover item' 'Remove item' %}">
+                      <i class="material-symbols-rounded" style="font-size: 1rem;">delete</i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="px-4 py-5 text-center text-secondary">
+        {% ui "O carrinho ainda está vazio. Adicione medicamentos ou consumíveis a partir do formulário ao lado." "The cart is still empty. Add medications or consumables from the form on the side." %}
+      </div>
+    {% endif %}
+  </div>
+</div>

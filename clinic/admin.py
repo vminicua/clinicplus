@@ -14,6 +14,8 @@ from .models import (
     Medico,
     MovimentoInventario,
     Paciente,
+    PharmacySale,
+    PharmacySaleItem,
 )
 
 @admin.register(Hospital)
@@ -141,4 +143,28 @@ class MovimentoInventarioAdmin(admin.ModelAdmin):
     list_display = ('item_label', 'armazem', 'movement_type', 'quantity', 'stock_before', 'stock_after', 'created_at')
     search_fields = ('reference', 'notes', 'armazem__name', 'medicamento__name', 'consumivel__name')
     list_filter = ('item_type', 'movement_type', 'armazem__branch', 'armazem')
+
+
+@admin.register(PharmacySale)
+class PharmacySaleAdmin(admin.ModelAdmin):
+    list_display = (
+        'sale_number',
+        'customer_display_name',
+        'status',
+        'branch',
+        'warehouse',
+        'payment_method',
+        'total_amount',
+        'sold_at',
+        'reversed_at',
+    )
+    search_fields = ('sale_number', 'customer_name', 'patient__user__first_name', 'patient__user__last_name')
+    list_filter = ('branch', 'warehouse', 'payment_method', 'status', 'sold_at')
+
+
+@admin.register(PharmacySaleItem)
+class PharmacySaleItemAdmin(admin.ModelAdmin):
+    list_display = ('sale', 'item_label', 'item_type', 'quantity', 'unit_price', 'line_total')
+    search_fields = ('sale__sale_number', 'item_name', 'sku')
+    list_filter = ('item_type',)
 

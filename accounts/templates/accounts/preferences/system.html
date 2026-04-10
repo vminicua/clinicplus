@@ -20,12 +20,21 @@
                   {% ui "Moeda base" "Base currency" %}: {{ object.get_default_currency_display }}
                 </div>
                 <div class="clinic-inline-badge">
+                  {% ui "IVA" "VAT" %}: {{ object.vat_rate|floatformat:2 }}%
+                </div>
+                <div class="clinic-inline-badge">
                   {% ui "Prefixo de paciente" "Patient prefix" %}: {{ object.patient_code_prefix }}
                 </div>
                 {% if perms.accounts.view_measurementunit or perms.accounts.add_measurementunit or perms.accounts.change_measurementunit %}
                   <a href="{{ measurement_units_url }}" class="btn btn-outline-dark mb-0">
                     <i class="material-symbols-rounded text-sm me-1">straighten</i>
                     {% ui "Gerir unidades" "Manage units" %}
+                  </a>
+                {% endif %}
+                {% if perms.accounts.view_paymentmethod or perms.accounts.add_paymentmethod or perms.accounts.change_paymentmethod %}
+                  <a href="{{ payment_methods_url }}" class="btn btn-outline-dark mb-0">
+                    <i class="material-symbols-rounded text-sm me-1">payments</i>
+                    {% ui "Gerir pagamentos" "Manage payments" %}
                   </a>
                 {% endif %}
               </div>

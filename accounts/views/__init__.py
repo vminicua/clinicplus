@@ -10,6 +10,9 @@ from .preferences_view import (
     MeasurementUnitCreateView,
     MeasurementUnitListView,
     MeasurementUnitUpdateView,
+    PaymentMethodCreateView,
+    PaymentMethodListView,
+    PaymentMethodUpdateView,
     SystemPreferenceView,
 )
 from .organization_view import (
@@ -66,6 +69,9 @@ __all__ = [
     "MeasurementUnitListView",
     "MeasurementUnitCreateView",
     "MeasurementUnitUpdateView",
+    "PaymentMethodListView",
+    "PaymentMethodCreateView",
+    "PaymentMethodUpdateView",
     "LanguageSwitchView",
     "BranchSwitchView",
 ]

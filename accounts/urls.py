@@ -37,6 +37,21 @@ urlpatterns = [
         views.MeasurementUnitUpdateView.as_view(),
         name="measurement_unit_update",
     ),
+    path(
+        "preferencias/metodos-pagamento/",
+        views.PaymentMethodListView.as_view(),
+        name="payment_method_list",
+    ),
+    path(
+        "preferencias/metodos-pagamento/novo/",
+        views.PaymentMethodCreateView.as_view(),
+        name="payment_method_create",
+    ),
+    path(
+        "preferencias/metodos-pagamento/<int:pk>/editar/",
+        views.PaymentMethodUpdateView.as_view(),
+        name="payment_method_update",
+    ),
     path("preferencias/idioma/", views.LanguageSwitchView.as_view(), name="switch_language"),
     path("preferencias/sucursal/", views.BranchSwitchView.as_view(), name="switch_branch"),
     path("perfis/", views.RoleListView.as_view(), name="role_list"),

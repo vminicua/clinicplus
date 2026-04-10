@@ -1,11 +1,12 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib.auth.models import Permission, User
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from accounts.models import Branch, SystemPreference
+from accounts.models import Branch, PaymentMethod, SystemPreference
 from clinic.forms import (
     AppointmentForm,
     ConsumableForm,
@@ -13,6 +14,8 @@ from clinic.forms import (
     InventoryMovementForm,
     MedicationForm,
     PatientForm,
+    PharmacyCartItemForm,
+    PharmacyCheckoutForm,
     SpecialtyForm,
     WarehouseForm,
     WorkScheduleBatchCreateForm,
@@ -33,6 +36,8 @@ from clinic.models import (
     Medico,
     MovimentoInventario,
     Paciente,
+    PharmacySale,
+    PharmacySaleItem,
     normalize_mojibake_text,
 )
 
@@ -701,6 +706,9 @@ class ClinicalStructureTests(TestCase):
         )
         self.user = User.objects.create_user(username="estrutura", password="123456")
         self.user.user_permissions.add(
+            Permission.objects.get(codename="view_paymentmethod"),
+            Permission.objects.get(codename="add_paymentmethod"),
+            Permission.objects.get(codename="change_paymentmethod"),
             Permission.objects.get(codename="view_especialidade"),
             Permission.objects.get(codename="add_especialidade"),
             Permission.objects.get(codename="change_especialidade"),
@@ -724,6 +732,9 @@ class ClinicalStructureTests(TestCase):
             Permission.objects.get(codename="change_estoqueconsumivel"),
             Permission.objects.get(codename="view_movimentoinventario"),
             Permission.objects.get(codename="add_movimentoinventario"),
+            Permission.objects.get(codename="view_pharmacysale"),
+            Permission.objects.get(codename="add_pharmacysale"),
+            Permission.objects.get(codename="change_pharmacysale"),
         )
         self.client.force_login(self.user)
 
@@ -956,6 +967,254 @@ class ClinicalStructureTests(TestCase):
         self.assertContains(consumable_response, consumable.name)
         self.assertEqual(movement_response.status_code, 200)
         self.assertContains(movement_response, movement.reference)
+
+    def test_pharmacy_cart_item_form_rejects_quantity_above_stock(self):
+        medication = Medicamento.objects.create(
+            name="Paracetamol",
+            principio_ativo="Paracetamol",
+            dosagem="500 mg",
+            preco="12.00",
+        )
+        EstoqueMedicamento.objects.create(
+            armazem=self.warehouse,
+            medicamento=medication,
+            quantidade=4,
+            stock_minimo=1,
+            ponto_reposicao=2,
+        )
+
+        form = PharmacyCartItemForm(
+            data={
+                "warehouse": self.warehouse.pk,
+                "item_type": PharmacySaleItem.ItemTypeChoices.MEDICAMENTO,
+                "medicamento": medication.pk,
+                "consumivel": "",
+                "quantity": 5,
+            },
+            request=None,
+            cart_snapshot={"warehouse_id": self.warehouse.pk, "items": []},
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("quantity", form.errors)
+
+    def test_pharmacy_sale_checkout_creates_sale_and_receipt(self):
+        payment_method = PaymentMethod.objects.create(
+            code="cash",
+            name="Dinheiro",
+            category=PaymentMethod.CategoryChoices.CASH,
+            sort_order=10,
+        )
+        patient_user = User.objects.create(username="farm_patient", first_name="Lia", last_name="Tembe")
+        patient = Paciente.objects.create(
+            user=patient_user,
+            branch=self.branch,
+            cpf="FARM1234",
+            phone="840111222",
+            date_of_birth="1992-03-10",
+            gender="F",
+            address="Av. de Moçambique",
+            city="Maputo",
+            country="Moçambique",
+            state="Maputo",
+            zip_code="",
+            emergency_contact="Carlos",
+            emergency_phone="",
+            medical_history="",
+            allergies="",
+        )
+        medication = Medicamento.objects.create(
+            name="Amoxicilina",
+            principio_ativo="Amoxicilina",
+            dosagem="500 mg",
+            preco="25.00",
+        )
+        stock_entry = EstoqueMedicamento.objects.create(
+            armazem=self.warehouse,
+            medicamento=medication,
+            quantidade=10,
+            stock_minimo=2,
+            ponto_reposicao=4,
+        )
+
+        session = self.client.session
+        session["pharmacy_sale_cart"] = {
+            "warehouse_id": self.warehouse.pk,
+            "items": [
+                {
+                    "item_type": PharmacySaleItem.ItemTypeChoices.MEDICAMENTO,
+                    "item_id": medication.pk,
+                    "quantity": 2,
+                }
+            ],
+        }
+        session.save()
+
+        response = self.client.post(
+            reverse("clinic:pharmacy_sale_create"),
+            data={
+                "action": "finalize",
+                "patient": patient.pk,
+                "customer_name": "",
+                "payment_method": payment_method.pk,
+                "notes": "Venda teste",
+            },
+        )
+
+        sale = PharmacySale.objects.get()
+        stock_entry.refresh_from_db()
+
+        self.assertRedirects(response, reverse("clinic:pharmacy_sale_detail", args=[sale.pk]))
+        self.assertEqual(stock_entry.quantidade, 8)
+        self.assertEqual(sale.payment_method, payment_method)
+        self.assertEqual(sale.patient, patient)
+        self.assertEqual(sale.subtotal, Decimal("43.10"))
+        self.assertEqual(sale.tax_amount, Decimal("6.90"))
+        self.assertEqual(sale.total_amount, Decimal("50.00"))
+        self.assertEqual(sale.items.count(), 1)
+        self.assertTrue(
+            MovimentoInventario.objects.filter(
+                reference=sale.sale_number,
+                movement_type=MovimentoInventario.MovementTypeChoices.SAIDA,
+            ).exists()
+        )
+
+        receipt_response = self.client.get(reverse("clinic:pharmacy_sale_receipt_pdf", args=[sale.pk]))
+        receipt_bytes = b"".join(receipt_response.streaming_content)
+        self.assertEqual(receipt_response.status_code, 200)
+        self.assertEqual(receipt_response["Content-Type"], "application/pdf")
+        self.assertTrue(receipt_bytes.startswith(b"%PDF"))
+
+    def test_pharmacy_sale_add_item_ajax_returns_updated_cart(self):
+        medication = Medicamento.objects.create(
+            name="Vitamina C",
+            principio_ativo="Ácido ascórbico",
+            dosagem="500 mg",
+            preco="10.00",
+        )
+        EstoqueMedicamento.objects.create(
+            armazem=self.warehouse,
+            medicamento=medication,
+            quantidade=20,
+            stock_minimo=2,
+            ponto_reposicao=4,
+        )
+
+        response = self.client.post(
+            reverse("clinic:pharmacy_sale_create"),
+            data={
+                "action": "add_item",
+                "warehouse": self.warehouse.pk,
+                "item_type": PharmacySaleItem.ItemTypeChoices.MEDICAMENTO,
+                "medicamento": medication.pk,
+                "consumivel": "",
+                "quantity": 3,
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        session = self.client.session
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, medication.name)
+        self.assertContains(response, "Total final")
+        self.assertEqual(session["pharmacy_sale_cart"]["warehouse_id"], self.warehouse.pk)
+        self.assertEqual(len(session["pharmacy_sale_cart"]["items"]), 1)
+        self.assertEqual(session["pharmacy_sale_cart"]["items"][0]["quantity"], 3)
+
+    def test_pharmacy_sale_cancel_restores_stock(self):
+        payment_method = PaymentMethod.objects.create(
+            code="cash_cancel",
+            name="Dinheiro",
+            category=PaymentMethod.CategoryChoices.CASH,
+            sort_order=10,
+        )
+        medication = Medicamento.objects.create(
+            name="Azitromicina",
+            principio_ativo="Azitromicina",
+            dosagem="500 mg",
+            preco="58.00",
+        )
+        stock_entry = EstoqueMedicamento.objects.create(
+            armazem=self.warehouse,
+            medicamento=medication,
+            quantidade=8,
+            stock_minimo=2,
+            ponto_reposicao=4,
+        )
+        sale = PharmacySale.objects.create(
+            branch=self.branch,
+            warehouse=self.warehouse,
+            customer_name="Cliente teste",
+            payment_method=payment_method,
+            subtotal=Decimal("50.00"),
+            tax_rate=Decimal("16.00"),
+            tax_amount=Decimal("8.00"),
+            total_amount=Decimal("58.00"),
+            sold_by=self.user,
+        )
+        PharmacySaleItem.objects.create(
+            sale=sale,
+            item_type=PharmacySaleItem.ItemTypeChoices.MEDICAMENTO,
+            medicamento=medication,
+            item_name=medication.name,
+            sku=medication.sku,
+            unit_label="un",
+            quantity=2,
+            unit_price=Decimal("29.00"),
+            line_subtotal=Decimal("50.00"),
+            line_tax_amount=Decimal("8.00"),
+            line_total=Decimal("58.00"),
+        )
+
+        response = self.client.post(reverse("clinic:pharmacy_sale_reverse", args=[sale.pk, "cancel"]))
+
+        sale.refresh_from_db()
+        stock_entry.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(sale.status, PharmacySale.StatusChoices.CANCELLED)
+        self.assertEqual(sale.reversed_by, self.user)
+        self.assertIsNotNone(sale.reversed_at)
+        self.assertEqual(stock_entry.quantidade, 10)
+        self.assertTrue(
+            MovimentoInventario.objects.filter(
+                reference=f"{sale.sale_number}-CANCEL",
+                movement_type=MovimentoInventario.MovementTypeChoices.ENTRADA,
+            ).exists()
+        )
+
+    def test_pharmacy_daily_report_renders_payment_breakdown(self):
+        payment_method = PaymentMethod.objects.create(
+            code="card_daily",
+            name="POS",
+            category=PaymentMethod.CategoryChoices.CARD,
+            sort_order=20,
+        )
+        sale = PharmacySale.objects.create(
+            branch=self.branch,
+            warehouse=self.warehouse,
+            customer_name="Cliente do dia",
+            payment_method=payment_method,
+            subtotal=Decimal("100.00"),
+            tax_rate=Decimal("16.00"),
+            tax_amount=Decimal("16.00"),
+            total_amount=Decimal("116.00"),
+            sold_by=self.user,
+        )
+        sale.sold_at = timezone.now()
+        sale.save(update_fields=["sold_at", "updated_at"])
+
+        response = self.client.get(
+            reverse("clinic:pharmacy_daily_report"),
+            {"date": timezone.localdate().isoformat()},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Caixa diário")
+        self.assertContains(response, payment_method.name)
+        self.assertContains(response, "116.00")
+        self.assertContains(response, "16.00")
 
     def test_specialty_and_department_display_descriptions_are_normalized(self):
         specialty = Especialidade.objects.create(

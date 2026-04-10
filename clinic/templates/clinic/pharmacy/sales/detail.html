@@ -1,0 +1,202 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">list_alt</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Linhas" "Lines" %}</p>
+              <h4 class="mb-0">{{ line_count }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">request_quote</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Base sem IVA" "Net base" %}</p>
+              <h4 class="mb-0">{{ sale.subtotal|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">percent</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "IVA incluído" "Included VAT" %}</p>
+              <h4 class="mb-0">{{ sale.tax_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">payments</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Total" "Total" %}</p>
+              <h4 class="mb-0">{{ sale.total_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card mb-4">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{{ sale.sale_number }}</h4>
+            <p class="text-secondary mb-0">{{ sale.customer_display_name }} · {{ sale.sold_at|date:"d/m/Y H:i" }}</p>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'clinic:pharmacy_sale_list' %}" class="btn btn-outline-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">arrow_back</i>
+              {% ui "Voltar às vendas" "Back to sales" %}
+            </a>
+            <a href="{% url 'clinic:pharmacy_sale_create' %}" class="btn btn-outline-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">add_shopping_cart</i>
+              {% ui "Nova venda" "New sale" %}
+            </a>
+            <a href="{% url 'clinic:pharmacy_sale_receipt_pdf' sale.pk %}" class="btn bg-gradient-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">download</i>
+              {% ui "Baixar recibo" "Download receipt" %}
+            </a>
+            {% if can_reverse %}
+              <a href="#"
+                 data-confirm-action
+                 data-action-url="{% url 'clinic:pharmacy_sale_reverse' sale.pk 'cancel' %}"
+                 data-confirm-title="{% ui 'Cancelar venda' 'Cancel sale' %}"
+                 data-confirm-text="{% ui 'Use esta opção quando a venda tiver sido lançada por engano. O stock será reposto.' 'Use this when the sale was recorded by mistake. Stock will be restored.' %}"
+                 data-confirm-button="{% ui 'Cancelar venda' 'Cancel sale' %}"
+                 data-confirm-icon="warning"
+                 class="btn btn-outline-warning mb-0">
+                <i class="material-symbols-rounded text-sm me-1">cancel</i>
+                {% ui "Cancelar venda" "Cancel sale" %}
+              </a>
+              <a href="#"
+                 data-confirm-action
+                 data-action-url="{% url 'clinic:pharmacy_sale_reverse' sale.pk 'return' %}"
+                 data-confirm-title="{% ui 'Registar devolução' 'Register return' %}"
+                 data-confirm-text="{% ui 'Use esta opção quando o cliente devolver os produtos. O stock será reposto.' 'Use this when the customer returns the products. Stock will be restored.' %}"
+                 data-confirm-button="{% ui 'Registar devolução' 'Register return' %}"
+                 data-confirm-icon="question"
+                 class="btn btn-outline-info mb-0">
+                <i class="material-symbols-rounded text-sm me-1">assignment_return</i>
+                {% ui "Registar devolução" "Register return" %}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body pt-0">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <div class="clinic-inline-note">
+              <strong>{% ui "Estado" "Status" %}:</strong>
+              {% if sale.status == "completed" %}
+                <span class="clinic-status clinic-status-success">{{ sale.get_status_display }}</span>
+              {% elif sale.status == "cancelled" %}
+                <span class="clinic-status clinic-status-warning">{{ sale.get_status_display }}</span>
+              {% else %}
+                <span class="clinic-status clinic-status-info">{{ sale.get_status_display }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="clinic-inline-note"><strong>{% ui "Sucursal" "Branch" %}:</strong> {{ sale.branch.name|default:"-" }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="clinic-inline-note"><strong>{% ui "Armazém" "Warehouse" %}:</strong> {{ sale.warehouse.display_name }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="clinic-inline-note"><strong>{% ui "Pagamento" "Payment" %}:</strong> {{ sale.payment_method.name|default:"-" }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="clinic-inline-note"><strong>{% ui "IVA aplicado" "Applied VAT" %}:</strong> {{ sale.tax_rate|floatformat:2 }}%</div>
+          </div>
+          {% if sale.reversed_at %}
+            <div class="col-md-6">
+              <div class="clinic-inline-note">
+                <strong>{% ui "Reversão" "Reversal" %}:</strong>
+                {{ sale.reversed_at|date:"d/m/Y H:i" }}
+                {% if sale.reversed_by %}· {{ sale.reversed_by.get_full_name|default:sale.reversed_by.username }}{% endif %}
+              </div>
+            </div>
+          {% endif %}
+          {% if sale.notes %}
+            <div class="col-12">
+              <div class="clinic-inline-note"><strong>{% ui "Notas" "Notes" %}:</strong> {{ sale.notes }}</div>
+            </div>
+          {% endif %}
+          {% if sale.reversal_reason %}
+            <div class="col-12">
+              <div class="clinic-inline-note"><strong>{% ui "Motivo da reversão" "Reversal reason" %}:</strong> {{ sale.reversal_reason }}</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <h4 class="mb-1">{% ui "Itens facturados" "Billed items" %}</h4>
+        <p class="text-secondary mb-0">{% ui "Resumo das linhas que compõem a venda." "Summary of the lines that make up the sale." %}</p>
+      </div>
+      <div class="card-body px-0 pb-0">
+        <div class="table-responsive">
+          <table class="table align-items-center mb-0">
+            <thead>
+              <tr>
+                <th class="ps-4">{% ui "Item" "Item" %}</th>
+                <th>{% ui "Qtd." "Qty." %}</th>
+                <th>{% ui "Preço unitário" "Unit price" %}</th>
+                <th>{% ui "Base sem IVA" "Net base" %}</th>
+                <th>{% ui "IVA incluído" "Included VAT" %}</th>
+                <th class="pe-4">{% ui "Total" "Total" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in sale.items.all %}
+                <tr>
+                  <td class="ps-4">
+                    <h6 class="mb-0 text-sm">{{ item.item_label }}</h6>
+                    <p class="text-xs text-secondary mb-0">{% if item.sku %}{{ item.sku }} · {% endif %}{{ item.unit_label }}</p>
+                  </td>
+                  <td><span class="text-sm">{{ item.quantity }}</span></td>
+                  <td><span class="text-sm">{{ item.unit_price|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</span></td>
+                  <td><span class="text-sm">{{ item.line_subtotal|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</span></td>
+                  <td><span class="text-sm">{{ item.line_tax_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</span></td>
+                  <td class="pe-4"><strong class="text-sm">{{ item.line_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</strong></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

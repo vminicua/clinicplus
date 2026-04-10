@@ -197,15 +197,40 @@
           </div>
         </li>
       {% endif %}
+      {% if perms.clinic.view_pharmacysale or perms.clinic.add_pharmacysale %}
+        <li class="nav-item">
+          <a class="nav-link clinic-nav-parent {% if segment == 'pharmacy_sales' or segment == 'pharmacy_reports' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-pharmacy" role="button" aria-expanded="{% if segment == 'pharmacy_sales' or segment == 'pharmacy_reports' %}true{% else %}false{% endif %}" aria-controls="sidebar-pharmacy">
+            <span class="d-flex align-items-center">
+              <i class="material-symbols-rounded opacity-10">local_pharmacy</i>
+              <span class="nav-link-text ms-2">{% ui "Farmácia" "Pharmacy" %}</span>
+            </span>
+            <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
+          </a>
+          <div class="collapse {% if segment == 'pharmacy_sales' or segment == 'pharmacy_reports' %}show{% endif %}" id="sidebar-pharmacy">
+            <ul class="nav flex-column clinic-submenu">
+              <li class="nav-item">
+                <a class="nav-link {% if segment == 'pharmacy_sales' %}active{% endif %}" href="{% url 'clinic:pharmacy_sale_list' %}">
+                  <span class="nav-link-text">{% ui "Vendas" "Sales" %}</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if segment == 'pharmacy_reports' %}active{% endif %}" href="{% url 'clinic:pharmacy_daily_report' %}">
+                  <span class="nav-link-text">{% ui "Caixa diário" "Daily cash" %}</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </li>
+      {% endif %}
       <li class="nav-item">
-        <a class="nav-link clinic-nav-parent {% if segment == 'preferences' or segment == 'preference_units' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-preferences" role="button" aria-expanded="{% if segment == 'preferences' or segment == 'preference_units' %}true{% else %}false{% endif %}" aria-controls="sidebar-preferences">
+        <a class="nav-link clinic-nav-parent {% if segment == 'preferences' or segment == 'preference_units' or segment == 'preference_payment_methods' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-preferences" role="button" aria-expanded="{% if segment == 'preferences' or segment == 'preference_units' or segment == 'preference_payment_methods' %}true{% else %}false{% endif %}" aria-controls="sidebar-preferences">
           <span class="d-flex align-items-center">
             <i class="material-symbols-rounded opacity-10">tune</i>
             <span class="nav-link-text ms-2">{% ui "Preferências" "Preferences" %}</span>
           </span>
           <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
         </a>
-        <div class="collapse {% if segment == 'preferences' or segment == 'preference_units' %}show{% endif %}" id="sidebar-preferences">
+        <div class="collapse {% if segment == 'preferences' or segment == 'preference_units' or segment == 'preference_payment_methods' %}show{% endif %}" id="sidebar-preferences">
           <ul class="nav flex-column clinic-submenu">
             <li class="nav-item">
               <a class="nav-link {% if segment == 'preferences' %}active{% endif %}" href="{% url 'accounts:system_preferences' %}">
@@ -216,6 +241,13 @@
               <li class="nav-item">
                 <a class="nav-link {% if segment == 'preference_units' %}active{% endif %}" href="{% url 'accounts:measurement_unit_list' %}">
                   <span class="nav-link-text">{% ui "Unidades" "Units" %}</span>
+                </a>
+              </li>
+            {% endif %}
+            {% if perms.accounts.view_paymentmethod or perms.accounts.add_paymentmethod or perms.accounts.change_paymentmethod %}
+              <li class="nav-item">
+                <a class="nav-link {% if segment == 'preference_payment_methods' %}active{% endif %}" href="{% url 'accounts:payment_method_list' %}">
+                  <span class="nav-link-text">{% ui "Métodos de pagamento" "Payment methods" %}</span>
                 </a>
               </li>
             {% endif %}

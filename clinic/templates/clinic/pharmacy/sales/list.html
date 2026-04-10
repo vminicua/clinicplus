@@ -1,0 +1,162 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">receipt_long</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Total de vendas" "Total sales" %}</p>
+              <h4 class="mb-0">{{ total_sales }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">today</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Hoje" "Today" %}</p>
+              <h4 class="mb-0">{{ sales_today }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">payments</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Facturado" "Billed" %}</p>
+              <h4 class="mb-0">{{ revenue_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">percent</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "IVA incluído" "Included VAT" %}</p>
+              <h4 class="mb-0">{{ tax_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{% ui "Vendas da farmácia" "Pharmacy sales" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Cada venda fecha o carrinho, mantém o IVA já incluído no preço e baixa o stock do armazém escolhido." "Each sale closes the cart, keeps VAT already included in the price, and deducts stock from the selected warehouse." %}</p>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if filter_branches %}
+              <div class="clinic-pill-group">
+                {% for branch in filter_branches %}
+                  <a href="#" class="clinic-pill {% if branch.pk == active_branch_filter_id %}active{% endif %}" data-table-pill="pharmacy-sales-table" data-column="2" data-value="{{ branch.name }}">{{ branch.name }}</a>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if perms.clinic.add_pharmacysale %}
+              <a href="{% url 'clinic:pharmacy_sale_create' %}" class="btn bg-gradient-dark mb-0">
+                <i class="material-symbols-rounded text-sm me-1">add_shopping_cart</i>
+                {% ui "Nova venda" "New sale" %}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body px-0 pb-0">
+        {% if sales %}
+          <div class="clinic-datatable-shell">
+            <table id="pharmacy-sales-table" data-page-length="10" data-export-title="{% ui 'Vendas da farmácia Clinic Plus' 'Clinic Plus Pharmacy Sales' %}" class="table align-items-center mb-0 clinic-data-table js-clinic-datatable">
+              <thead>
+                <tr>
+                  <th class="ps-4">{% ui "Venda" "Sale" %}</th>
+                  <th>{% ui "Cliente" "Customer" %}</th>
+                  <th>{% ui "Sucursal" "Branch" %}</th>
+                  <th>{% ui "Armazém" "Warehouse" %}</th>
+                  <th>{% ui "Estado" "Status" %}</th>
+                  <th>{% ui "Pagamento" "Payment" %}</th>
+                  <th>{% ui "IVA incluído" "Included VAT" %}</th>
+                  <th>{% ui "Total" "Total" %}</th>
+                  <th>{% ui "Data" "Date" %}</th>
+                  <th class="text-end pe-4 not-export">{% ui "Acções" "Actions" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for sale in sales %}
+                  <tr>
+                    <td class="ps-4">
+                      <h6 class="mb-0 text-sm">{{ sale.sale_number }}</h6>
+                      <p class="text-xs text-secondary mb-0">{{ sale.get_status_display }}</p>
+                    </td>
+                    <td>
+                      <span class="text-sm d-block">{{ sale.customer_display_name }}</span>
+                      <span class="text-xs text-secondary">
+                        {% if sale.patient_id %}{% ui "Ligado ao paciente" "Linked to patient" %}{% else %}{% ui "Cliente livre" "Walk-in customer" %}{% endif %}
+                      </span>
+                    </td>
+                    <td><span class="text-sm">{{ sale.branch.name|default:"-" }}</span></td>
+                    <td><span class="text-sm">{{ sale.warehouse.display_name }}</span></td>
+                    <td>
+                      {% if sale.status == "completed" %}
+                        <span class="clinic-status clinic-status-success">{{ sale.get_status_display }}</span>
+                      {% elif sale.status == "cancelled" %}
+                        <span class="clinic-status clinic-status-warning">{{ sale.get_status_display }}</span>
+                      {% else %}
+                        <span class="clinic-status clinic-status-info">{{ sale.get_status_display }}</span>
+                      {% endif %}
+                    </td>
+                    <td><span class="text-sm">{{ sale.payment_method.name|default:"-" }}</span></td>
+                    <td><span class="text-sm">{{ sale.tax_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</span></td>
+                    <td><strong class="text-sm">{{ sale.total_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</strong></td>
+                    <td><span class="text-sm">{{ sale.sold_at|date:"d/m/Y H:i" }}</span></td>
+                    <td class="text-end pe-4">
+                      <div class="clinic-action-stack">
+                        <a href="{% url 'clinic:pharmacy_sale_detail' sale.pk %}" class="clinic-action-btn is-info" title="{% ui 'Ver venda' 'View sale' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">visibility</i>
+                        </a>
+                        <a href="{% url 'clinic:pharmacy_sale_receipt_pdf' sale.pk %}" class="clinic-action-btn is-muted" title="{% ui 'Baixar recibo' 'Download receipt' %}">
+                          <i class="material-symbols-rounded" style="font-size: 1rem;">download</i>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="px-4 py-5 text-center text-secondary">
+            {% ui "Ainda não existem vendas registadas na farmácia." "There are no pharmacy sales recorded yet." %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

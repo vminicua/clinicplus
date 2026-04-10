@@ -5,8 +5,8 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, ListView, UpdateView
 
-from accounts.forms import MeasurementUnitForm, SystemPreferenceForm
-from accounts.models import MeasurementUnit, SystemPreference, UserProfile
+from accounts.forms import MeasurementUnitForm, PaymentMethodForm, SystemPreferenceForm
+from accounts.models import MeasurementUnit, PaymentMethod, SystemPreference, UserProfile
 from accounts.ui import (
     BRANCH_SESSION_KEY,
     LANGUAGE_SESSION_KEY,
@@ -64,6 +64,16 @@ class SystemPreferenceView(AppPermissionMixin, ClinicPageMixin, UpdateView):
                 "fields": [form["default_currency"]],
             },
             {
+                "id": "pref-taxes",
+                "title": ui_text(self.request, "Facturação", "Billing"),
+                "description": ui_text(
+                    self.request,
+                    "Configure a taxa de IVA usada por defeito nos recibos e vendas da farmácia.",
+                    "Configure the default VAT rate used in pharmacy receipts and sales.",
+                ),
+                "fields": [form["vat_rate"]],
+            },
+            {
                 "id": "pref-patients",
                 "title": ui_text(self.request, "Pacientes", "Patients"),
                 "description": ui_text(
@@ -76,6 +86,7 @@ class SystemPreferenceView(AppPermissionMixin, ClinicPageMixin, UpdateView):
         ]
         context["submit_label"] = ui_text(self.request, "Guardar preferências", "Save preferences")
         context["measurement_units_url"] = reverse("accounts:measurement_unit_list")
+        context["payment_methods_url"] = reverse("accounts:payment_method_list")
         return context
 
     def form_valid(self, form):
@@ -207,6 +218,115 @@ class MeasurementUnitUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMi
 
     def get_success_message(self) -> str:
         return ui_text(self.request, "Unidade actualizada com sucesso.", "Unit updated successfully.")
+
+
+class PaymentMethodListView(AppPermissionMixin, ClinicPageMixin, ListView):
+    model = PaymentMethod
+    template_name = "accounts/preferences/payment_methods/list.html"
+    context_object_name = "payment_methods"
+    permission_required = "accounts.view_paymentmethod"
+    segment = "preference_payment_methods"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Métodos de pagamento", "Payment methods")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Catálogo de métodos aceites no caixa, farmácia e futuras cobranças do sistema.",
+            "Catalog of methods accepted at checkout, pharmacy, and future billing flows.",
+        )
+
+    def get_queryset(self):
+        return PaymentMethod.objects.order_by("sort_order", "name", "code")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        payment_methods = list(context["payment_methods"])
+        context["payment_methods"] = payment_methods
+        context["total_methods"] = len(payment_methods)
+        context["active_methods"] = sum(1 for method in payment_methods if method.is_active)
+        context["mobile_wallet_methods"] = sum(
+            1 for method in payment_methods if method.category == PaymentMethod.CategoryChoices.MOBILE_MONEY
+        )
+        context["banking_methods"] = sum(
+            1
+            for method in payment_methods
+            if method.category in {PaymentMethod.CategoryChoices.CARD, PaymentMethod.CategoryChoices.BANK_TRANSFER}
+        )
+        return context
+
+
+class PaymentMethodCreateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, CreateView):
+    model = PaymentMethod
+    form_class = PaymentMethodForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("accounts:payment_method_list")
+    permission_required = "accounts.add_paymentmethod"
+    segment = "preference_payment_methods"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Novo método de pagamento", "New payment method")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Registe um método que poderá ser usado na farmácia e em futuras cobranças.",
+            "Register a method that can be used in pharmacy sales and future billing.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Criar método de pagamento", "Create payment method")
+        context["form_description"] = ui_text(
+            self.request,
+            "Métodos activos aparecem nos formulários de venda e nos recibos emitidos.",
+            "Active methods appear in sales forms and issued receipts.",
+        )
+        context["submit_label"] = ui_text(self.request, "Guardar método", "Save method")
+        context["cancel_url"] = reverse("accounts:payment_method_list")
+        context["wide_fields"] = {"description"}
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Método de pagamento criado com sucesso.", "Payment method created successfully.")
+
+
+class PaymentMethodUpdateView(AppPermissionMixin, ModalFormMixin, ClinicPageMixin, UpdateView):
+    queryset = PaymentMethod.objects.all()
+    form_class = PaymentMethodForm
+    template_name = "accounts/shared/form.html"
+    modal_template_name = "accounts/shared/modal_form.html"
+    success_url = reverse_lazy("accounts:payment_method_list")
+    permission_required = "accounts.change_paymentmethod"
+    segment = "preference_payment_methods"
+
+    def get_page_title(self) -> str:
+        return ui_text(self.request, "Editar método de pagamento", "Edit payment method")
+
+    def get_page_subtitle(self) -> str:
+        return ui_text(
+            self.request,
+            "Actualize nome, categoria e disponibilidade operacional deste método.",
+            "Update the name, category, and operational availability of this method.",
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = ui_text(self.request, "Editar método de pagamento", "Edit payment method")
+        context["form_description"] = ui_text(
+            self.request,
+            "As alterações reflectem-se imediatamente no caixa da farmácia e nos recibos seguintes.",
+            "Changes are immediately reflected in the pharmacy checkout and future receipts.",
+        )
+        context["submit_label"] = ui_text(self.request, "Actualizar método", "Update method")
+        context["cancel_url"] = reverse("accounts:payment_method_list")
+        context["wide_fields"] = {"description"}
+        return context
+
+    def get_success_message(self) -> str:
+        return ui_text(self.request, "Método de pagamento actualizado com sucesso.", "Payment method updated successfully.")
 
 
 class LanguageSwitchView(View):

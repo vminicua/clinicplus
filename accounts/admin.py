@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Branch, Clinic, MeasurementUnit, SystemPreference, UserProfile
+from .models import Branch, Clinic, MeasurementUnit, PaymentMethod, SystemPreference, UserProfile
 
 
 @admin.register(Clinic)
@@ -19,7 +19,7 @@ class BranchAdmin(admin.ModelAdmin):
 
 @admin.register(SystemPreference)
 class SystemPreferenceAdmin(admin.ModelAdmin):
-    list_display = ("default_language", "default_currency", "updated_at")
+    list_display = ("default_language", "default_currency", "vat_rate", "updated_at")
 
 
 @admin.register(MeasurementUnit)
@@ -27,6 +27,13 @@ class MeasurementUnitAdmin(admin.ModelAdmin):
     list_display = ("code", "name", "abbreviation", "sort_order", "is_active")
     search_fields = ("code", "name", "abbreviation")
     list_filter = ("is_active",)
+
+
+@admin.register(PaymentMethod)
+class PaymentMethodAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "category", "provider", "sort_order", "is_active")
+    search_fields = ("name", "code", "provider")
+    list_filter = ("category", "is_active")
 
 
 @admin.register(UserProfile)

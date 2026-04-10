@@ -10,7 +10,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from accounts.models import Branch, MeasurementUnit
+from accounts.models import Branch, MeasurementUnit, PaymentMethod
 from accounts.forms import StyledFormMixin
 from accounts.i18n import translate_pair
 from accounts.ui import available_branches_for_user
@@ -31,6 +31,7 @@ from .models import (
     Medico,
     MovimentoInventario,
     Paciente,
+    PharmacySaleItem,
 )
 
 
@@ -285,6 +286,11 @@ class ConsumableChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         unit = f" · {obj.unidade_medida}" if obj.unidade_medida else ""
         return f"{obj.display_name}{unit}"
+
+
+class PaymentMethodChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return obj.select_label
 
 
 def appointment_doctor_user_queryset():
@@ -1268,6 +1274,208 @@ class InventoryMovementForm(StyledFormMixin, forms.ModelForm):
             self.save_m2m()
 
         return movement
+
+
+class PharmacyCartItemForm(StyledFormMixin, forms.Form):
+    warehouse = WarehouseChoiceField(
+        queryset=Armazem.objects.none(),
+        label=tr("Armazém de saída", "Dispensing warehouse"),
+    )
+    item_type = forms.ChoiceField(
+        choices=PharmacySaleItem.ItemTypeChoices.choices,
+        label=tr("Tipo de item", "Item type"),
+    )
+    medicamento = MedicationChoiceField(
+        queryset=Medicamento.objects.none(),
+        required=False,
+        label=tr("Medicamento", "Medication"),
+    )
+    consumivel = ConsumableChoiceField(
+        queryset=Consumivel.objects.none(),
+        required=False,
+        label=tr("Consumível", "Consumable"),
+    )
+    quantity = forms.IntegerField(
+        min_value=1,
+        label=tr("Quantidade", "Quantity"),
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        self.cart_snapshot = kwargs.pop("cart_snapshot", None) or {}
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        warehouse_queryset = (
+            Armazem.objects.select_related("branch")
+            .filter(branch__in=appointment_branch_queryset(self.request), is_active=True)
+            .order_by("branch__name", "name")
+        )
+        self.fields["warehouse"].queryset = warehouse_queryset
+        self.fields["medicamento"].queryset = Medicamento.objects.filter(is_active=True).order_by("name", "dosagem")
+        self.fields["consumivel"].queryset = Consumivel.objects.filter(is_active=True).order_by("name")
+        self.fields["warehouse"].help_text = tr(
+            "Cada venda da farmácia é fechada a partir de um único armazém por vez.",
+            "Each pharmacy sale is finalized from a single warehouse at a time.",
+        )
+        self.fields["quantity"].help_text = tr(
+            "Só é possível adicionar quantidades com stock disponível no armazém seleccionado.",
+            "You can only add quantities that are available in the selected warehouse.",
+        )
+        self.fields["quantity"].widget.attrs["step"] = "1"
+        locked_warehouse_id = self.cart_snapshot.get("warehouse_id")
+        if not self.is_bound:
+            self.fields["item_type"].initial = PharmacySaleItem.ItemTypeChoices.MEDICAMENTO
+            self.fields["quantity"].initial = 1
+        if (
+            locked_warehouse_id
+            and not self.is_bound
+            and self.fields["warehouse"].queryset.filter(pk=locked_warehouse_id).exists()
+        ):
+            self.fields["warehouse"].initial = locked_warehouse_id
+        elif not self.is_bound and self.request is not None:
+            current_branch = getattr(self.request, "clinic_current_branch", None)
+            if current_branch:
+                current_warehouse = self.fields["warehouse"].queryset.filter(branch=current_branch).first()
+                if current_warehouse is not None:
+                    self.fields["warehouse"].initial = current_warehouse
+
+    def clean(self):
+        cleaned_data = super().clean()
+        warehouse = cleaned_data.get("warehouse")
+        item_type = cleaned_data.get("item_type")
+        medication = cleaned_data.get("medicamento")
+        consumable = cleaned_data.get("consumivel")
+        quantity = cleaned_data.get("quantity") or 0
+        locked_warehouse_id = self.cart_snapshot.get("warehouse_id")
+        cart_items = self.cart_snapshot.get("items") or []
+
+        if locked_warehouse_id and warehouse and str(warehouse.pk) != str(locked_warehouse_id):
+            self.add_error(
+                "warehouse",
+                tr(
+                    "O carrinho actual já está ligado a outro armazém. Limpe o carrinho para trocar de armazém.",
+                    "The current cart is already linked to another warehouse. Clear the cart to change warehouses.",
+                ),
+            )
+
+        if item_type == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO:
+            if medication is None:
+                self.add_error("medicamento", tr("Seleccione o medicamento desta venda.", "Select the medication for this sale."))
+        elif item_type == PharmacySaleItem.ItemTypeChoices.CONSUMIVEL:
+            if consumable is None:
+                self.add_error("consumivel", tr("Seleccione o consumível desta venda.", "Select the consumable for this sale."))
+
+        if warehouse and quantity and item_type == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO and medication is not None:
+            stock_entry = EstoqueMedicamento.objects.filter(armazem=warehouse, medicamento=medication).first()
+            reserved_quantity = sum(
+                line.get("quantity", 0)
+                for line in cart_items
+                if line.get("item_type") == PharmacySaleItem.ItemTypeChoices.MEDICAMENTO
+                and str(line.get("item_id")) == str(medication.pk)
+            )
+            if stock_entry is None:
+                self.add_error(
+                    "medicamento",
+                    tr(
+                        "Este medicamento ainda não tem stock neste armazém.",
+                        "This medication does not have stock in this warehouse yet.",
+                    ),
+                )
+            elif quantity + reserved_quantity > stock_entry.quantidade:
+                self.add_error(
+                    "quantity",
+                    tr(
+                        "A quantidade pedida excede o stock disponível neste armazém.",
+                        "The requested quantity exceeds the available stock in this warehouse.",
+                    ),
+                )
+
+        if warehouse and quantity and item_type == PharmacySaleItem.ItemTypeChoices.CONSUMIVEL and consumable is not None:
+            stock_entry = EstoqueConsumivel.objects.filter(armazem=warehouse, consumivel=consumable).first()
+            reserved_quantity = sum(
+                line.get("quantity", 0)
+                for line in cart_items
+                if line.get("item_type") == PharmacySaleItem.ItemTypeChoices.CONSUMIVEL
+                and str(line.get("item_id")) == str(consumable.pk)
+            )
+            if stock_entry is None:
+                self.add_error(
+                    "consumivel",
+                    tr(
+                        "Este consumível ainda não tem stock neste armazém.",
+                        "This consumable does not have stock in this warehouse yet.",
+                    ),
+                )
+            elif quantity + reserved_quantity > stock_entry.quantidade:
+                self.add_error(
+                    "quantity",
+                    tr(
+                        "A quantidade pedida excede o stock disponível neste armazém.",
+                        "The requested quantity exceeds the available stock in this warehouse.",
+                    ),
+                )
+
+        return cleaned_data
+
+
+class PharmacyCheckoutForm(StyledFormMixin, forms.Form):
+    patient = PatientChoiceField(
+        queryset=Paciente.objects.none(),
+        required=False,
+        label=tr("Paciente", "Patient"),
+    )
+    customer_name = forms.CharField(
+        max_length=255,
+        required=False,
+        label=tr("Cliente / titular", "Customer / holder"),
+    )
+    payment_method = PaymentMethodChoiceField(
+        queryset=PaymentMethod.objects.none(),
+        label=tr("Método de pagamento", "Payment method"),
+    )
+    notes = forms.CharField(
+        required=False,
+        label=tr("Notas", "Notes"),
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        self.fields["patient"].queryset = Paciente.objects.select_related("user", "branch").filter(is_active=True).order_by(
+            "user__first_name",
+            "user__last_name",
+            "user__username",
+        )
+        self.fields["payment_method"].queryset = PaymentMethod.objects.filter(is_active=True).order_by(
+            "sort_order",
+            "name",
+            "code",
+        )
+        self.fields["customer_name"].help_text = tr(
+            "Use o nome do comprador quando a venda não estiver ligada a um paciente.",
+            "Use the buyer name when the sale is not linked to a patient.",
+        )
+        if not self.is_bound:
+            first_method = self.fields["payment_method"].queryset.first()
+            if first_method is not None:
+                self.fields["payment_method"].initial = first_method
+
+    def clean(self):
+        cleaned_data = super().clean()
+        patient = cleaned_data.get("patient")
+        customer_name = (cleaned_data.get("customer_name") or "").strip()
+        if patient is None and not customer_name:
+            self.add_error(
+                "customer_name",
+                tr(
+                    "Indique o paciente ou o nome do cliente para emitir o recibo.",
+                    "Provide either the patient or the customer name to issue the receipt.",
+                ),
+            )
+        cleaned_data["customer_name"] = customer_name
+        return cleaned_data
 
 
 WORK_SCHEDULE_WEEKDAY_OPTIONS = [

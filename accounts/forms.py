@@ -10,7 +10,7 @@ from django.db.models import Q
 from clinic.models import Departamento, Especialidade, Hospital, Medico
 
 from .i18n import translate_pair
-from .models import Branch, Clinic, MeasurementUnit, SystemPreference, UserProfile
+from .models import Branch, Clinic, MeasurementUnit, PaymentMethod, SystemPreference, UserProfile
 from .utils import build_permission_matrix, describe_permission_scope, visible_users_queryset
 
 
@@ -752,11 +752,12 @@ class ClinicForm(StyledFormMixin, forms.ModelForm):
 class SystemPreferenceForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = SystemPreference
-        fields = ["default_language", "default_currency", "patient_code_prefix"]
+        fields = ["default_language", "default_currency", "patient_code_prefix", "vat_rate"]
         labels = {
             "default_language": tr("Idioma do sistema", "System language"),
             "default_currency": tr("Moeda base", "Base currency"),
             "patient_code_prefix": tr("Prefixo do ID do paciente", "Patient ID prefix"),
+            "vat_rate": tr("IVA (%)", "VAT (%)"),
         }
         help_texts = {
             "default_language": tr(
@@ -771,6 +772,13 @@ class SystemPreferenceForm(StyledFormMixin, forms.ModelForm):
                 "Ex.: PCCP000. O código visível ficará no formato prefixo + ID, como PCCP0001.",
                 "Example: PCCP000. The visible code will be prefix + ID, such as PCCP0001.",
             ),
+            "vat_rate": tr(
+                "Taxa de IVA usada por defeito na facturação. Mantenha configurável para futuras alterações legais.",
+                "Default VAT rate used in billing. Keep it configurable for future legal changes.",
+            ),
+        }
+        widgets = {
+            "vat_rate": forms.NumberInput(attrs={"step": "0.01", "min": "0", "max": "100"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -795,6 +803,94 @@ class SystemPreferenceForm(StyledFormMixin, forms.ModelForm):
                 )
             )
         return prefix
+
+    def clean_vat_rate(self):
+        vat_rate = self.cleaned_data.get("vat_rate")
+        if vat_rate is None:
+            raise forms.ValidationError(
+                tr(
+                    "Defina uma taxa de IVA para a facturação.",
+                    "Define a VAT rate for billing.",
+                )
+            )
+        if vat_rate < 0 or vat_rate > 100:
+            raise forms.ValidationError(
+                tr(
+                    "Use um valor de IVA entre 0 e 100.",
+                    "Use a VAT value between 0 and 100.",
+                )
+            )
+        return vat_rate
+
+
+class PaymentMethodForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = PaymentMethod
+        fields = ["code", "name", "category", "provider", "description", "sort_order", "is_active"]
+        labels = {
+            "code": tr("Código", "Code"),
+            "name": tr("Método de pagamento", "Payment method"),
+            "category": tr("Categoria", "Category"),
+            "provider": tr("Provedor", "Provider"),
+            "description": tr("Descrição", "Description"),
+            "sort_order": tr("Ordem", "Sort order"),
+            "is_active": tr("Activo", "Active"),
+        }
+        help_texts = {
+            "code": tr(
+                "Ex.: cash, mpesa, emola, mkesh, card_pos. Este código é usado no sistema e integrações futuras.",
+                "Example: cash, mpesa, emola, mkesh, card_pos. This code is used across the system and future integrations.",
+            ),
+            "name": tr(
+                "Nome visível no caixa e nos recibos.",
+                "Visible name used in checkout and receipts.",
+            ),
+            "category": tr(
+                "Agrupa o método para leitura operacional e relatórios.",
+                "Groups the method for operational reading and reporting.",
+            ),
+            "provider": tr(
+                "Opcional. Útil para carteiras móveis, bancos ou processadores.",
+                "Optional. Useful for mobile wallets, banks, or processors.",
+            ),
+            "description": tr(
+                "Pode explicar como este método é usado ou em que contexto deve aparecer.",
+                "Can explain how this method is used or where it should appear.",
+            ),
+            "sort_order": tr(
+                "Métodos com menor ordem aparecem primeiro nos formulários de venda.",
+                "Methods with lower sort order appear first in sales forms.",
+            ),
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_widget_classes()
+        for field_name in ("code", "name", "provider", "description"):
+            self.fields[field_name].widget.attrs["autocomplete"] = "off"
+            self.fields[field_name].widget.attrs["data-lpignore"] = "true"
+            self.fields[field_name].widget.attrs["data-1p-ignore"] = "true"
+
+    def clean_code(self):
+        code = (self.cleaned_data.get("code") or "").strip().lower()
+        if not code:
+            raise forms.ValidationError(
+                tr(
+                    "Defina um código para o método de pagamento.",
+                    "Define a code for the payment method.",
+                )
+            )
+        if not re.fullmatch(r"[a-z0-9_-]+", code):
+            raise forms.ValidationError(
+                tr(
+                    "Use apenas letras minúsculas, números, hífen ou underscore no código.",
+                    "Use only lowercase letters, numbers, hyphen, or underscore in the code.",
+                )
+            )
+        return code
 
 
 class MeasurementUnitForm(StyledFormMixin, forms.ModelForm):

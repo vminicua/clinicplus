@@ -6,7 +6,7 @@ from django.db.models import Sum
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from accounts.models import Branch
+from accounts.models import Branch, PaymentMethod
 
 
 MOJIBAKE_MARKERS = ("Ã", "Â", "â€", "â€™", "â€œ", "â€“", "â€”")
@@ -794,6 +794,173 @@ class MovimentoInventario(models.Model):
     def save(self, *args, **kwargs):
         self.reference = normalize_mojibake_text(self.reference)
         self.notes = normalize_mojibake_text(self.notes)
+        super().save(*args, **kwargs)
+
+
+class PharmacySale(models.Model):
+    class StatusChoices(models.TextChoices):
+        COMPLETED = "completed", "Concluída"
+        CANCELLED = "cancelled", "Cancelada"
+        RETURNED = "returned", "Devolvida"
+
+    sale_number = models.CharField(max_length=40, unique=True, blank=True)
+    branch = models.ForeignKey(
+        Branch,
+        on_delete=models.SET_NULL,
+        related_name="pharmacy_sales",
+        null=True,
+        blank=True,
+    )
+    warehouse = models.ForeignKey(
+        Armazem,
+        on_delete=models.PROTECT,
+        related_name="pharmacy_sales",
+    )
+    patient = models.ForeignKey(
+        "clinic.Paciente",
+        on_delete=models.SET_NULL,
+        related_name="pharmacy_sales",
+        null=True,
+        blank=True,
+    )
+    customer_name = models.CharField(max_length=255)
+    payment_method = models.ForeignKey(
+        PaymentMethod,
+        on_delete=models.SET_NULL,
+        related_name="pharmacy_sales",
+        null=True,
+        blank=True,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=StatusChoices.choices,
+        default=StatusChoices.COMPLETED,
+    )
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    notes = models.TextField(blank=True)
+    sold_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="pharmacy_sales",
+        null=True,
+        blank=True,
+    )
+    reversed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="reversed_pharmacy_sales",
+        null=True,
+        blank=True,
+    )
+    sold_at = models.DateTimeField(auto_now_add=True)
+    reversed_at = models.DateTimeField(null=True, blank=True)
+    reversal_reason = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Venda de farmácia"
+        verbose_name_plural = "Vendas de farmácia"
+        ordering = ("-sold_at", "-id")
+
+    def __str__(self):
+        return self.sale_number or f"Venda {self.pk}"
+
+    @property
+    def customer_display_name(self):
+        if self.patient_id:
+            return self.patient.full_name
+        return normalize_mojibake_text(self.customer_name)
+
+    def save(self, *args, **kwargs):
+        self.customer_name = normalize_mojibake_text(self.customer_name)
+        self.notes = normalize_mojibake_text(self.notes)
+        self.reversal_reason = normalize_mojibake_text(self.reversal_reason)
+        if self.warehouse_id and not self.branch_id:
+            self.branch = self.warehouse.branch
+        creating = self.pk is None
+        super().save(*args, **kwargs)
+        if creating and not self.sale_number:
+            sold_reference = timezone.localtime(self.sold_at or timezone.now())
+            self.sale_number = f"FAR-{sold_reference:%Y%m%d}-{self.pk:05d}"
+            super().save(update_fields=["sale_number", "updated_at"])
+
+
+class PharmacySaleItem(models.Model):
+    class ItemTypeChoices(models.TextChoices):
+        MEDICAMENTO = "medicamento", "Medicamento"
+        CONSUMIVEL = "consumivel", "Consumível"
+
+    sale = models.ForeignKey(
+        PharmacySale,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    item_type = models.CharField(max_length=20, choices=ItemTypeChoices.choices)
+    medicamento = models.ForeignKey(
+        Medicamento,
+        on_delete=models.SET_NULL,
+        related_name="pharmacy_sale_items",
+        null=True,
+        blank=True,
+    )
+    consumivel = models.ForeignKey(
+        Consumivel,
+        on_delete=models.SET_NULL,
+        related_name="pharmacy_sale_items",
+        null=True,
+        blank=True,
+    )
+    item_name = models.CharField(max_length=255)
+    sku = models.CharField(max_length=40, blank=True)
+    unit_label = models.CharField(max_length=30, blank=True, default="un")
+    quantity = models.PositiveIntegerField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    line_subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+    line_tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    line_total = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        verbose_name = "Linha da venda de farmácia"
+        verbose_name_plural = "Linhas da venda de farmácia"
+        ordering = ("id",)
+
+    def __str__(self):
+        return f"{self.item_label} · {self.quantity}"
+
+    @property
+    def item_label(self):
+        if self.item_name:
+            return normalize_mojibake_text(self.item_name)
+        if self.item_type == self.ItemTypeChoices.MEDICAMENTO and self.medicamento_id:
+            return self.medicamento.display_name
+        if self.item_type == self.ItemTypeChoices.CONSUMIVEL and self.consumivel_id:
+            return self.consumivel.display_name
+        return ""
+
+    def clean(self):
+        errors = {}
+        if self.quantity is None or self.quantity <= 0:
+            errors["quantity"] = "Informe uma quantidade maior que zero."
+        if self.item_type == self.ItemTypeChoices.MEDICAMENTO:
+            if not self.medicamento_id:
+                errors["medicamento"] = "Seleccione o medicamento desta linha."
+            if self.consumivel_id:
+                errors["consumivel"] = "Limpe o consumível quando a linha for de medicamento."
+        elif self.item_type == self.ItemTypeChoices.CONSUMIVEL:
+            if not self.consumivel_id:
+                errors["consumivel"] = "Seleccione o consumível desta linha."
+            if self.medicamento_id:
+                errors["medicamento"] = "Limpe o medicamento quando a linha for de consumível."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.item_name = normalize_mojibake_text(self.item_name)
+        self.sku = normalize_mojibake_text(self.sku) or ""
+        self.unit_label = (normalize_mojibake_text(self.unit_label) or "").strip().lower() or "un"
         super().save(*args, **kwargs)
 
 

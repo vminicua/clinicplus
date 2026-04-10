@@ -73,6 +73,71 @@ class MeasurementUnit(models.Model):
         super().save(*args, **kwargs)
 
 
+class PaymentMethod(models.Model):
+    class CategoryChoices(models.TextChoices):
+        CASH = "cash", translate_pair("Dinheiro", "Cash")
+        CARD = "card", translate_pair("Cartão / POS", "Card / POS")
+        MOBILE_MONEY = "mobile_money", translate_pair("Moeda electrónica", "Mobile money")
+        BANK_TRANSFER = "bank_transfer", translate_pair("Transferência bancária", "Bank transfer")
+        OTHER = "other", translate_pair("Outro", "Other")
+
+    code = models.CharField(
+        max_length=40,
+        unique=True,
+        verbose_name=translate_pair("Código", "Code"),
+    )
+    name = models.CharField(
+        max_length=120,
+        verbose_name=translate_pair("Método de pagamento", "Payment method"),
+    )
+    category = models.CharField(
+        max_length=30,
+        choices=CategoryChoices.choices,
+        default=CategoryChoices.CASH,
+        verbose_name=translate_pair("Categoria", "Category"),
+    )
+    provider = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name=translate_pair("Provedor", "Provider"),
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name=translate_pair("Descrição", "Description"),
+    )
+    sort_order = models.PositiveIntegerField(
+        default=100,
+        verbose_name=translate_pair("Ordem", "Sort order"),
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=translate_pair("Activo", "Active"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("sort_order", "name", "code")
+        verbose_name = translate_pair("Método de pagamento", "Payment method")
+        verbose_name_plural = translate_pair("Métodos de pagamento", "Payment methods")
+
+    def __str__(self) -> str:
+        return self.select_label
+
+    @property
+    def select_label(self) -> str:
+        if self.provider:
+            return f"{self.name} · {self.provider}"
+        return self.name
+
+    def save(self, *args, **kwargs):
+        self.code = (self.code or "").strip().lower()
+        self.name = (self.name or "").strip()
+        self.provider = (self.provider or "").strip()
+        self.description = (self.description or "").strip()
+        super().save(*args, **kwargs)
+
+
 class Branch(models.Model):
     clinic = models.ForeignKey(
         "accounts.Clinic",
@@ -269,6 +334,12 @@ class SystemPreference(models.Model):
         max_length=20,
         default=DEFAULT_PATIENT_CODE_PREFIX,
         verbose_name=translate_pair("Prefixo do ID do paciente", "Patient ID prefix"),
+    )
+    vat_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=16,
+        verbose_name=translate_pair("IVA (%)", "VAT (%)"),
     )
     updated_at = models.DateTimeField(auto_now=True)
 

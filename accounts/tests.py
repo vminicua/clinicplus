@@ -4,8 +4,8 @@ from django.contrib.auth.models import Group
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 
-from accounts.forms import BranchForm, ClinicForm, MeasurementUnitForm, UserForm
-from accounts.models import Branch, Clinic, MeasurementUnit, SystemPreference
+from accounts.forms import BranchForm, ClinicForm, MeasurementUnitForm, PaymentMethodForm, UserForm
+from accounts.models import Branch, Clinic, MeasurementUnit, PaymentMethod, SystemPreference
 from accounts.ui import LANGUAGE_SESSION_KEY, resolve_language_for_request
 from clinic.models import Departamento, Especialidade, Medico
 
@@ -19,6 +19,7 @@ class SystemPreferenceTests(TestCase):
 
         self.assertEqual(preferences.default_currency, "MZN")
         self.assertEqual(preferences.default_language, "pt")
+        self.assertEqual(preferences.vat_rate, 16)
         self.assertEqual(SystemPreference.objects.count(), 1)
 
     def test_resolve_language_prefers_user_profile_over_session(self):
@@ -63,6 +64,39 @@ class SystemPreferenceTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Frasco")
+
+    def test_payment_method_form_normalizes_code(self):
+        form = PaymentMethodForm(
+            data={
+                "code": " M-Pesa ",
+                "name": "M-Pesa",
+                "category": "mobile_money",
+                "provider": "Vodacom M-Pesa",
+                "description": "Carteira móvel.",
+                "sort_order": 20,
+                "is_active": "on",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        method = form.save()
+
+        self.assertEqual(method.code, "m-pesa")
+        self.assertEqual(method.provider, "Vodacom M-Pesa")
+
+    def test_payment_method_list_renders(self):
+        client = Client()
+        user = User.objects.create_user(username="prefs_pay", password="123456")
+        user.user_permissions.add(
+            Permission.objects.get(codename="view_paymentmethod"),
+        )
+        PaymentMethod.objects.create(code="cash", name="Dinheiro", category="cash", sort_order=10)
+        client.force_login(user)
+
+        response = client.get(reverse("accounts:payment_method_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Dinheiro")
 
 
 class UserBranchValidationTests(TestCase):

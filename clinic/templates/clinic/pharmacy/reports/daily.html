@@ -1,0 +1,231 @@
+{% extends "accounts/layouts/base.html" %}
+{% load ui_extras %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="clinic-page-shell">
+    <div class="row mb-4">
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">receipt_long</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Vendas concluídas" "Completed sales" %}</p>
+              <h4 class="mb-0">{{ sold_count }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">payments</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Total vendido" "Total sold" %}</p>
+              <h4 class="mb-0">{{ sold_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">assignment_return</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Reversões" "Reversals" %}</p>
+              <h4 class="mb-0">{{ reversed_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-sm-6 mb-4">
+        <div class="card clinic-stat-card h-100">
+          <div class="card-header p-3 position-relative">
+            <div class="icon icon-lg icon-shape shadow text-center border-radius-xl mt-n4 position-absolute">
+              <i class="material-symbols-rounded opacity-10">point_of_sale</i>
+            </div>
+            <div class="text-end pt-1">
+              <p class="text-sm mb-0">{% ui "Caixa líquido" "Net cash" %}</p>
+              <h4 class="mb-0">{{ net_cash_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card clinic-page-card mb-4">
+      <div class="card-header p-4 border-0">
+        <div class="clinic-list-toolbar">
+          <div>
+            <h4 class="mb-1">{% ui "Caixa diário da farmácia" "Daily pharmacy cash report" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Fecho do dia com totais vendidos, IVA incluído e impacto de cancelamentos ou devoluções." "Daily close with sold totals, included VAT, and the impact of cancellations or returns." %}</p>
+          </div>
+
+          <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
+            <div>
+              <label for="daily-report-date" class="form-label mb-1">{% ui "Data" "Date" %}</label>
+              <input id="daily-report-date" type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="form-control">
+            </div>
+            <button type="submit" class="btn bg-gradient-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">filter_alt</i>
+              {% ui "Actualizar" "Refresh" %}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card-body pt-0">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="clinic-inline-note"><strong>{% ui "Data seleccionada" "Selected date" %}:</strong> {{ selected_date|date:"d/m/Y" }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="clinic-inline-note"><strong>{% ui "Base sem IVA" "Net base" %}:</strong> {{ sold_base|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="clinic-inline-note"><strong>{% ui "IVA incluído" "Included VAT" %}:</strong> {{ sold_tax|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-xl-7">
+        <div class="card clinic-page-card h-100">
+          <div class="card-header p-4 border-0">
+            <h4 class="mb-1">{% ui "Resumo por método de pagamento" "Payment method summary" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Comparação entre total vendido, IVA incluído, reversões e saldo líquido por método." "Comparison between total sold, included VAT, reversals, and net balance by method." %}</p>
+          </div>
+          <div class="card-body px-0 pb-0">
+            {% if payment_breakdown %}
+              <div class="table-responsive">
+                <table class="table align-items-center mb-0">
+                  <thead>
+                    <tr>
+                      <th class="ps-4">{% ui "Método" "Method" %}</th>
+                      <th>{% ui "Vendas" "Sales" %}</th>
+                      <th>{% ui "Bruto" "Gross" %}</th>
+                      <th>{% ui "IVA incluído" "Included VAT" %}</th>
+                      <th>{% ui "Reversões" "Reversals" %}</th>
+                      <th class="pe-4">{% ui "Líquido" "Net" %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for entry in payment_breakdown %}
+                      <tr>
+                        <td class="ps-4"><strong class="text-sm">{{ entry.method_name }}</strong></td>
+                        <td><span class="text-sm">{{ entry.sales_count }}</span></td>
+                        <td><span class="text-sm">{{ entry.gross_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</span></td>
+                        <td><span class="text-sm">{{ entry.tax_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</span></td>
+                        <td><span class="text-sm">{{ entry.reversal_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</span></td>
+                        <td class="pe-4"><strong class="text-sm">{{ entry.net_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</strong></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="px-4 py-5 text-center text-secondary">
+                {% ui "Sem vendas concluídas para a data seleccionada." "No completed sales for the selected date." %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-5">
+        <div class="card clinic-page-card mb-4">
+          <div class="card-header p-4 border-0">
+            <h4 class="mb-1">{% ui "Vendas do dia" "Sales of the day" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Últimas vendas concluídas consideradas no fecho." "Latest completed sales included in the close." %}</p>
+          </div>
+          <div class="card-body px-0 pb-0">
+            {% if sales_for_day %}
+              <div class="table-responsive">
+                <table class="table align-items-center mb-0">
+                  <thead>
+                    <tr>
+                      <th class="ps-4">{% ui "Venda" "Sale" %}</th>
+                      <th>{% ui "Cliente" "Customer" %}</th>
+                      <th class="pe-4">{% ui "Total" "Total" %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for sale in sales_for_day %}
+                      <tr>
+                        <td class="ps-4">
+                          <strong class="text-sm">{{ sale.sale_number }}</strong>
+                          <div class="text-xs text-secondary">{{ sale.sold_at|date:"H:i" }}</div>
+                        </td>
+                        <td><span class="text-sm">{{ sale.customer_display_name }}</span></td>
+                        <td class="pe-4"><strong class="text-sm">{{ sale.total_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</strong></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="px-4 py-5 text-center text-secondary">
+                {% ui "Nenhuma venda concluída neste dia." "No completed sales on this day." %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card clinic-page-card">
+          <div class="card-header p-4 border-0">
+            <h4 class="mb-1">{% ui "Cancelamentos e devoluções" "Cancellations and returns" %}</h4>
+            <p class="text-secondary mb-0">{% ui "Movimentos de reversão registados na data seleccionada." "Reversal movements recorded on the selected date." %}</p>
+          </div>
+          <div class="card-body px-0 pb-0">
+            {% if reversals_for_day %}
+              <div class="table-responsive">
+                <table class="table align-items-center mb-0">
+                  <thead>
+                    <tr>
+                      <th class="ps-4">{% ui "Venda" "Sale" %}</th>
+                      <th>{% ui "Estado" "Status" %}</th>
+                      <th class="pe-4">{% ui "Impacto" "Impact" %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for sale in reversals_for_day %}
+                      <tr>
+                        <td class="ps-4">
+                          <strong class="text-sm">{{ sale.sale_number }}</strong>
+                          <div class="text-xs text-secondary">{{ sale.reversed_at|date:"H:i" }}</div>
+                        </td>
+                        <td>
+                          {% if sale.status == "cancelled" %}
+                            <span class="clinic-status clinic-status-warning">{{ sale.get_status_display }}</span>
+                          {% else %}
+                            <span class="clinic-status clinic-status-info">{{ sale.get_status_display }}</span>
+                          {% endif %}
+                        </td>
+                        <td class="pe-4"><strong class="text-sm">{{ sale.total_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</strong></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="px-4 py-5 text-center text-secondary">
+                {% ui "Sem cancelamentos ou devoluções nesta data." "No cancellations or returns on this date." %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

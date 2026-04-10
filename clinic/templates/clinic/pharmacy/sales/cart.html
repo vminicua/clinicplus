@@ -7,7 +7,7 @@
 {% block extra_js %}
 <script>
   (function() {
-    let pharmacyItemInfoRequestId = 0;
+    let pharmacySelectorPayload = null;
 
     function getCsrfToken() {
       const cookie = document.cookie
@@ -58,6 +58,51 @@
       }
     }
 
+    function getDefaultSelectorPayload() {
+      return {
+        currency: 'MZN',
+        labels: {
+          selectWarehouse: 'Seleccione primeiro o armazém para orientar a escolha do produto.',
+          selectProduct: 'Seleccione o produto para ver preço e stock disponível.',
+          outOfStock: 'Sem stock disponível neste armazém.',
+          available: 'Disponível',
+          reserved: 'Já no carrinho',
+          canAdd: 'Pode adicionar até',
+          unitPrice: 'Preço unitário',
+        },
+        items: {
+          medicamento: {},
+          consumivel: {},
+        },
+      };
+    }
+
+    function getSelectorPayload() {
+      if (pharmacySelectorPayload) {
+        return pharmacySelectorPayload;
+      }
+
+      const node = document.getElementById('pharmacy-selector-payload');
+      if (!node) {
+        pharmacySelectorPayload = getDefaultSelectorPayload();
+        return pharmacySelectorPayload;
+      }
+
+      try {
+        pharmacySelectorPayload = JSON.parse(node.textContent);
+      } catch (error) {
+        pharmacySelectorPayload = getDefaultSelectorPayload();
+      }
+
+      return pharmacySelectorPayload;
+    }
+
+    function setSelectorPayload(payload) {
+      if (payload && typeof payload === 'object') {
+        pharmacySelectorPayload = payload;
+      }
+    }
+
     function syncPharmacyAddForm(root) {
       const form = root.querySelector('[data-pharmacy-add-form="1"]');
       if (!form) {
@@ -72,13 +117,18 @@
       const addButton = form.querySelector('[data-pharmacy-add-button]');
       const medicationWrapper = form.querySelector('[data-pharmacy-field="medicamento"]');
       const consumableWrapper = form.querySelector('[data-pharmacy-field="consumivel"]');
-      const itemInfoUrl = form.dataset.itemInfoUrl;
 
       if (!itemTypeField || !warehouseField || !medicationField || !consumableField || !quantityField) {
         return;
       }
 
-      const refresh = async () => {
+      const refresh = () => {
+        const selectorPayload = getSelectorPayload();
+        const labels = {
+          ...getDefaultSelectorPayload().labels,
+          ...(selectorPayload.labels || {}),
+        };
+        const currency = selectorPayload.currency || 'MZN';
         const itemType = itemTypeField.value || 'medicamento';
         const warehouseId = warehouseField.value || '';
         const activeField = itemType === 'consumivel' ? consumableField : medicationField;
@@ -101,7 +151,7 @@
           if (!quantityField.value || Number(quantityField.value) < 1) {
             quantityField.value = '1';
           }
-          setItemSummary(form, 'Seleccione primeiro o armazém para orientar a escolha do produto.');
+          setItemSummary(form, labels.selectWarehouse);
           setItemHint(form, '');
           if (addButton) {
             addButton.disabled = true;
@@ -114,7 +164,7 @@
           if (!quantityField.value || Number(quantityField.value) < 1) {
             quantityField.value = '1';
           }
-          setItemSummary(form, 'Seleccione o produto para ver preço e stock disponível.');
+          setItemSummary(form, labels.selectProduct);
           setItemHint(form, '');
           if (addButton) {
             addButton.disabled = true;
@@ -122,80 +172,53 @@
           return;
         }
 
-        if (!itemInfoUrl) {
-          return;
-        }
+        const selectedItem = selectorPayload.items?.[itemType]?.[selectedItemId] || null;
+        const warehouseStock = selectedItem?.warehouses?.[warehouseId] || null;
+        const remaining = Number(warehouseStock?.remaining || 0);
+        const available = Number(warehouseStock?.available || 0);
+        const reserved = Number(warehouseStock?.reserved || 0);
 
-        const requestId = ++pharmacyItemInfoRequestId;
-        setItemSummary(form, 'A carregar disponibilidade do item seleccionado...');
-        setItemHint(form, '');
-        if (addButton) {
-          addButton.disabled = true;
-        }
-
-        try {
-          const params = new URLSearchParams({
-            warehouse: warehouseId,
-            item_type: itemType,
-            item_id: selectedItemId,
-          });
-          const response = await fetch(`${itemInfoUrl}?${params.toString()}`, {
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest',
-              'Accept': 'application/json',
-            },
-          });
-          const data = await response.json();
-          if (requestId !== pharmacyItemInfoRequestId) {
-            return;
-          }
-
-          if (!response.ok) {
-            quantityField.max = '';
+        if (remaining > 0) {
+          quantityField.max = String(remaining);
+          if (!quantityField.value || Number(quantityField.value) < 1) {
             quantityField.value = '1';
-            setItemSummary(form, data.message || 'Este item não tem stock disponível neste armazém.');
-            setItemHint(form, '');
-            if (addButton) {
-              addButton.disabled = true;
-            }
-            return;
+          } else if (Number(quantityField.value) > remaining) {
+            quantityField.value = String(remaining);
           }
-
-          const remaining = Number(data.remaining_quantity || 0);
-          if (remaining > 0) {
-            quantityField.max = String(remaining);
-            if (!quantityField.value || Number(quantityField.value) < 1) {
-              quantityField.value = '1';
-            } else if (Number(quantityField.value) > remaining) {
-              quantityField.value = String(remaining);
-            }
-          } else {
-            quantityField.max = '';
-            quantityField.value = '1';
-          }
-
-          setItemSummary(
-            form,
-            remaining > 0
-              ? `${data.item_label} · Disponível: ${data.available_quantity} ${data.unit_label} · Já no carrinho: ${data.reserved_quantity} · Pode adicionar até: ${remaining}.`
-              : `${data.item_label} · Sem stock disponível neste armazém.`
-          );
-          setItemHint(form, `Preço unitário: ${data.unit_price} ${data.currency} / ${data.unit_label}`);
-
-          if (addButton) {
-            addButton.disabled = remaining <= 0;
-          }
-        } catch (error) {
-          if (requestId !== pharmacyItemInfoRequestId) {
-            return;
-          }
+        } else {
           quantityField.max = '';
           quantityField.value = '1';
-          setItemSummary(form, 'Não foi possível consultar o stock deste item agora.');
+        }
+
+        if (!selectedItem) {
+          setItemSummary(form, labels.outOfStock);
           setItemHint(form, '');
           if (addButton) {
             addButton.disabled = true;
           }
+          return;
+        }
+
+        if (!warehouseStock || remaining <= 0) {
+          setItemSummary(
+            form,
+            `${selectedItem.label} · ${labels.available}: ${available} ${selectedItem.unit_label} · ${labels.reserved}: ${reserved} · ${labels.outOfStock}`
+          );
+          setItemHint(form, `${labels.unitPrice}: ${selectedItem.unit_price} ${currency} / ${selectedItem.unit_label}`);
+          if (addButton) {
+            addButton.disabled = true;
+          }
+          return;
+        }
+
+        setItemSummary(
+          form,
+          `${selectedItem.label} · ${labels.available}: ${available} ${selectedItem.unit_label} · ${labels.reserved}: ${reserved} · ${labels.canAdd}: ${remaining}.`
+        );
+        setItemHint(form, `${labels.unitPrice}: ${selectedItem.unit_price} ${currency} / ${selectedItem.unit_label}`);
+
+        if (addButton) {
+          addButton.disabled = false;
         }
       };
 
@@ -231,6 +254,7 @@
           },
         });
         const data = await response.json();
+        setSelectorPayload(data.selector_payload);
         replacePartial('[data-pharmacy-stats]', data.stats_html);
         replacePartial('[data-pharmacy-cart-card]', data.cart_card_html);
         replacePartial('[data-pharmacy-checkout-summary]', data.checkout_summary_html);
@@ -294,6 +318,7 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
+      getSelectorPayload();
       syncPharmacyAddForm(document);
     });
   })();

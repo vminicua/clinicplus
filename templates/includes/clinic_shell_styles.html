@@ -146,6 +146,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.45rem 0.8rem;
+    min-height: 42px;
     border-radius: 999px;
     background: #fff;
     border: 1px solid var(--clinic-line);
@@ -167,19 +168,34 @@
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
+    min-height: 42px;
     background: rgba(255, 255, 255, 0.92);
   }
 
   .clinic-branch-trigger {
     justify-content: space-between;
-    min-width: 220px;
+    min-width: 0;
+    max-width: 270px;
   }
 
-  .clinic-branch-trigger small {
-    color: #64748b;
+  .clinic-branch-trigger-label,
+  .clinic-user-pill-text {
     display: block;
-    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .clinic-branch-trigger-label {
+    color: #0f172a;
     font-weight: 600;
+    max-width: 190px;
+  }
+
+  .clinic-user-pill-text {
+    color: #0f172a;
+    font-weight: 600;
+    max-width: 200px;
   }
 
   .clinic-flag-icon {

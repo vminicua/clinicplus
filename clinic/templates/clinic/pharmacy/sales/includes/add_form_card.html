@@ -10,7 +10,7 @@
     </div>
   </div>
   <div class="card-body p-4 pt-0">
-    <form method="post" data-pharmacy-async-form="1" data-pharmacy-add-form="1" data-item-info-url="{% url 'clinic:pharmacy_item_info' %}">
+    <form method="post" data-pharmacy-async-form="1" data-pharmacy-add-form="1">
       {% csrf_token %}
       <input type="hidden" name="cart_action" value="add_item">
       <div class="clinic-form-grid">
@@ -32,7 +32,7 @@
         <div class="full-width">
           <div class="clinic-inline-note" data-pharmacy-item-summary>
             <strong>{% ui "Resumo do item" "Item summary" %}:</strong>
-            <span data-pharmacy-item-summary-text>{% ui "Seleccione o armazém, o tipo e o produto para ver preço e stock em tempo real." "Select the warehouse, type, and product to see price and stock in real time." %}</span>
+            <span data-pharmacy-item-summary-text>{% ui "Seleccione o armazém, o tipo e o produto para ver o preço e o stock disponível." "Select the warehouse, type, and product to see the price and available stock." %}</span>
           </div>
         </div>
       </div>

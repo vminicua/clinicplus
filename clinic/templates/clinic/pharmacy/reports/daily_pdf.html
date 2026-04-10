@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <title>Caixa Farmácia {{ selected_period_label }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 14mm 12mm;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      color: #22313f;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    .header {
+      border-bottom: 2px solid #0f766e;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+
+    .header table,
+    .stats-table,
+    .summary-table,
+    .list-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .muted {
+      color: #64748b;
+    }
+
+    .section {
+      margin-bottom: 16px;
+    }
+
+    .section h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #0f766e;
+      margin-bottom: 8px;
+    }
+
+    .chip {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #ecfeff;
+      border: 1px solid #bae6fd;
+      color: #155e75;
+      font-weight: 700;
+      font-size: 10px;
+    }
+
+    .stat-card {
+      border: 1px solid #dbe4ee;
+      border-radius: 10px;
+      padding: 10px;
+      background: #f8fafc;
+      width: 24%;
+      vertical-align: top;
+    }
+
+    .label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .summary-table th,
+    .summary-table td,
+    .list-table th,
+    .list-table td {
+      border: 1px solid #dbe4ee;
+      padding: 7px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .summary-table thead th,
+    .list-table thead th {
+      background: #eff6ff;
+      color: #0f172a;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .empty {
+      padding: 12px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <table>
+      <tr>
+        <td>
+          <h1>Relatório de Caixa da Farmácia</h1>
+          <p class="muted">
+            {% if current_branch %}
+              {{ current_branch.name }}{% if current_branch.code %} · {{ current_branch.code }}{% endif %}
+            {% else %}
+              Clinic Plus
+            {% endif %}
+          </p>
+        </td>
+        <td style="text-align: right;">
+          <span class="chip">{{ selected_period_label }}</span>
+        </td>
+      </tr>
+    </table>
+    <table style="margin-top: 10px;">
+      <tr>
+        <td class="muted">Gerado em: {{ generated_at|date:"d/m/Y H:i" }}</td>
+        <td class="muted" style="text-align: right;">Utilizador: {{ request.user.get_full_name|default:request.user.username }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <table class="stats-table">
+      <tr>
+        <td class="stat-card">
+          <div class="label">Vendas concluídas</div>
+          <div class="value">{{ sold_count }}</div>
+        </td>
+        <td style="width: 1.33%;"></td>
+        <td class="stat-card">
+          <div class="label">Total vendido</div>
+          <div class="value">{{ sold_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</div>
+        </td>
+        <td style="width: 1.33%;"></td>
+        <td class="stat-card">
+          <div class="label">Reversões</div>
+          <div class="value">{{ reversed_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</div>
+        </td>
+        <td style="width: 1.33%;"></td>
+        <td class="stat-card">
+          <div class="label">Caixa líquido</div>
+          <div class="value">{{ net_cash_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Resumo do período</h2>
+    <table class="summary-table">
+      <tbody>
+        <tr>
+          <th>Período</th>
+          <td>{{ selected_period_label }}</td>
+          <th>Dias</th>
+          <td>{{ selected_day_count }}</td>
+        </tr>
+        <tr>
+          <th>Base sem IVA</th>
+          <td>{{ sold_base|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</td>
+          <th>IVA incluído</th>
+          <td>{{ sold_tax|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Resumo por método de pagamento</h2>
+    {% if payment_breakdown %}
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Método</th>
+            <th>Vendas</th>
+            <th class="right">Bruto</th>
+            <th class="right">IVA incluído</th>
+            <th class="right">Reversões</th>
+            <th class="right">Líquido</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in payment_breakdown %}
+            <tr>
+              <td>{{ entry.method_name }}</td>
+              <td>{{ entry.sales_count }}</td>
+              <td class="right">{{ entry.gross_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</td>
+              <td class="right">{{ entry.tax_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</td>
+              <td class="right">{{ entry.reversal_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</td>
+              <td class="right">{{ entry.net_total|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty">Sem vendas concluídas no período seleccionado.</div>
+    {% endif %}
+  </div>
+
+  <div class="section">
+    <h2>Vendas consideradas</h2>
+    {% if report_sales %}
+      <table class="list-table">
+        <thead>
+          <tr>
+            <th>Venda</th>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th>Método</th>
+            <th class="right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in report_sales %}
+            <tr>
+              <td>{{ sale.sale_number }}</td>
+              <td>{{ sale.sold_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ sale.customer_display_name }}</td>
+              <td>{{ sale.payment_method.name|default:"Sem método" }}</td>
+              <td class="right">{{ sale.total_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty">Nenhuma venda concluída no período seleccionado.</div>
+    {% endif %}
+  </div>
+
+  <div class="section">
+    <h2>Cancelamentos e devoluções</h2>
+    {% if report_reversals %}
+      <table class="list-table">
+        <thead>
+          <tr>
+            <th>Venda</th>
+            <th>Data</th>
+            <th>Estado</th>
+            <th class="right">Impacto</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in report_reversals %}
+            <tr>
+              <td>{{ sale.sale_number }}</td>
+              <td>{{ sale.reversed_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ sale.get_status_display }}</td>
+              <td class="right">{{ sale.total_amount|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty">Sem cancelamentos ou devoluções no período seleccionado.</div>
+    {% endif %}
+  </div>
+</body>
+</html>

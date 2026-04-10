@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import Count, Exists, F, Max, OuterRef, Prefetch, Q, Sum
 from django.db.models.functions import Coalesce
@@ -2787,30 +2788,48 @@ class PharmacyDailyReportView(AnyPermissionRequiredMixin, ClinicPageMixin, Templ
             "Daily pharmacy cash close with sales, included VAT, reversals, and payment-method breakdown.",
         )
 
-    def get_selected_date(self):
-        requested_date = self.request.GET.get("date")
-        if requested_date:
-            try:
-                return date.fromisoformat(requested_date)
-            except ValueError:
-                pass
-        return timezone.localdate()
+    def parse_requested_date(self, raw_value):
+        if not raw_value:
+            return None
+        try:
+            return date.fromisoformat(raw_value)
+        except ValueError:
+            return None
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        selected_date = self.get_selected_date()
+    def get_selected_period(self):
+        requested_single_date = self.parse_requested_date(self.request.GET.get("date"))
+        requested_start_date = self.parse_requested_date(self.request.GET.get("start_date"))
+        requested_end_date = self.parse_requested_date(self.request.GET.get("end_date"))
+        fallback_date = requested_single_date or timezone.localdate()
+
+        start_date = requested_start_date or requested_end_date or fallback_date
+        end_date = requested_end_date or requested_start_date or fallback_date
+
+        if start_date > end_date:
+            start_date, end_date = end_date, start_date
+
+        return start_date, end_date
+
+    def build_report_context(self):
+        cached_context = getattr(self, "_pharmacy_daily_report_context", None)
+        if cached_context is not None:
+            return cached_context
+
+        start_date, end_date = self.get_selected_period()
         visible_sales = pharmacy_sale_queryset(self.request)
-        day_start, day_end = local_day_bounds(selected_date)
-        sales_for_day = visible_sales.filter(sold_at__gte=day_start, sold_at__lt=day_end)
-        reversals_for_day = visible_sales.filter(reversed_at__gte=day_start, reversed_at__lt=day_end).exclude(
+        period_start, _period_start_end = local_day_bounds(start_date)
+        _period_end_start, period_end = local_day_bounds(end_date)
+        sales_for_day = visible_sales.filter(sold_at__gte=period_start, sold_at__lt=period_end)
+        reversals_for_day = visible_sales.filter(reversed_at__gte=period_start, reversed_at__lt=period_end).exclude(
             status=PharmacySale.StatusChoices.COMPLETED
         )
 
-        completed_sales = sales_for_day.filter(status=PharmacySale.StatusChoices.COMPLETED)
+        completed_sales = list(sales_for_day.filter(status=PharmacySale.StatusChoices.COMPLETED))
+        reversals = list(reversals_for_day)
         sold_total = quantize_money(sum(sale.total_amount for sale in completed_sales))
         sold_base = quantize_money(sum(sale.subtotal for sale in completed_sales))
         sold_tax = quantize_money(sum(sale.tax_amount for sale in completed_sales))
-        reversed_total = quantize_money(sum(sale.total_amount for sale in reversals_for_day))
+        reversed_total = quantize_money(sum(sale.total_amount for sale in reversals))
         net_cash_total = quantize_money(sold_total - reversed_total)
 
         payment_breakdown = []
@@ -2835,7 +2854,7 @@ class PharmacyDailyReportView(AnyPermissionRequiredMixin, ClinicPageMixin, Templ
             entry["gross_total"] += sale.total_amount
             entry["tax_total"] += sale.tax_amount
 
-        for sale in reversals_for_day:
+        for sale in reversals:
             key = sale.payment_method_id or f"manual-{sale.payment_method_id}"
             entry = payment_methods.setdefault(
                 key,
@@ -2862,18 +2881,86 @@ class PharmacyDailyReportView(AnyPermissionRequiredMixin, ClinicPageMixin, Templ
 
         payment_breakdown.sort(key=lambda item: item["method_name"].lower())
 
-        context["selected_date"] = selected_date
-        context["sales_for_day"] = list(completed_sales[:12])
-        context["reversals_for_day"] = list(reversals_for_day[:12])
-        context["sold_count"] = completed_sales.count()
-        context["reversed_count"] = reversals_for_day.count()
-        context["sold_total"] = sold_total
-        context["sold_base"] = sold_base
-        context["sold_tax"] = sold_tax
-        context["reversed_total"] = reversed_total
-        context["net_cash_total"] = net_cash_total
-        context["payment_breakdown"] = payment_breakdown
+        selected_day_count = (end_date - start_date).days + 1
+        is_single_day = start_date == end_date
+        period_label = (
+            start_date.strftime("%d/%m/%Y")
+            if is_single_day
+            else f"{start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}"
+        )
+        export_query = urlencode(
+            {
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "export": "pdf",
+            }
+        )
+
+        context = {
+            "selected_date": start_date,
+            "selected_start_date": start_date,
+            "selected_end_date": end_date,
+            "selected_day_count": selected_day_count,
+            "selected_period_label": period_label,
+            "is_single_day": is_single_day,
+            "sales_for_day": completed_sales[:12],
+            "reversals_for_day": reversals[:12],
+            "report_sales": completed_sales,
+            "report_reversals": reversals,
+            "sold_count": len(completed_sales),
+            "reversed_count": len(reversals),
+            "sold_total": sold_total,
+            "sold_base": sold_base,
+            "sold_tax": sold_tax,
+            "reversed_total": reversed_total,
+            "net_cash_total": net_cash_total,
+            "payment_breakdown": payment_breakdown,
+            "report_export_query": export_query,
+        }
+        self._pharmacy_daily_report_context = context
         return context
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.build_report_context())
+        return context
+
+    def render_pdf_response(self):
+        report_context = self.build_report_context()
+        html = render_to_string(
+            "clinic/pharmacy/reports/daily_pdf.html",
+            {
+                **report_context,
+                "generated_at": timezone.localtime(),
+                "current_branch": getattr(self.request, "clinic_current_branch", None),
+                "system_preferences": get_system_preferences(),
+                "request": self.request,
+            },
+            request=self.request,
+        )
+
+        from weasyprint import HTML
+
+        pdf_bytes = HTML(string=html, base_url=self.request.build_absolute_uri("/")).write_pdf()
+        if report_context["is_single_day"]:
+            filename_suffix = report_context["selected_start_date"].isoformat()
+        else:
+            filename_suffix = (
+                f"{report_context['selected_start_date'].isoformat()}-a-"
+                f"{report_context['selected_end_date'].isoformat()}"
+            )
+        filename = f"caixa-farmacia-{filename_suffix}.pdf"
+        return FileResponse(
+            BytesIO(pdf_bytes),
+            as_attachment=True,
+            filename=filename,
+            content_type="application/pdf",
+        )
+
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("export") == "pdf":
+            return self.render_pdf_response()
+        return super().get(request, *args, **kwargs)
 
 
 class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, TemplateView):
@@ -2895,6 +2982,7 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
         context = super().get_context_data(**kwargs)
         cart_state = resolve_pharmacy_cart(self.request)
         context.update(cart_state)
+        context["pharmacy_selector_payload"] = build_pharmacy_selector_payload(self.request, cart_state["cart"])
         context.setdefault(
             "add_form",
             PharmacyCartItemForm(request=self.request, cart_snapshot=cart_state["cart"]),
@@ -2944,6 +3032,7 @@ class PharmacySaleCreateView(AnyPermissionRequiredMixin, ClinicPageMixin, Templa
                 context,
             ),
             "message": message,
+            "selector_payload": build_pharmacy_selector_payload(request, cart_state["cart"]),
         }
         if refresh_add_form:
             context["add_form"] = add_form or PharmacyCartItemForm(

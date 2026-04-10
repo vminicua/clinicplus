@@ -72,26 +72,44 @@
 
           <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
             <div>
-              <label for="daily-report-date" class="form-label mb-1">{% ui "Data" "Date" %}</label>
-              <input id="daily-report-date" type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="form-control">
+              <label for="daily-report-start" class="form-label mb-1">{% ui "De" "From" %}</label>
+              <input id="daily-report-start" type="date" name="start_date" value="{{ selected_start_date|date:'Y-m-d' }}" class="form-control">
+            </div>
+            <div>
+              <label for="daily-report-end" class="form-label mb-1">{% ui "Até" "To" %}</label>
+              <input id="daily-report-end" type="date" name="end_date" value="{{ selected_end_date|date:'Y-m-d' }}" class="form-control">
             </div>
             <button type="submit" class="btn bg-gradient-dark mb-0">
               <i class="material-symbols-rounded text-sm me-1">filter_alt</i>
-              {% ui "Actualizar" "Refresh" %}
+              {% ui "Filtrar" "Filter" %}
             </button>
+            <a href="{% url 'clinic:pharmacy_daily_report' %}" class="btn btn-outline-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">today</i>
+              {% ui "Hoje" "Today" %}
+            </a>
+            <a href="{% url 'clinic:pharmacy_daily_report' %}?{{ report_export_query }}" class="btn btn-outline-dark mb-0">
+              <i class="material-symbols-rounded text-sm me-1">download</i>
+              {% ui "Baixar PDF" "Download PDF" %}
+            </a>
           </form>
         </div>
       </div>
 
       <div class="card-body pt-0">
         <div class="row g-3">
-          <div class="col-md-4">
-            <div class="clinic-inline-note"><strong>{% ui "Data seleccionada" "Selected date" %}:</strong> {{ selected_date|date:"d/m/Y" }}</div>
+          <div class="col-lg-3 col-md-6">
+            <div class="clinic-inline-note">
+              <strong>{% if is_single_day %}{% ui "Data seleccionada" "Selected date" %}{% else %}{% ui "Período seleccionado" "Selected range" %}{% endif %}:</strong>
+              {{ selected_period_label }}
+            </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-lg-3 col-md-6">
+            <div class="clinic-inline-note"><strong>{% ui "Dias no filtro" "Days in filter" %}:</strong> {{ selected_day_count }}</div>
+          </div>
+          <div class="col-lg-3 col-md-6">
             <div class="clinic-inline-note"><strong>{% ui "Base sem IVA" "Net base" %}:</strong> {{ sold_base|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</div>
           </div>
-          <div class="col-md-4">
+          <div class="col-lg-3 col-md-6">
             <div class="clinic-inline-note"><strong>{% ui "IVA incluído" "Included VAT" %}:</strong> {{ sold_tax|floatformat:2 }} {{ system_preferences.default_currency|default:"MZN" }}</div>
           </div>
         </div>
@@ -145,7 +163,7 @@
       <div class="col-xl-5">
         <div class="card clinic-page-card mb-4">
           <div class="card-header p-4 border-0">
-            <h4 class="mb-1">{% ui "Vendas do dia" "Sales of the day" %}</h4>
+            <h4 class="mb-1">{% if is_single_day %}{% ui "Vendas do dia" "Sales of the day" %}{% else %}{% ui "Vendas do período" "Sales in range" %}{% endif %}</h4>
             <p class="text-secondary mb-0">{% ui "Últimas vendas concluídas consideradas no fecho." "Latest completed sales included in the close." %}</p>
           </div>
           <div class="card-body px-0 pb-0">
@@ -175,7 +193,11 @@
               </div>
             {% else %}
               <div class="px-4 py-5 text-center text-secondary">
-                {% ui "Nenhuma venda concluída neste dia." "No completed sales on this day." %}
+                {% if is_single_day %}
+                  {% ui "Nenhuma venda concluída neste dia." "No completed sales on this day." %}
+                {% else %}
+                  {% ui "Nenhuma venda concluída neste período." "No completed sales in this period." %}
+                {% endif %}
               </div>
             {% endif %}
           </div>
@@ -184,7 +206,13 @@
         <div class="card clinic-page-card">
           <div class="card-header p-4 border-0">
             <h4 class="mb-1">{% ui "Cancelamentos e devoluções" "Cancellations and returns" %}</h4>
-            <p class="text-secondary mb-0">{% ui "Movimentos de reversão registados na data seleccionada." "Reversal movements recorded on the selected date." %}</p>
+            <p class="text-secondary mb-0">
+              {% if is_single_day %}
+                {% ui "Movimentos de reversão registados na data seleccionada." "Reversal movements recorded on the selected date." %}
+              {% else %}
+                {% ui "Movimentos de reversão registados no período seleccionado." "Reversal movements recorded in the selected range." %}
+              {% endif %}
+            </p>
           </div>
           <div class="card-body px-0 pb-0">
             {% if reversals_for_day %}
@@ -219,7 +247,11 @@
               </div>
             {% else %}
               <div class="px-4 py-5 text-center text-secondary">
-                {% ui "Sem cancelamentos ou devoluções nesta data." "No cancellations or returns on this date." %}
+                {% if is_single_day %}
+                  {% ui "Sem cancelamentos ou devoluções nesta data." "No cancellations or returns on this date." %}
+                {% else %}
+                  {% ui "Sem cancelamentos ou devoluções neste período." "No cancellations or returns in this period." %}
+                {% endif %}
               </div>
             {% endif %}
           </div>

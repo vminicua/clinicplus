@@ -16,9 +16,8 @@
         <div class="dropdown">
           <button class="btn btn-sm btn-outline-dark mb-0 clinic-language-trigger clinic-branch-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="material-symbols-rounded text-sm">apartment</i>
-            <span class="text-start">
-              <strong class="d-block">{{ current_branch.name|default:"-" }}</strong>
-              <small>{{ current_branch.code|default:"" }}</small>
+            <span class="clinic-branch-trigger-label text-start" title="{{ current_branch.name|default:'-' }}{% if current_branch.code %} · {{ current_branch.code }}{% endif %}">
+              {{ current_branch.name|default:"-" }}{% if current_branch.code %} · {{ current_branch.code }}{% endif %}
             </span>
             <i class="material-symbols-rounded text-sm">expand_more</i>
           </button>
@@ -38,6 +37,13 @@
               </form>
             {% endfor %}
           </div>
+        </div>
+      {% endif %}
+
+      {% if request.user.is_authenticated %}
+        <div class="clinic-user-pill" title="{{ request.user.get_full_name|default:request.user.username }}">
+          <span class="clinic-avatar">{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}</span>
+          <span class="clinic-user-pill-text">{{ request.user.get_full_name|default:request.user.username }}</span>
         </div>
       {% endif %}
 

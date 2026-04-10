@@ -1220,6 +1220,92 @@ class ClinicalStructureTests(TestCase):
         self.assertContains(response, "116.00")
         self.assertContains(response, "16.00")
 
+    def test_pharmacy_daily_report_filters_by_date_range(self):
+        payment_method = PaymentMethod.objects.create(
+            code="cash_range",
+            name="Dinheiro",
+            category=PaymentMethod.CategoryChoices.CASH,
+            sort_order=10,
+        )
+        sale_outside = PharmacySale.objects.create(
+            branch=self.branch,
+            warehouse=self.warehouse,
+            customer_name="Cliente fora",
+            payment_method=payment_method,
+            subtotal=Decimal("50.00"),
+            tax_rate=Decimal("16.00"),
+            tax_amount=Decimal("8.00"),
+            total_amount=Decimal("58.00"),
+            sold_by=self.user,
+        )
+        sale_inside = PharmacySale.objects.create(
+            branch=self.branch,
+            warehouse=self.warehouse,
+            customer_name="Cliente dentro",
+            payment_method=payment_method,
+            subtotal=Decimal("100.00"),
+            tax_rate=Decimal("16.00"),
+            tax_amount=Decimal("16.00"),
+            total_amount=Decimal("116.00"),
+            sold_by=self.user,
+        )
+        sale_outside.sold_at = timezone.now() - timedelta(days=3)
+        sale_outside.save(update_fields=["sold_at", "updated_at"])
+        sale_inside.sold_at = timezone.now() - timedelta(days=1)
+        sale_inside.save(update_fields=["sold_at", "updated_at"])
+
+        target_date = timezone.localdate() - timedelta(days=1)
+        response = self.client.get(
+            reverse("clinic:pharmacy_daily_report"),
+            {
+                "start_date": target_date.isoformat(),
+                "end_date": target_date.isoformat(),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cliente dentro")
+        self.assertNotContains(response, "Cliente fora")
+        self.assertContains(response, "116.00")
+        self.assertNotContains(response, "58.00")
+
+    def test_pharmacy_daily_report_pdf_download(self):
+        payment_method = PaymentMethod.objects.create(
+            code="mobile_pdf",
+            name="M-Pesa",
+            category=PaymentMethod.CategoryChoices.MOBILE_MONEY,
+            sort_order=30,
+        )
+        sale = PharmacySale.objects.create(
+            branch=self.branch,
+            warehouse=self.warehouse,
+            customer_name="Cliente PDF",
+            payment_method=payment_method,
+            subtotal=Decimal("100.00"),
+            tax_rate=Decimal("16.00"),
+            tax_amount=Decimal("16.00"),
+            total_amount=Decimal("116.00"),
+            sold_by=self.user,
+        )
+        sale.sold_at = timezone.now()
+        sale.save(update_fields=["sold_at", "updated_at"])
+
+        selected_date = timezone.localdate().isoformat()
+        response = self.client.get(
+            reverse("clinic:pharmacy_daily_report"),
+            {
+                "start_date": selected_date,
+                "end_date": selected_date,
+                "export": "pdf",
+            },
+        )
+        pdf_bytes = b"".join(response.streaming_content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn(f"caixa-farmacia-{selected_date}.pdf", response["Content-Disposition"])
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+
     def test_specialty_and_department_display_descriptions_are_normalized(self):
         specialty = Especialidade.objects.create(
             name="Cardiologista",

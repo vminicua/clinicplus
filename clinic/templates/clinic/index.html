@@ -269,30 +269,30 @@
                 <div class="row g-3">
                   <div class="col-sm-6">
                     <div class="clinic-mini-stat h-100">
-                      <p class="text-sm text-white opacity-8 mb-1">{% ui "Consultas hoje" "Appointments today" %}</p>
+                      <p class="text-sm text-white opacity-8 mb-1">{% ui "Marcações de hoje" "Today's bookings" %}</p>
                       <h3 class="text-white mb-1">{{ appointments_today }}</h3>
-                      <p class="text-sm text-white opacity-8 mb-0">{% ui "Fluxo sem atraso critico" "Flow with no critical delay" %}</p>
+                      <p class="text-sm text-white opacity-8 mb-0">{{ completed_consultations_today }} {% ui "consultas registadas hoje" "consultations recorded today" %}</p>
                     </div>
                   </div>
                   <div class="col-sm-6">
                     <div class="clinic-mini-stat h-100">
-                      <p class="text-sm text-white opacity-8 mb-1">{% ui "Satisfacao" "Satisfaction" %}</p>
-                      <h3 class="text-white mb-1">{{ satisfaction_rate }}%</h3>
-                      <p class="text-sm text-white opacity-8 mb-0">{% ui "Experiencia positiva" "Positive experience" %}</p>
+                      <p class="text-sm text-white opacity-8 mb-1">{% ui "Agenda concluída" "Completed schedule" %}</p>
+                      <h3 class="text-white mb-1">{{ completed_rate }}%</h3>
+                      <p class="text-sm text-white opacity-8 mb-0">{{ completed_consultations_month }} {% ui "consultas registadas no mês" "consultations recorded this month" %}</p>
                     </div>
                   </div>
                   <div class="col-sm-6">
                     <div class="clinic-mini-stat h-100">
                       <p class="text-sm text-white opacity-8 mb-1">{% ui "Receita do dia" "Revenue today" %}</p>
-                      <h3 class="text-white mb-1">{{ revenue_today }}</h3>
-                      <p class="text-sm text-white opacity-8 mb-0">{% ui "Bom ritmo de faturacao" "Healthy billing pace" %}</p>
+                      <h3 class="text-white mb-1">{{ revenue_today|floatformat:2 }} {{ currency }}</h3>
+                      <p class="text-sm text-white opacity-8 mb-0">{{ sales_this_month }} {% ui "vendas concluídas no mês" "completed sales this month" %}</p>
                     </div>
                   </div>
                   <div class="col-sm-6">
                     <div class="clinic-mini-stat h-100">
-                      <p class="text-sm text-white opacity-8 mb-1">{% ui "Acompanhamentos" "Follow-ups" %}</p>
-                      <h3 class="text-white mb-1">{{ pending_followups }}</h3>
-                      <p class="text-sm text-white opacity-8 mb-0">{% ui "Retornos para confirmar" "Follow-up returns to confirm" %}</p>
+                      <p class="text-sm text-white opacity-8 mb-1">{% ui "Pendências da agenda" "Schedule backlog" %}</p>
+                      <h3 class="text-white mb-1">{{ pending_appointments }}</h3>
+                      <p class="text-sm text-white opacity-8 mb-0">{{ today_capacity_slots }} {% ui "vagas planeadas para hoje" "planned slots for today" %}</p>
                     </div>
                   </div>
                 </div>
@@ -318,7 +318,7 @@
           <hr class="dark horizontal my-0" />
           <div class="card-footer p-3">
             <p class="mb-0 text-sm">
-              <span class="text-success font-weight-bolder">+6%</span>nas ultimas 4 semanas
+              <span class="text-success font-weight-bolder">{{ new_patients_this_month }}</span> {% ui "novos este mês" "new this month" %}
             </p>
           </div>
         </div>
@@ -337,7 +337,7 @@
           <hr class="dark horizontal my-0" />
           <div class="card-footer p-3">
             <p class="mb-0 text-sm">
-              <span class="text-success font-weight-bolder">{{ confirmed_rate }}%</span>da agenda confirmada
+              <span class="text-success font-weight-bolder">{{ doctors_on_duty_today }}</span> {% ui "de serviço hoje" "on duty today" %}
             </p>
           </div>
         </div>
@@ -349,14 +349,14 @@
               <i class="material-symbols-rounded opacity-10">event_available</i>
             </div>
             <div class="text-end pt-1">
-              <p class="text-sm mb-0">{% ui "Agendamentos" "Appointments" %}</p>
-              <h4 class="mb-0">{{ total_appointments }}</h4>
+              <p class="text-sm mb-0">{% ui "Agendamentos do mês" "Appointments this month" %}</p>
+              <h4 class="mb-0">{{ appointments_this_month }}</h4>
             </div>
           </div>
           <hr class="dark horizontal my-0" />
           <div class="card-footer p-3">
             <p class="mb-0 text-sm">
-              <span class="text-success font-weight-bolder">{{ completed_consultations }}</span>consultas concluidas
+              <span class="text-success font-weight-bolder">{{ completed_consultations_month }}</span> {% ui "consultas registadas" "consultations recorded" %}
             </p>
           </div>
         </div>
@@ -369,13 +369,13 @@
             </div>
             <div class="text-end pt-1">
               <p class="text-sm mb-0">{% ui "Receita do mes" "Revenue this month" %}</p>
-              <h4 class="mb-0">{{ revenue_month }}</h4>
+              <h4 class="mb-0">{{ revenue_month|floatformat:2 }} {{ currency }}</h4>
             </div>
           </div>
           <hr class="dark horizontal my-0" />
           <div class="card-footer p-3">
             <p class="mb-0 text-sm">
-              <span class="text-warning font-weight-bolder">{{ monthly_target_progress }}%</span>da meta
+              <span class="text-warning font-weight-bolder">{{ sales_this_month }}</span> {% ui "vendas concluídas" "completed sales" %}
             </p>
           </div>
         </div>
@@ -390,7 +390,7 @@
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <h6 class="mb-0">{% ui "Ritmo semanal da clinica" "Clinic weekly pace" %}</h6>
-                <p class="text-sm text-secondary mb-0">{% ui "Consultas realizadas e faturacao projetada." "Completed appointments and projected billing." %}</p>
+                <p class="text-sm text-secondary mb-0">{% ui "Marcações e faturação da farmácia nesta semana." "Bookings and pharmacy billing this week." %}</p>
               </div>
               <span class="badge bg-gradient-light text-dark">{% ui "Atualizado hoje" "Updated today" %}</span>
             </div>
@@ -421,7 +421,7 @@
               <div class="d-flex align-items-start">
                 <i class="material-symbols-rounded text-dark me-2">pulse_alert</i>
                 <div>
-                  <strong>{% ui "Foco do turno:" "Shift focus:" %}</strong> {% ui "manter retornos e encaixes da tarde sob controlo." "keep afternoon follow-ups and extra appointments under control." %}
+                  <strong>{% ui "Foco do turno:" "Shift focus:" %}</strong> {{ shift_focus_text }}
                 </div>
               </div>
             </div>
@@ -474,6 +474,10 @@
                       </td>
                       <td><span class="badge bg-gradient-{{ appointment.tone }}">{{ appointment.status }}</span></td>
                     </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="4" class="text-center text-secondary py-4">{% ui "Sem marcações recentes para mostrar." "No recent bookings to show." %}</td>
+                    </tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -499,10 +503,12 @@
                   </div>
                 </div>
                 <div class="text-end">
-                  <p class="text-sm font-weight-bold mb-0">{{ doctor.appointments }} consultas</p>
-                  <span class="text-xs text-success">{{ doctor.satisfaction }}% satisfacao</span>
+                  <p class="text-sm font-weight-bold mb-0">{{ doctor.appointments }} {% ui "marcações" "bookings" %}</p>
+                  <span class="text-xs text-success">{{ doctor.completed }} {% ui "concluídas" "completed" %}</span>
                 </div>
               </div>
+            {% empty %}
+              <p class="text-sm text-secondary mb-0">{% ui "Ainda não há médicos com agenda nesta semana." "There are no doctors with bookings this week yet." %}</p>
             {% endfor %}
           </div>
         </div>
@@ -526,6 +532,8 @@
                     <p class="text-secondary font-weight-bold text-xs mb-0">{{ event.time }}</p>
                   </div>
                 </div>
+              {% empty %}
+                <p class="text-sm text-secondary mb-0">{% ui "Sem eventos recentes para esta sucursal." "No recent events for this branch." %}</p>
               {% endfor %}
             </div>
           </div>
@@ -551,33 +559,33 @@
               <div class="col-md-4 mb-3">
                 <div class="border border-radius-lg p-3 h-100">
                   <p class="text-sm text-secondary mb-1">{% ui "Receita de hoje" "Revenue today" %}</p>
-                  <h5 class="mb-1">{{ revenue_today }}</h5>
-                  <span class="text-xs text-success">{% ui "Fluxo de caixa saudavel" "Healthy cash flow" %}</span>
+                  <h5 class="mb-1">{{ revenue_today|floatformat:2 }} {{ currency }}</h5>
+                  <span class="text-xs text-success">{{ sales_this_month }} {% ui "vendas concluídas no mês" "completed sales this month" %}</span>
                 </div>
               </div>
               <div class="col-md-4 mb-3">
                 <div class="border border-radius-lg p-3 h-100">
-                  <p class="text-sm text-secondary mb-1">{% ui "Consultas concluidas" "Completed consultations" %}</p>
-                  <h5 class="mb-1">{{ completed_consultations }}</h5>
-                  <span class="text-xs text-info">{% ui "Bom aproveitamento" "Good utilization" %}</span>
+                  <p class="text-sm text-secondary mb-1">{% ui "Consultas registadas hoje" "Consultations recorded today" %}</p>
+                  <h5 class="mb-1">{{ completed_consultations_today }}</h5>
+                  <span class="text-xs text-info">{{ completed_rate }}% {% ui "da agenda do mês concluída" "of the monthly schedule completed" %}</span>
                 </div>
               </div>
               <div class="col-md-4 mb-3">
                 <div class="border border-radius-lg p-3 h-100">
-                  <p class="text-sm text-secondary mb-1">{% ui "Clínicas" "Clinics" %}</p>
-                  <h5 class="mb-1">{{ total_clinics }}</h5>
-                  <span class="text-xs text-warning">{% ui "Estrutura pronta para expandir" "Structure ready to expand" %}</span>
+                  <p class="text-sm text-secondary mb-1">{% ui "Sucursais visíveis" "Visible branches" %}</p>
+                  <h5 class="mb-1">{{ visible_branches_count }}</h5>
+                  <span class="text-xs text-warning">{% ui "escopo activo para o utilizador" "active scope for this user" %}</span>
                 </div>
               </div>
             </div>
             <div class="alert alert-light border mb-0">
               <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                  <strong>{% ui "Próxima melhoria:" "Next improvement:" %}</strong> {% ui "ligar estes cards aos dados reais do MySQL para o painel ficar vivo." "connect these cards to real MySQL data so the dashboard becomes live." %}
+                  <strong>{% ui "Estado do painel:" "Dashboard status:" %}</strong> {% ui "dados sincronizados com marcações, consultas e vendas registadas na aplicação." "data synced with bookings, consultations, and sales recorded in the application." %}
                 </div>
                 <span class="clinic-chip">
                   <i class="material-symbols-rounded" style="font-size: 1rem;">data_object</i>
-                  {% ui "Integração em preparação" "Integration in progress" %}
+                  {% ui "Dados sincronizados" "Live data connected" %}
                 </span>
               </div>
             </div>
@@ -590,18 +598,27 @@
 
 {% block extra_js %}
   {% load static %}
+  {{ weekly_chart_labels|json_script:"dashboard-weekly-chart-labels" }}
+  {{ weekly_chart_appointments|json_script:"dashboard-weekly-chart-appointments" }}
+  {{ weekly_chart_revenue|json_script:"dashboard-weekly-chart-revenue" }}
+  {{ currency|json_script:"dashboard-currency" }}
   <script src="{% static 'assets/js/plugins/chartjs.min.js' %}"></script>
   <script>
     const clinicChart = document.getElementById('clinicActivityChart')
     if (clinicChart) {
+      const weeklyLabels = JSON.parse(document.getElementById('dashboard-weekly-chart-labels').textContent)
+      const weeklyAppointments = JSON.parse(document.getElementById('dashboard-weekly-chart-appointments').textContent)
+      const weeklyRevenue = JSON.parse(document.getElementById('dashboard-weekly-chart-revenue').textContent)
+      const dashboardCurrency = JSON.parse(document.getElementById('dashboard-currency').textContent)
+
       new Chart(clinicChart.getContext('2d'), {
         type: 'line',
         data: {
-          labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'],
+          labels: weeklyLabels,
           datasets: [
             {
-              label: '{% ui "Consultas" "Consultations" %}',
-              data: [12, 19, 15, 22, 20, 11, 8],
+              label: '{% ui "Marcações" "Bookings" %}',
+              data: weeklyAppointments,
               borderColor: '#0f766e',
               backgroundColor: 'rgba(15, 118, 110, 0.12)',
               pointBackgroundColor: '#0f766e',
@@ -609,17 +626,19 @@
               pointRadius: 4,
               borderWidth: 3,
               tension: 0.35,
+              yAxisID: 'y',
               fill: true
             },
             {
-              label: '{% ui "Receita projetada" "Projected revenue" %}',
-              data: [8, 13, 11, 17, 16, 9, 7],
+              label: `{% ui "Receita da farmácia" "Pharmacy revenue" %} (${dashboardCurrency})`,
+              data: weeklyRevenue,
               borderColor: '#f97316',
               pointBackgroundColor: '#f97316',
               pointBorderColor: '#ffffff',
               pointRadius: 4,
               borderWidth: 2,
               tension: 0.35,
+              yAxisID: 'yRevenue',
               fill: false
             }
           ]
@@ -633,12 +652,33 @@
               display: true,
               position: 'bottom',
               labels: { usePointStyle: true, boxWidth: 10, color: '#64748b' }
+            },
+            tooltip: {
+              callbacks: {
+                label(context) {
+                  const label = context.dataset.label || ''
+                  if (context.dataset.yAxisID === 'yRevenue') {
+                    return `${label}: ${Number(context.parsed.y || 0).toFixed(2)} ${dashboardCurrency}`
+                  }
+                  return `${label}: ${context.parsed.y || 0}`
+                }
+              }
             }
           },
           scales: {
             y: {
               grid: { color: 'rgba(148, 163, 184, 0.14)', drawBorder: false },
               ticks: { color: '#64748b' }
+            },
+            yRevenue: {
+              position: 'right',
+              grid: { drawBorder: false, display: false },
+              ticks: {
+                color: '#64748b',
+                callback(value) {
+                  return `${Number(value).toFixed(0)} ${dashboardCurrency}`
+                }
+              }
             },
             x: {
               grid: { display: false, drawBorder: false },

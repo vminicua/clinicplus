@@ -371,6 +371,76 @@ def local_day_bounds(target_date):
     return start, end
 
 
+def scope_queryset_to_branch(queryset, branch, lookup="branch"):
+    if branch is None:
+        return queryset
+    return queryset.filter(**{lookup: branch})
+
+
+def dashboard_schedule_capacity_slots(schedule):
+    if not schedule.accepts_appointments or schedule.slot_minutes <= 0:
+        return 0
+
+    reference_date = timezone.localdate()
+    start_at = datetime.combine(reference_date, schedule.start_time)
+    end_at = datetime.combine(reference_date, schedule.end_time)
+    duration_minutes = max(int((end_at - start_at).total_seconds() // 60), 0)
+
+    if schedule.break_start and schedule.break_end:
+        break_start_at = datetime.combine(reference_date, schedule.break_start)
+        break_end_at = datetime.combine(reference_date, schedule.break_end)
+        duration_minutes -= max(int((break_end_at - break_start_at).total_seconds() // 60), 0)
+
+    return max(duration_minutes // schedule.slot_minutes, 0)
+
+
+def dashboard_event_time_label(timestamp, today=None):
+    if timestamp is None:
+        return ""
+
+    if timezone.is_naive(timestamp):
+        timestamp = timezone.make_aware(timestamp)
+
+    localized_timestamp = timezone.localtime(timestamp)
+    reference_date = today or timezone.localdate()
+    if localized_timestamp.date() == reference_date:
+        return localized_timestamp.strftime("%H:%M")
+    return localized_timestamp.strftime("%d/%m %H:%M")
+
+
+def dashboard_appointment_status_meta(request, status):
+    status_map = {
+        "agendado": {
+            "label": ui_text(request, "Agendado", "Scheduled"),
+            "tone": "info",
+            "icon": "event_available",
+        },
+        "concluido": {
+            "label": ui_text(request, "Concluído", "Completed"),
+            "tone": "success",
+            "icon": "task_alt",
+        },
+        "cancelado": {
+            "label": ui_text(request, "Cancelado", "Cancelled"),
+            "tone": "danger",
+            "icon": "event_busy",
+        },
+        "nao_compareceu": {
+            "label": ui_text(request, "Não compareceu", "No-show"),
+            "tone": "warning",
+            "icon": "person_off",
+        },
+    }
+    return status_map.get(
+        status,
+        {
+            "label": status.replace("_", " ").title(),
+            "tone": "secondary",
+            "icon": "event_note",
+        },
+    )
+
+
 def pharmacy_vat_rate():
     preferences = get_system_preferences()
     if preferences is None:
@@ -900,6 +970,302 @@ def custom_logout(request):
 def dashboard(request):
     greeting_name = request.user.get_short_name() or request.user.first_name or request.user.username
     current_branch = getattr(request, "clinic_current_branch", None)
+    today = timezone.localdate()
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+    month_start = today.replace(day=1)
+    today_start, today_end = local_day_bounds(today)
+    month_start_dt, _month_end_dt = local_day_bounds(month_start)
+    visible_branches = cached_available_branches_for_request(request)
+    preferences = get_system_preferences()
+    currency = (preferences.default_currency if preferences else "MZN") or "MZN"
+
+    patients_qs = scope_queryset_to_branch(patient_queryset(), current_branch)
+    appointments_qs = scope_queryset_to_branch(appointment_queryset(), current_branch)
+    consultations_qs = scope_queryset_to_branch(
+        Consulta.objects.select_related(
+            "agendamento__paciente__user",
+            "agendamento__medico__user",
+            "agendamento__medico__especialidade",
+            "agendamento__medico__departamento",
+        ),
+        current_branch,
+        lookup="agendamento__branch",
+    )
+    doctor_schedules_qs = scope_queryset_to_branch(
+        work_schedule_queryset().filter(role=HorarioTrabalho.RoleChoices.MEDICO),
+        current_branch,
+    )
+    sales_qs = pharmacy_sale_queryset(request)
+    if current_branch is not None:
+        sales_qs = sales_qs.filter(branch=current_branch)
+
+    active_patients = patients_qs.filter(is_active=True)
+    total_patients = active_patients.count()
+    new_patients_this_month = patients_qs.filter(created_at__date__gte=month_start).count()
+
+    appointments_today_qs = appointments_qs.filter(data=today)
+    appointments_this_month_qs = appointments_qs.filter(data__year=today.year, data__month=today.month)
+    completed_appointments_month = appointments_this_month_qs.filter(status="concluido").count()
+    appointments_today = appointments_today_qs.count()
+    appointments_this_month = appointments_this_month_qs.count()
+    pending_appointments = appointments_qs.filter(status="agendado", data__gte=today).count()
+
+    consultations_today_qs = consultations_qs.filter(data_consulta__gte=today_start, data_consulta__lt=today_end)
+    consultations_month_qs = consultations_qs.filter(data_consulta__gte=month_start_dt, data_consulta__lt=today_end)
+    completed_consultations_today = consultations_today_qs.count()
+    completed_consultations_month = consultations_month_qs.count()
+
+    completed_rate = (
+        round((completed_appointments_month / appointments_this_month) * 100)
+        if appointments_this_month
+        else 0
+    )
+    consultation_capture_rate = (
+        round((completed_consultations_month / completed_appointments_month) * 100)
+        if completed_appointments_month
+        else 0
+    )
+
+    today_doctor_schedules = list(
+        doctor_schedules_qs.filter(
+            is_active=True,
+            accepts_appointments=True,
+            weekday=today.weekday(),
+            valid_from__lte=today,
+        )
+        .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=today))
+        .order_by("start_time", "user__first_name", "user__last_name", "user__username")
+    )
+    doctors_on_duty_today = len({schedule.user_id for schedule in today_doctor_schedules})
+    today_capacity_slots = sum(dashboard_schedule_capacity_slots(schedule) for schedule in today_doctor_schedules)
+    daily_capacity = round((appointments_today / today_capacity_slots) * 100) if today_capacity_slots else 0
+
+    total_doctors = len(
+        (
+            set(appointments_qs.values_list("medico_id", flat=True))
+            | set(doctor_schedules_qs.values_list("user__medico__id", flat=True))
+        )
+        - {None}
+    )
+
+    completed_sales_today = list(
+        sales_qs.filter(
+            status=PharmacySale.StatusChoices.COMPLETED,
+            sold_at__gte=today_start,
+            sold_at__lt=today_end,
+        )
+    )
+    completed_sales_month = list(
+        sales_qs.filter(
+            status=PharmacySale.StatusChoices.COMPLETED,
+            sold_at__gte=month_start_dt,
+            sold_at__lt=today_end,
+        )
+    )
+    revenue_today = quantize_money(sum(sale.total_amount for sale in completed_sales_today))
+    revenue_month = quantize_money(sum(sale.total_amount for sale in completed_sales_month))
+    sales_this_month = len(completed_sales_month)
+
+    future_appointments = list(appointments_qs.filter(data__gte=today).order_by("data", "hora")[:5])
+    if len(future_appointments) < 5:
+        fallback_appointments = list(
+            appointments_qs.filter(data__lt=today).order_by("-data", "-hora")[: 5 - len(future_appointments)]
+        )
+        recent_appointment_objects = future_appointments + fallback_appointments
+    else:
+        recent_appointment_objects = future_appointments
+
+    recent_appointments = []
+    for appointment in recent_appointment_objects:
+        status_meta = dashboard_appointment_status_meta(request, appointment.status)
+        specialty = (
+            appointment.medico.especialidade.display_name
+            if appointment.medico.especialidade_id
+            else (
+                appointment.medico.departamento.display_name
+                if appointment.medico.departamento_id
+                else ui_text(request, "Clínica geral", "General clinic")
+            )
+        )
+        recent_appointments.append(
+            {
+                "patient": appointment.paciente.full_name,
+                "doctor": appointment.medico.user.get_full_name() or appointment.medico.user.username,
+                "specialty": specialty,
+                "time": f"{appointment.data:%d/%m} · {appointment.hora:%H:%M}"
+                if appointment.data != today
+                else f"{appointment.hora:%H:%M}",
+                "status": status_meta["label"],
+                "tone": status_meta["tone"],
+            }
+        )
+
+    weekly_top_doctors = (
+        appointments_qs.filter(data__range=(week_start, week_end))
+        .order_by()
+        .values(
+            "medico_id",
+            "medico__user__first_name",
+            "medico__user__last_name",
+            "medico__user__username",
+            "medico__especialidade__name",
+            "medico__departamento__name",
+        )
+        .annotate(
+            appointments=Count("id"),
+            completed=Count("id", filter=Q(status="concluido")),
+            consultations=Count("consulta", distinct=True),
+        )
+        .order_by("-appointments", "-completed", "medico__user__first_name", "medico__user__last_name")[:5]
+    )
+    top_doctors = []
+    for item in weekly_top_doctors:
+        doctor_name = " ".join(
+            part
+            for part in [item["medico__user__first_name"], item["medico__user__last_name"]]
+            if part
+        ) or item["medico__user__username"]
+        specialty_name = (
+            item["medico__especialidade__name"]
+            or item["medico__departamento__name"]
+            or ui_text(request, "Sem especialidade", "No specialty")
+        )
+        top_doctors.append(
+            {
+                "name": doctor_name,
+                "specialty": specialty_name,
+                "appointments": item["appointments"],
+                "completed": item["completed"],
+                "consultations": item["consultations"],
+            }
+        )
+
+    timeline_entries = []
+    timeline_window_start = today - timedelta(days=6)
+    timeline_window_start_dt, _timeline_window_end = local_day_bounds(timeline_window_start)
+
+    recent_consultations = consultations_qs.filter(data_consulta__gte=timeline_window_start_dt).order_by("-data_consulta")[:4]
+    for consultation in recent_consultations:
+        timeline_entries.append(
+            {
+                "title": ui_text(
+                    request,
+                    "Consulta registada para %(patient)s",
+                    "Consultation recorded for %(patient)s",
+                )
+                % {"patient": consultation.agendamento.paciente.full_name},
+                "time": dashboard_event_time_label(consultation.data_consulta, today=today),
+                "icon": "stethoscope",
+                "tone": "success",
+                "sort_at": consultation.data_consulta,
+            }
+        )
+
+    recent_sales = sales_qs.filter(sold_at__gte=timeline_window_start_dt).order_by("-sold_at")[:4]
+    for sale in recent_sales:
+        sale_event_timestamp = sale.sold_at if sale.status == PharmacySale.StatusChoices.COMPLETED else (sale.reversed_at or sale.sold_at)
+        title = (
+            ui_text(
+                request,
+                "Venda %(sale)s concluída para %(customer)s",
+                "Sale %(sale)s completed for %(customer)s",
+            )
+            if sale.status == PharmacySale.StatusChoices.COMPLETED
+            else ui_text(
+                request,
+                "Venda %(sale)s revertida para %(customer)s",
+                "Sale %(sale)s reversed for %(customer)s",
+            )
+        )
+        timeline_entries.append(
+            {
+                "title": title
+                % {
+                    "sale": sale.sale_number or f"#{sale.pk}",
+                    "customer": sale.customer_display_name,
+                },
+                "time": dashboard_event_time_label(sale_event_timestamp, today=today),
+                "icon": "payments",
+                "tone": "primary" if sale.status == PharmacySale.StatusChoices.COMPLETED else "warning",
+                "sort_at": sale_event_timestamp,
+            }
+        )
+
+    recent_timeline_appointments = appointments_qs.filter(data__gte=timeline_window_start).order_by("-data", "-hora")[:4]
+    for appointment in recent_timeline_appointments:
+        appointment_moment = timezone.make_aware(datetime.combine(appointment.data, appointment.hora))
+        status_meta = dashboard_appointment_status_meta(request, appointment.status)
+        timeline_entries.append(
+            {
+                "title": ui_text(
+                    request,
+                    "%(status)s de %(patient)s com %(doctor)s",
+                    "%(status)s for %(patient)s with %(doctor)s",
+                )
+                % {
+                    "status": status_meta["label"],
+                    "patient": appointment.paciente.full_name,
+                    "doctor": appointment.medico.user.get_full_name() or appointment.medico.user.username,
+                },
+                "time": dashboard_event_time_label(appointment_moment, today=today),
+                "icon": status_meta["icon"],
+                "tone": status_meta["tone"],
+                "sort_at": appointment_moment,
+            }
+        )
+
+    timeline_events = [
+        {
+            "title": item["title"],
+            "time": item["time"],
+            "icon": item["icon"],
+            "tone": item["tone"],
+        }
+        for item in sorted(timeline_entries, key=lambda entry: entry["sort_at"], reverse=True)[:6]
+    ]
+
+    weekly_chart_labels = []
+    weekly_chart_appointments = []
+    weekly_chart_revenue = []
+    for offset in range(7):
+        target_date = week_start + timedelta(days=offset)
+        period_start, period_end = local_day_bounds(target_date)
+        weekly_chart_labels.append(target_date.strftime("%d/%m"))
+        weekly_chart_appointments.append(appointments_qs.filter(data=target_date).count())
+        weekly_chart_revenue.append(
+            float(
+                quantize_money(
+                    sum(
+                        sale.total_amount
+                        for sale in sales_qs.filter(
+                            status=PharmacySale.StatusChoices.COMPLETED,
+                            sold_at__gte=period_start,
+                            sold_at__lt=period_end,
+                        )
+                    )
+                )
+            )
+        )
+
+    if pending_appointments:
+        shift_focus_text = ui_text(
+            request,
+            "%(count)s marcações agendadas ainda aguardam atendimento ou confirmação operacional.",
+            "%(count)s scheduled bookings are still waiting for operational handling or follow-up.",
+        ) % {"count": pending_appointments}
+    elif daily_capacity >= 85:
+        shift_focus_text = ui_text(
+            request,
+            "A capacidade do dia está elevada; vale acompanhar encaixes e atrasos.",
+            "Today's capacity is running high; keep an eye on walk-ins and delays.",
+        )
+    else:
+        shift_focus_text = ui_text(
+            request,
+            "Operação estável, com agenda e faturação a evoluírem dentro do esperado.",
+            "Operations are stable, with scheduling and billing moving as expected.",
+        )
 
     context = {
         'segment': 'dashboard',
@@ -921,130 +1287,41 @@ def dashboard(request):
             )
             if current_branch else ""
         ),
-        'current_date': timezone.localdate(),
+        'current_date': today,
         'greeting_name': greeting_name,
         'current_branch': current_branch,
-        'total_clinics': Clinic.objects.filter(is_active=True).count() or Clinic.objects.count() or 1,
-        'total_doctors': 5,
-        'total_patients': 24,
-        'total_appointments': 48,
-        'completed_consultations': 42,
-        'appointments_today': 6,
-        'revenue_today': 'MZN 2 850,00',
-        'revenue_month': 'MZN 45 230,00',
-        'satisfaction_rate': 96,
-        'confirmed_rate': 88,
-        'monthly_target_progress': 76,
-        'daily_capacity': 68,
-        'pending_followups': 3,
+        'currency': currency,
+        'total_clinics': Clinic.objects.filter(is_active=True).count(),
+        'visible_branches_count': len(visible_branches) if visible_branches else Branch.objects.filter(is_active=True).count(),
+        'total_doctors': total_doctors,
+        'doctors_on_duty_today': doctors_on_duty_today,
+        'total_patients': total_patients,
+        'new_patients_this_month': new_patients_this_month,
+        'appointments_this_month': appointments_this_month,
+        'completed_appointments_month': completed_appointments_month,
+        'completed_consultations_month': completed_consultations_month,
+        'completed_consultations_today': completed_consultations_today,
+        'appointments_today': appointments_today,
+        'revenue_today': revenue_today,
+        'revenue_month': revenue_month,
+        'completed_rate': completed_rate,
+        'consultation_capture_rate': consultation_capture_rate,
+        'daily_capacity': daily_capacity,
+        'today_capacity_slots': today_capacity_slots,
+        'pending_appointments': pending_appointments,
+        'sales_this_month': sales_this_month,
         'service_mix': [
-            {'label': ui_text(request, 'Consultas confirmadas', 'Confirmed consultations'), 'value': 88, 'tone': 'success'},
-            {'label': ui_text(request, 'Capacidade ocupada hoje', 'Capacity occupied today'), 'value': 68, 'tone': 'info'},
-            {'label': ui_text(request, 'Meta de receita do mes', 'Monthly revenue target'), 'value': 76, 'tone': 'warning'},
+            {'label': ui_text(request, 'Agenda concluída no mês', 'Monthly schedule completed'), 'value': completed_rate, 'tone': 'success'},
+            {'label': ui_text(request, 'Capacidade ocupada hoje', 'Capacity occupied today'), 'value': daily_capacity, 'tone': 'info'},
+            {'label': ui_text(request, 'Consultas registadas no mês', 'Monthly recorded consultations'), 'value': consultation_capture_rate, 'tone': 'warning'},
         ],
-        'timeline_events': [
-            {
-                'title': ui_text(request, 'Checklist da recepcao concluido', 'Reception checklist completed'),
-                'time': '08:10',
-                'icon': 'task_alt',
-                'tone': 'success',
-            },
-            {
-                'title': ui_text(request, '3 retornos precisam de confirmacao', '3 follow-ups need confirmation'),
-                'time': '09:00',
-                'icon': 'call',
-                'tone': 'warning',
-            },
-            {
-                'title': ui_text(request, 'Laboratorio enviou resultados pendentes', 'Laboratory sent pending results'),
-                'time': '10:25',
-                'icon': 'lab_profile',
-                'tone': 'info',
-            },
-            {
-                'title': ui_text(request, 'Financeiro fechou conciliacao parcial', 'Finance closed a partial reconciliation'),
-                'time': '11:40',
-                'icon': 'payments',
-                'tone': 'primary',
-            },
-        ],
-
-        'top_doctors': [
-            {
-                'name': 'Dr. João Silva',
-                'specialty': ui_text(request, 'Cardiologia', 'Cardiology'),
-                'appointments': 12,
-                'satisfaction': 98
-            },
-            {
-                'name': 'Dra. Maria Santos',
-                'specialty': ui_text(request, 'Pediatria', 'Pediatrics'),
-                'appointments': 11,
-                'satisfaction': 97
-            },
-            {
-                'name': 'Dr. Carlos Oliveira',
-                'specialty': ui_text(request, 'Ortopedia', 'Orthopedics'),
-                'appointments': 10,
-                'satisfaction': 95
-            },
-            {
-                'name': 'Dra. Ana Costa',
-                'specialty': ui_text(request, 'Dermatologia', 'Dermatology'),
-                'appointments': 9,
-                'satisfaction': 94
-            },
-            {
-                'name': 'Dr. Paulo Ferreira',
-                'specialty': ui_text(request, 'Neurologia', 'Neurology'),
-                'appointments': 8,
-                'satisfaction': 93
-            },
-        ],
-
-        # Agendamentos recentes
-        'recent_appointments': [
-            {
-                'patient': 'João Dos Santos',
-                'doctor': 'Dr. João Silva',
-                'specialty': ui_text(request, 'Cardiologia', 'Cardiology'),
-                'time': '09:00',
-                'status': ui_text(request, 'Confirmado', 'Confirmed'),
-                'tone': 'success',
-            },
-            {
-                'patient': 'Maria Silva',
-                'doctor': 'Dra. Maria Santos',
-                'specialty': ui_text(request, 'Pediatria', 'Pediatrics'),
-                'time': '09:30',
-                'status': ui_text(request, 'Confirmado', 'Confirmed'),
-                'tone': 'success',
-            },
-            {
-                'patient': 'Carlos Santos',
-                'doctor': 'Dr. Carlos Oliveira',
-                'specialty': ui_text(request, 'Ortopedia', 'Orthopedics'),
-                'time': '10:00',
-                'status': ui_text(request, 'Em andamento', 'In progress'),
-                'tone': 'info',
-            },
-            {
-                'patient': 'Ana Costa',
-                'doctor': 'Dra. Ana Costa',
-                'specialty': ui_text(request, 'Dermatologia', 'Dermatology'),
-                'time': '10:30',
-                'status': ui_text(request, 'Confirmado', 'Confirmed'),
-                'tone': 'success',
-            },
-            {
-                'patient': 'Paulo Oliveira',
-                'doctor': 'Dr. Paulo Ferreira',
-                'specialty': ui_text(request, 'Neurologia', 'Neurology'),
-                'time': '11:00',
-                'status': ui_text(request, 'Confirmado', 'Confirmed'),
-                'tone': 'success',
-            },
-        ],
+        'shift_focus_text': shift_focus_text,
+        'timeline_events': timeline_events,
+        'top_doctors': top_doctors,
+        'recent_appointments': recent_appointments,
+        'weekly_chart_labels': weekly_chart_labels,
+        'weekly_chart_appointments': weekly_chart_appointments,
+        'weekly_chart_revenue': weekly_chart_revenue,
     }
 
     return render(request, 'clinic/index.html', context)

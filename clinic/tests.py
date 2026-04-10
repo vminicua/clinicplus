@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import Permission, User
@@ -117,11 +117,11 @@ class PatientViewsTests(TestCase):
         self.preferences.patient_code_prefix = "TEST000"
         self.preferences.save(update_fields=["patient_code_prefix", "updated_at"])
 
-    def create_patient(self, document="DOC12345"):
+    def create_patient(self, document="DOC12345", branch=None):
         patient_user = User.objects.create(username=f"user_{document.lower()}", first_name="Maria", last_name="Silva")
         return Paciente.objects.create(
             user=patient_user,
-            branch=self.branch,
+            branch=branch or self.branch,
             cpf=document,
             phone="840333333",
             date_of_birth="1990-01-01",
@@ -204,6 +204,142 @@ class PatientViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.preferences.format_patient_code(patient.pk))
+
+    def test_dashboard_uses_real_branch_scoped_data(self):
+        today = timezone.localdate()
+        other_branch = Branch.objects.create(name="Clinic Plus Norte", code="CPN", city="Nampula")
+        profile = self.user.profile
+        profile.assigned_branches.set([self.branch])
+        profile.default_branch = self.branch
+        profile.save(update_fields=["default_branch"])
+
+        patient = self.create_patient("DASH1234", branch=self.branch)
+        other_patient = self.create_patient("DASH9999", branch=other_branch)
+        other_patient.user.first_name = "Joana"
+        other_patient.user.last_name = "Tembe"
+        other_patient.user.save(update_fields=["first_name", "last_name"])
+
+        doctor_user = User.objects.create(username="doctor_dashboard", first_name="Elsa", last_name="Maiaia")
+        other_doctor_user = User.objects.create(username="doctor_dashboard_2", first_name="Tomás", last_name="Mucavele")
+        doctor = Medico.objects.create(
+            user=doctor_user,
+            hospital=self.hospital,
+            especialidade=None,
+            crm="CRM-DASH-01",
+            phone="840123123",
+        )
+        other_doctor = Medico.objects.create(
+            user=other_doctor_user,
+            hospital=self.hospital,
+            especialidade=None,
+            crm="CRM-DASH-02",
+            phone="840999123",
+        )
+
+        HorarioTrabalho.objects.create(
+            user=doctor_user,
+            branch=self.branch,
+            role=HorarioTrabalho.RoleChoices.MEDICO,
+            weekday=today.weekday(),
+            start_time="08:00",
+            end_time="10:00",
+            slot_minutes=30,
+            valid_from=today.replace(day=1),
+            accepts_appointments=True,
+        )
+
+        completed_appointment = Agendamento.objects.create(
+            paciente=patient,
+            medico=doctor,
+            branch=self.branch,
+            hospital=self.hospital,
+            data=today,
+            hora="08:30",
+            motivo="Consulta concluída",
+            status="concluido",
+        )
+        consultation = Consulta.objects.create(
+            agendamento=completed_appointment,
+            diagnostico="Observação concluída",
+            prescricao="Repouso",
+            notas_medico="Registo do dashboard.",
+        )
+
+        pending_appointment = Agendamento.objects.create(
+            paciente=patient,
+            medico=doctor,
+            branch=self.branch,
+            hospital=self.hospital,
+            data=today,
+            hora="09:30",
+            motivo="Consulta pendente",
+            status="agendado",
+        )
+        Agendamento.objects.create(
+            paciente=other_patient,
+            medico=other_doctor,
+            branch=other_branch,
+            hospital=self.hospital,
+            data=today,
+            hora="11:00",
+            motivo="Consulta fora da sucursal",
+            status="agendado",
+        )
+
+        consultation.data_consulta = timezone.make_aware(
+            datetime.combine(today, datetime.strptime("08:45", "%H:%M").time())
+        )
+        consultation.save(update_fields=["data_consulta"])
+
+        warehouse = Armazem.objects.create(branch=self.branch, name="Farmácia Central", code="FARM-CENTRAL")
+        other_warehouse = Armazem.objects.create(branch=other_branch, name="Farmácia Norte", code="FARM-NORTE")
+        sale = PharmacySale.objects.create(
+            branch=self.branch,
+            warehouse=warehouse,
+            patient=patient,
+            customer_name=patient.full_name,
+            subtotal=Decimal("129.31"),
+            tax_rate=Decimal("16.00"),
+            tax_amount=Decimal("20.69"),
+            total_amount=Decimal("150.00"),
+            status=PharmacySale.StatusChoices.COMPLETED,
+        )
+        other_sale = PharmacySale.objects.create(
+            branch=other_branch,
+            warehouse=other_warehouse,
+            patient=other_patient,
+            customer_name=other_patient.full_name,
+            subtotal=Decimal("172.41"),
+            tax_rate=Decimal("16.00"),
+            tax_amount=Decimal("27.59"),
+            total_amount=Decimal("200.00"),
+            status=PharmacySale.StatusChoices.COMPLETED,
+        )
+        now = timezone.now()
+        PharmacySale.objects.filter(pk=sale.pk).update(sold_at=now)
+        PharmacySale.objects.filter(pk=other_sale.pk).update(sold_at=now)
+
+        response = self.client.get(reverse("clinic:index"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["total_patients"], 1)
+        self.assertEqual(response.context["total_doctors"], 1)
+        self.assertEqual(response.context["appointments_today"], 2)
+        self.assertEqual(response.context["appointments_this_month"], 2)
+        self.assertEqual(response.context["completed_consultations_today"], 1)
+        self.assertEqual(response.context["pending_appointments"], 1)
+        self.assertEqual(response.context["sales_this_month"], 1)
+        self.assertEqual(response.context["visible_branches_count"], 1)
+        self.assertEqual(response.context["revenue_today"], Decimal("150.00"))
+        self.assertEqual(response.context["revenue_month"], Decimal("150.00"))
+        self.assertEqual(response.context["completed_rate"], 50)
+        self.assertEqual(response.context["daily_capacity"], 50)
+        self.assertEqual(response.context["weekly_chart_appointments"][today.weekday()], 2)
+        self.assertEqual(response.context["weekly_chart_revenue"][today.weekday()], 150.0)
+        self.assertTrue(all(item["patient"] != other_patient.full_name for item in response.context["recent_appointments"]))
+        self.assertEqual(response.context["top_doctors"][0]["appointments"], 2)
+        self.assertContains(response, patient.full_name)
+        self.assertNotContains(response, other_patient.full_name)
 
     def test_patient_pdf_download_uses_weasyprint(self):
         patient = self.create_patient("PDF12345")

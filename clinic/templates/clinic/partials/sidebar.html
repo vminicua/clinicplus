@@ -23,14 +23,6 @@
           <span class="nav-link-text ms-2">{% ui "Dashboard" "Dashboard" %}</span>
         </a>
       </li>
-      {% if perms.clinic.view_horariotrabalho or perms.clinic.add_horariotrabalho or perms.clinic.change_horariotrabalho %}
-        <li class="nav-item">
-          <a class="nav-link {% if segment == 'schedules' %}active{% endif %}" href="{% url 'clinic:work_schedule_list' %}">
-            <i class="material-symbols-rounded opacity-10">schedule</i>
-            <span class="nav-link-text ms-2">{% ui "Horários" "Schedules" %}</span>
-          </a>
-        </li>
-      {% endif %}
       {% if perms.clinic.view_agendamento or perms.clinic.add_agendamento or perms.clinic.change_agendamento %}
         <li class="nav-item">
           <a class="nav-link clinic-nav-parent {% if segment == 'appointments' or segment == 'appointment_agenda' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-appointments" role="button" aria-expanded="{% if segment == 'appointments' or segment == 'appointment_agenda' %}true{% else %}false{% endif %}" aria-controls="sidebar-appointments">
@@ -50,6 +42,31 @@
               <li class="nav-item">
                 <a class="nav-link {% if segment == 'appointment_agenda' %}active{% endif %}" href="{% url 'clinic:appointment_agenda' %}">
                   <span class="nav-link-text">{% ui "Agenda" "Agenda" %}</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </li>
+      {% endif %}
+      {% if perms.clinic.view_pharmacysale or perms.clinic.add_pharmacysale %}
+        <li class="nav-item">
+          <a class="nav-link clinic-nav-parent {% if segment == 'pharmacy_sales' or segment == 'pharmacy_reports' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-pharmacy" role="button" aria-expanded="{% if segment == 'pharmacy_sales' or segment == 'pharmacy_reports' %}true{% else %}false{% endif %}" aria-controls="sidebar-pharmacy">
+            <span class="d-flex align-items-center">
+              <i class="material-symbols-rounded opacity-10">local_pharmacy</i>
+              <span class="nav-link-text ms-2">{% ui "Farmácia" "Pharmacy" %}</span>
+            </span>
+            <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
+          </a>
+          <div class="collapse {% if segment == 'pharmacy_sales' or segment == 'pharmacy_reports' %}show{% endif %}" id="sidebar-pharmacy">
+            <ul class="nav flex-column clinic-submenu">
+              <li class="nav-item">
+                <a class="nav-link {% if segment == 'pharmacy_sales' %}active{% endif %}" href="{% url 'clinic:pharmacy_sale_list' %}">
+                  <span class="nav-link-text">{% ui "Vendas" "Sales" %}</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if segment == 'pharmacy_reports' %}active{% endif %}" href="{% url 'clinic:pharmacy_daily_report' %}">
+                  <span class="nav-link-text">{% ui "Caixa diário" "Daily cash" %}</span>
                 </a>
               </li>
             </ul>
@@ -85,58 +102,12 @@
           </div>
         </li>
       {% endif %}
-      <li class="nav-item">
-        <a class="nav-link clinic-nav-parent {% if segment == 'clinics' or segment == 'branches' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-organization" role="button" aria-expanded="{% if segment == 'clinics' or segment == 'branches' %}true{% else %}false{% endif %}" aria-controls="sidebar-organization">
-          <span class="d-flex align-items-center">
-            <i class="material-symbols-rounded opacity-10">apartment</i>
-            <span class="nav-link-text ms-2">{% ui "Organização" "Organization" %}</span>
-          </span>
-          <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
-        </a>
-        <div class="collapse {% if segment == 'clinics' or segment == 'branches' %}show{% endif %}" id="sidebar-organization">
-          <ul class="nav flex-column clinic-submenu">
-            {% if perms.accounts.view_clinic or perms.accounts.add_clinic or perms.accounts.change_clinic %}
-              <li class="nav-item">
-                <a class="nav-link {% if segment == 'clinics' %}active{% endif %}" href="{% url 'accounts:clinic_list' %}">
-                  <span class="nav-link-text">{% ui "Clínicas" "Clinics" %}</span>
-                </a>
-              </li>
-            {% endif %}
-            <li class="nav-item">
-              <a class="nav-link {% if segment == 'branches' %}active{% endif %}" href="{% url 'accounts:branch_list' %}">
-                <span class="nav-link-text">{% ui "Sucursais" "Branches" %}</span>
-              </a>
-            </li>
-          </ul>
-        </div>
-      </li>
-      {% if perms.clinic.view_especialidade or perms.clinic.add_especialidade or perms.clinic.change_especialidade or perms.clinic.view_departamento or perms.clinic.add_departamento or perms.clinic.change_departamento %}
+      {% if perms.clinic.view_horariotrabalho or perms.clinic.add_horariotrabalho or perms.clinic.change_horariotrabalho %}
         <li class="nav-item">
-          <a class="nav-link clinic-nav-parent {% if segment == 'specialties' or segment == 'departments' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-structure" role="button" aria-expanded="{% if segment == 'specialties' or segment == 'departments' %}true{% else %}false{% endif %}" aria-controls="sidebar-structure">
-            <span class="d-flex align-items-center">
-              <i class="material-symbols-rounded opacity-10">account_tree</i>
-              <span class="nav-link-text ms-2">{% ui "Estrutura Clínica" "Clinical structure" %}</span>
-            </span>
-            <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
+          <a class="nav-link {% if segment == 'schedules' %}active{% endif %}" href="{% url 'clinic:work_schedule_list' %}">
+            <i class="material-symbols-rounded opacity-10">schedule</i>
+            <span class="nav-link-text ms-2">{% ui "Horários" "Schedules" %}</span>
           </a>
-          <div class="collapse {% if segment == 'specialties' or segment == 'departments' %}show{% endif %}" id="sidebar-structure">
-            <ul class="nav flex-column clinic-submenu">
-            {% if perms.clinic.view_especialidade or perms.clinic.add_especialidade or perms.clinic.change_especialidade %}
-              <li class="nav-item">
-                <a class="nav-link {% if segment == 'specialties' %}active{% endif %}" href="{% url 'clinic:specialty_list' %}">
-                  <span class="nav-link-text">{% ui "Especialidades" "Specialties" %}</span>
-                </a>
-              </li>
-            {% endif %}
-            {% if perms.clinic.view_departamento or perms.clinic.add_departamento or perms.clinic.change_departamento %}
-              <li class="nav-item">
-                <a class="nav-link {% if segment == 'departments' %}active{% endif %}" href="{% url 'clinic:department_list' %}">
-                  <span class="nav-link-text">{% ui "Departamentos" "Departments" %}</span>
-                </a>
-              </li>
-            {% endif %}
-          </ul>
-          </div>
         </li>
       {% endif %}
       {% if perms.clinic.view_armazem or perms.clinic.add_armazem or perms.clinic.change_armazem or perms.clinic.view_medicamento or perms.clinic.add_medicamento or perms.clinic.change_medicamento or perms.clinic.view_estoquemedicamento or perms.clinic.add_estoquemedicamento or perms.clinic.change_estoquemedicamento or perms.clinic.view_consumivel or perms.clinic.add_consumivel or perms.clinic.change_consumivel or perms.clinic.view_estoqueconsumivel or perms.clinic.add_estoqueconsumivel or perms.clinic.change_estoqueconsumivel or perms.clinic.view_movimentoinventario or perms.clinic.add_movimentoinventario or perms.clinic.change_movimentoinventario %}
@@ -197,31 +168,88 @@
           </div>
         </li>
       {% endif %}
-      {% if perms.clinic.view_pharmacysale or perms.clinic.add_pharmacysale %}
+      {% if perms.clinic.view_especialidade or perms.clinic.add_especialidade or perms.clinic.change_especialidade or perms.clinic.view_departamento or perms.clinic.add_departamento or perms.clinic.change_departamento %}
         <li class="nav-item">
-          <a class="nav-link clinic-nav-parent {% if segment == 'pharmacy_sales' or segment == 'pharmacy_reports' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-pharmacy" role="button" aria-expanded="{% if segment == 'pharmacy_sales' or segment == 'pharmacy_reports' %}true{% else %}false{% endif %}" aria-controls="sidebar-pharmacy">
+          <a class="nav-link clinic-nav-parent {% if segment == 'specialties' or segment == 'departments' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-structure" role="button" aria-expanded="{% if segment == 'specialties' or segment == 'departments' %}true{% else %}false{% endif %}" aria-controls="sidebar-structure">
             <span class="d-flex align-items-center">
-              <i class="material-symbols-rounded opacity-10">local_pharmacy</i>
-              <span class="nav-link-text ms-2">{% ui "Farmácia" "Pharmacy" %}</span>
+              <i class="material-symbols-rounded opacity-10">account_tree</i>
+              <span class="nav-link-text ms-2">{% ui "Estrutura Clínica" "Clinical structure" %}</span>
             </span>
             <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
           </a>
-          <div class="collapse {% if segment == 'pharmacy_sales' or segment == 'pharmacy_reports' %}show{% endif %}" id="sidebar-pharmacy">
+          <div class="collapse {% if segment == 'specialties' or segment == 'departments' %}show{% endif %}" id="sidebar-structure">
             <ul class="nav flex-column clinic-submenu">
-              <li class="nav-item">
-                <a class="nav-link {% if segment == 'pharmacy_sales' %}active{% endif %}" href="{% url 'clinic:pharmacy_sale_list' %}">
-                  <span class="nav-link-text">{% ui "Vendas" "Sales" %}</span>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if segment == 'pharmacy_reports' %}active{% endif %}" href="{% url 'clinic:pharmacy_daily_report' %}">
-                  <span class="nav-link-text">{% ui "Caixa diário" "Daily cash" %}</span>
-                </a>
-              </li>
+              {% if perms.clinic.view_especialidade or perms.clinic.add_especialidade or perms.clinic.change_especialidade %}
+                <li class="nav-item">
+                  <a class="nav-link {% if segment == 'specialties' %}active{% endif %}" href="{% url 'clinic:specialty_list' %}">
+                    <span class="nav-link-text">{% ui "Especialidades" "Specialties" %}</span>
+                  </a>
+                </li>
+              {% endif %}
+              {% if perms.clinic.view_departamento or perms.clinic.add_departamento or perms.clinic.change_departamento %}
+                <li class="nav-item">
+                  <a class="nav-link {% if segment == 'departments' %}active{% endif %}" href="{% url 'clinic:department_list' %}">
+                    <span class="nav-link-text">{% ui "Departamentos" "Departments" %}</span>
+                  </a>
+                </li>
+              {% endif %}
             </ul>
           </div>
         </li>
       {% endif %}
+      <li class="nav-item">
+        <a class="nav-link clinic-nav-parent {% if segment == 'clinics' or segment == 'branches' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-organization" role="button" aria-expanded="{% if segment == 'clinics' or segment == 'branches' %}true{% else %}false{% endif %}" aria-controls="sidebar-organization">
+          <span class="d-flex align-items-center">
+            <i class="material-symbols-rounded opacity-10">apartment</i>
+            <span class="nav-link-text ms-2">{% ui "Organização" "Organization" %}</span>
+          </span>
+          <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
+        </a>
+        <div class="collapse {% if segment == 'clinics' or segment == 'branches' %}show{% endif %}" id="sidebar-organization">
+          <ul class="nav flex-column clinic-submenu">
+            {% if perms.accounts.view_clinic or perms.accounts.add_clinic or perms.accounts.change_clinic %}
+              <li class="nav-item">
+                <a class="nav-link {% if segment == 'clinics' %}active{% endif %}" href="{% url 'accounts:clinic_list' %}">
+                  <span class="nav-link-text">{% ui "Clínicas" "Clinics" %}</span>
+                </a>
+              </li>
+            {% endif %}
+            <li class="nav-item">
+              <a class="nav-link {% if segment == 'branches' %}active{% endif %}" href="{% url 'accounts:branch_list' %}">
+                <span class="nav-link-text">{% ui "Sucursais" "Branches" %}</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link clinic-nav-parent {% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-access" role="button" aria-expanded="{% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}true{% else %}false{% endif %}" aria-controls="sidebar-access">
+          <span class="d-flex align-items-center">
+            <i class="material-symbols-rounded opacity-10">manage_accounts</i>
+            <span class="nav-link-text ms-2">{% ui "Perfis & Permissões" "Roles & Permissions" %}</span>
+          </span>
+          <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
+        </a>
+        <div class="collapse {% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}show{% endif %}" id="sidebar-access">
+          <ul class="nav flex-column clinic-submenu">
+            <li class="nav-item">
+              <a class="nav-link {% if segment == 'users' %}active{% endif %}" href="{% url 'accounts:user_list' %}">
+                <span class="nav-link-text">{% ui "Utilizadores" "Users" %}</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if segment == 'roles' %}active{% endif %}" href="{% url 'accounts:role_list' %}">
+                <span class="nav-link-text">{% ui "Perfis" "Roles" %}</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if segment == 'permissions' %}active{% endif %}" href="{% url 'accounts:permission_list' %}">
+                <span class="nav-link-text">{% ui "Permissões" "Permissions" %}</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </li>
       <li class="nav-item">
         <a class="nav-link clinic-nav-parent {% if segment == 'preferences' or segment == 'preference_units' or segment == 'preference_payment_methods' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-preferences" role="button" aria-expanded="{% if segment == 'preferences' or segment == 'preference_units' or segment == 'preference_payment_methods' %}true{% else %}false{% endif %}" aria-controls="sidebar-preferences">
           <span class="d-flex align-items-center">
@@ -251,34 +279,6 @@
                 </a>
               </li>
             {% endif %}
-          </ul>
-        </div>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link clinic-nav-parent {% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}active{% endif %}" data-bs-toggle="collapse" href="#sidebar-access" role="button" aria-expanded="{% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}true{% else %}false{% endif %}" aria-controls="sidebar-access">
-          <span class="d-flex align-items-center">
-            <i class="material-symbols-rounded opacity-10">manage_accounts</i>
-            <span class="nav-link-text ms-2">{% ui "Perfis & Permissões" "Roles & Permissions" %}</span>
-          </span>
-          <i class="material-symbols-rounded clinic-submenu-arrow">expand_more</i>
-        </a>
-        <div class="collapse {% if segment == 'users' or segment == 'roles' or segment == 'permissions' %}show{% endif %}" id="sidebar-access">
-          <ul class="nav flex-column clinic-submenu">
-            <li class="nav-item">
-              <a class="nav-link {% if segment == 'users' %}active{% endif %}" href="{% url 'accounts:user_list' %}">
-                <span class="nav-link-text">{% ui "Utilizadores" "Users" %}</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if segment == 'roles' %}active{% endif %}" href="{% url 'accounts:role_list' %}">
-                <span class="nav-link-text">{% ui "Perfis" "Roles" %}</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if segment == 'permissions' %}active{% endif %}" href="{% url 'accounts:permission_list' %}">
-                <span class="nav-link-text">{% ui "Permissões" "Permissions" %}</span>
-              </a>
-            </li>
           </ul>
         </div>
       </li>
